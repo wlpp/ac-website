@@ -20,7 +20,8 @@ class User(db.Model):
     
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
-    password_hash = db.Column(db.String(128))
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    pwd = db.Column(db.String(128))
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
@@ -31,10 +32,10 @@ class User(db.Model):
         }
 
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        self.pwd = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        return check_password_hash(self.pwd, password)
 
 # 登录路由
 @auth_bp.route('/api/login', methods=['POST'])
@@ -56,19 +57,32 @@ def login():
 def register():
     data = request.get_json()
     
-    if not data or not data.get('username') or not data.get('password'):
-        return jsonify({'message': '请提供用户名和密码'}), 400
+    if not data or not data.get('username') or not data.get('password') or not data.get('email'):
+        return jsonify({'message': '请提供完整的注册信息'}), 400
     
+    # 检查用户名是否存在
     if User.query.filter_by(username=data['username']).first():
         return jsonify({'message': '用户名已存在'}), 400
     
-    user = User(username=data['username'])
-    user.set_password(data['password'])
+    # 检查邮箱是否存在
+    if User.query.filter_by(email=data['email']).first():
+        return jsonify({'message': '该邮箱已被注册'}), 400
     
-    db.session.add(user)
-    db.session.commit()
-    
-    return jsonify({'message': '注册成功'}), 201
+    try:
+        user = User(
+            username=data['username'],
+            email=data['email']
+        )
+        user.set_password(data['password'])
+        
+        db.session.add(user)
+        db.session.commit()
+        
+        return jsonify({'message': '注册成功'}), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'message': '注册失败，请稍后重试'}), 500
 
 @auth_bp.route('/login')
 def login_page():

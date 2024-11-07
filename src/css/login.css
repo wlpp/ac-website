@@ -90,6 +90,12 @@ body {
     top: 50%;
     transform: translateY(-50%);
     color: #666;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.form-group i:hover {
+    color: #1E9FFF; /* layui 的主题蓝色 */
 }
 
 .remember-me {

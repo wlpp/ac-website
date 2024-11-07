@@ -9,6 +9,8 @@
     <link rel="stylesheet" href="../css/login.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <!-- 引入 layui.css -->
+<link href="//unpkg.com/layui@2.9.18/dist/css/layui.css" rel="stylesheet">
 </head>
 <body>
     <div class="login-container">
@@ -21,11 +23,22 @@
                 <input type="text" placeholder="用户名" required>
                 <i class="fa-solid fa-user"></i>
             </div>
+            <div class="form-group">
+                <input type="password" placeholder="密码" required>
+                <i class="fa-solid fa-lock"></i>
+            </div>
             
+            <div class="form-group">
+                <input type="password" placeholder="确认密码" required>
+                <i class="fa-solid fa-lock"></i>
+            </div>
+
             <div class="form-group">
                 <input type="email" placeholder="电子邮箱地址" required>
                 <i class="fa-solid fa-envelope"></i>
             </div>
+            
+           
             
             <button type="submit" class="register-btn">注册</button>
         </form>
@@ -38,5 +51,7 @@
     
     <script src="../api/config.js"></script>
     <script src="../js/user.js"></script>
+    <!-- 引入 layui.js -->
+    <script src="//unpkg.com/layui@2.9.18/dist/layui.js"></script>
 </body>
 </html>

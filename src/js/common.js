@@ -71,6 +71,64 @@ function initializeNavigation() {
         });
     }
 
+    // 添加用户状态检查
+    function updateUserInterface() {
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+        const username = localStorage.getItem('username') || sessionStorage.getItem('username');
+        
+        const userContainer = document.querySelector('.user-container');
+        if (userContainer && token && username) {
+            // 清空现有内容
+            userContainer.innerHTML = '';
+            
+            // 创建用户名显示元素
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.className = 'username';
+            
+            // 创建下拉菜单容器
+            const dropdownMenu = document.createElement('div');
+            dropdownMenu.className = 'dropdown-menu';
+            
+            // 创建退出按钮
+            const logoutLink = document.createElement('a');
+            logoutLink.href = '#';
+            logoutLink.className = 'dropdown-item';
+            logoutLink.textContent = '退出';
+            logoutLink.onclick = function(e) {
+                e.preventDefault();
+                // 清除存储的用户信息
+                localStorage.removeItem('token');
+                localStorage.removeItem('username');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('username');
+                // 刷新页面
+                window.location.reload();
+            };
+            
+            // 组装界面
+            dropdownMenu.appendChild(logoutLink);
+            userContainer.appendChild(usernameSpan);
+            userContainer.appendChild(dropdownMenu);
+            
+            // 添加用户名点击事件（显示/隐藏下拉菜单）
+            usernameSpan.onclick = function(e) {
+                e.stopPropagation();
+                dropdownMenu.style.opacity = dropdownMenu.style.opacity === '1' ? '0' : '1';
+                dropdownMenu.style.visibility = dropdownMenu.style.visibility === 'visible' ? 'hidden' : 'visible';
+            };
+            
+            // 点击其他地方关闭下拉菜单
+            document.addEventListener('click', function() {
+                dropdownMenu.style.opacity = '0';
+                dropdownMenu.style.visibility = 'hidden';
+            });
+        }
+    }
+
+    // 初始化时检查用户状态
+    updateUserInterface();
+
     // 初始化滚动检查
     checkScroll();
     

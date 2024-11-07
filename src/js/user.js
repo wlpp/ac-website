@@ -44,8 +44,11 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 验证用户名
     function validateUsername(username) {
-        if (username.length < 6) {
-            return '用户名长度必须大于6位';
+        if (username.length < 4) {
+            return '用户名长度必须大于等于4位';
+        }
+        if (username.length > 8) {
+            return '用户名长度不能超过8位';
         }
         if (/^\d+$/.test(username)) {
             return '用户名不能为纯数字';
@@ -176,4 +179,127 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
     });
+});
+
+// 登录功能
+if (document.querySelector('.login-form')) {
+    const loginForm = document.querySelector('.login-form');
+    const rememberMe = document.querySelector('#remember');
+
+    // 添加密码显示/隐藏功能
+    const passwordField = loginForm.querySelector('input[type="password"]');
+    const passwordIcon = loginForm.querySelector('.fa-lock');
+
+    passwordIcon.style.cursor = 'pointer';
+    passwordIcon.addEventListener('click', function() {
+        if (passwordField.type === 'password') {
+            passwordField.type = 'text';
+            passwordIcon.classList.remove('fa-lock');
+            passwordIcon.classList.add('fa-lock-open');
+        } else {
+            passwordField.type = 'password';
+            passwordIcon.classList.remove('fa-lock-open');
+            passwordIcon.classList.add('fa-lock');
+        }
+    });
+
+    // 表单提交处理
+    loginForm.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const username = loginForm.querySelector('input[placeholder="用户名/邮箱"]').value;
+        const password = loginForm.querySelector('input[type="password"]').value;
+
+        try {
+            const response = await fetch('/api/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+            
+            if (response.ok) {
+                // 登录成功
+                layer.msg('登录成功！', {
+                    icon: 1,
+                    time: 1500,
+                    end: function() {
+                        // 存储 token
+                        if (rememberMe.checked) {
+                            localStorage.setItem('token', data.token);
+                            localStorage.setItem('username', data.username);
+                        } else {
+                            sessionStorage.setItem('token', data.token);
+                            sessionStorage.setItem('username', data.username);
+                        }
+                        
+                        // 跳转到首页
+                        window.location.href = '/';
+                    }
+                });
+            } else {
+                layer.msg(data.message, {
+                    icon: 2,
+                    time: 2000
+                });
+            }
+        } catch (error) {
+            console.error('登录请求失败:', error);
+            layer.msg('登录失败，请稍后重试', {
+                icon: 2,
+                time: 2000
+            });
+        }
+    });
+}
+
+// 添加用户状态检查函数
+function checkUserStatus() {
+    const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    const username = localStorage.getItem('username') || sessionStorage.getItem('username');
+    
+    if (token && username) {
+        // 找到导航栏中的用户容器
+        const userContainer = document.querySelector('.user-container');
+        if (userContainer) {
+            // 隐藏默认图标
+            const icons = userContainer.querySelectorAll('i');
+            icons.forEach(icon => icon.style.display = 'none');
+            
+            // 显示用户名
+            const usernameSpan = document.createElement('span');
+            usernameSpan.textContent = username;
+            usernameSpan.className = 'username';
+            userContainer.appendChild(usernameSpan);
+            
+            // 添加退出登录按钮
+            const logoutBtn = document.createElement('a');
+            logoutBtn.href = '#';
+            logoutBtn.textContent = '退出';
+            logoutBtn.className = 'logout-btn';
+            logoutBtn.style.marginLeft = '10px';
+            logoutBtn.onclick = function(e) {
+                e.preventDefault();
+                // 清除存储的用户信息
+                localStorage.removeItem('token');
+                localStorage.removeItem('username');
+                sessionStorage.removeItem('token');
+                sessionStorage.removeItem('username');
+                // 刷新页面
+                window.location.reload();
+            };
+            userContainer.appendChild(logoutBtn);
+        }
+    }
+}
+
+// 在页面加载完成时检查用户状态
+document.addEventListener('DOMContentLoaded', function() {
+    checkUserStatus();
 });

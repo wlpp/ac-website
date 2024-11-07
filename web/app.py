@@ -13,30 +13,12 @@ def create_app():
                 static_folder=os.path.join(root_dir, 'src'),
                 static_url_path='')
     
-    # 添加调试路由来验证路径
-    @app.route('/debug/paths')
-    def debug_paths():
-        return {
-            'static_folder': app.static_folder,
-            'root_dir': root_dir,
-            'login_path': os.path.join(app.static_folder, 'views', 'login.html'),
-            'exists': os.path.exists(os.path.join(app.static_folder, 'views', 'login.html'))
-        }
-    
     # 启用 CORS
     CORS(app)
-    
-    # 添加根路由
-    @app.route('/')
-    def index():
-        index_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'src', 'views', 'index.html')
-        return send_file(index_path)
     
     # MySQL 数据库配置
     app.config['SQLALCHEMY_DATABASE_URI'] = 'mysql+pymysql://root:123456@localhost:3306/ac-website'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    
-    # 启用详细错误信息
     app.config['DEBUG'] = True
     app.config['SQLALCHEMY_ECHO'] = True
     
@@ -51,14 +33,30 @@ def create_app():
     with app.app_context():
         try:
             db.create_all()
-            init_db(app)
-            init_auth_db(app)
+            init_db()
+            init_auth_db()
         except Exception as e:
             print(f"Error creating tables or initializing data: {str(e)}")
     
     return app
 
 app = create_app()
+
+@app.route('/')
+def index():
+    """首页路由"""
+    try:
+        file_path = os.path.join(app.static_folder, 'views', 'index.html')
+        print(f"Attempting to serve index file from: {file_path}")
+        
+        if os.path.exists(file_path):
+            return send_file(file_path)
+        else:
+            print(f"Index file not found at: {file_path}")
+            return "Index page not found", 404
+    except Exception as e:
+        print(f"Error serving index page: {str(e)}")
+        return str(e), 500
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

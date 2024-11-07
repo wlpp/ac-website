@@ -90,6 +90,23 @@ def init_db(app):
 article_bp = Blueprint('article', __name__)
 CORS(article_bp)  # 为蓝图启用 CORS
 
+@article_bp.route('/')
+def index():
+    """首页路由"""
+    try:
+        static_folder = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        file_path = os.path.join(static_folder, 'src', 'views', 'index.html')
+        print(f"Attempting to serve index file from: {file_path}")
+        
+        if os.path.exists(file_path):
+            return send_file(file_path)
+        else:
+            print(f"Index file not found at: {file_path}")
+            return "Index page not found", 404
+    except Exception as e:
+        print(f"Error serving index page: {str(e)}")
+        return str(e), 500
+
 @article_bp.route('/api/articles')
 def get_articles():
     try:

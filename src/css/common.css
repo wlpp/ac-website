@@ -187,8 +187,7 @@
 .dropdown-menu {
     position: absolute;
     top: 100%;
-    right: 50%;
-    transform: translateX(50%);
+    right: 0;
     background: white;
     border-radius: 8px;
     box-shadow: 0 2px 10px rgba(0,0,0,0.1);
@@ -514,3 +513,30 @@
     /* 时添加背景色用于测试 */
     background-color: rgba(0, 0, 0, 0.02);
 }
+
+/* 用户名显示样式 */
+.username {
+    color: #666;
+    cursor: pointer;
+    padding: 5px 10px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.username:hover {
+    color: #FEA23B;
+    background: rgba(254, 162, 59, 0.1);
+}
+
+/* 下拉菜单样式调整 */
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    padding: 8px 0;
+    min-width: 120px;
+    opacity: 0;
+    visibility: hidden;

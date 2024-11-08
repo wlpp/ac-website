@@ -1,10 +1,16 @@
-// 图片加载失败处理
+/**
+ * 图片加载错误处理
+ * 显示占位图片
+ */
 function handleImageError(img) {
     img.src = 'https://via.placeholder.com/800x600?text=Image+Not+Found';
     img.alt = '图片加载失败';
 }
 
-// 图片懒加载
+/**
+ * 图片懒加载实现
+ * 使用 data-src 属性延迟加载图片
+ */
 function lazyLoad() {
     const images = document.querySelectorAll('img[data-src]');
     const loadingImageUrl = 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
@@ -34,7 +40,11 @@ function lazyLoad() {
     });
 }
 
-// 渲染文章卡片
+/**
+ * 渲染文章卡片
+ * @param {Object} article 文章数据对象
+ * @returns {HTMLElement} 文章卡片DOM元素
+ */
 function renderArticleCard(article) {
     const articleCard = document.createElement('div');
     articleCard.className = 'article-card';
@@ -63,7 +73,11 @@ function renderArticleCard(article) {
     return articleCard;
 }
 
-// 加载更多文章
+/**
+ * 加载更多文章
+ * 支持分页加载和错误处理
+ * @param {number} page 页码
+ */
 async function loadMoreArticles(page = 1) {
     const articleSection = document.querySelector('.article-section');
     const loadMoreBtn = document.querySelector('.load-more-btn');
@@ -130,7 +144,10 @@ async function loadMoreArticles(page = 1) {
     }
 }
 
-// 图片切换功能初始化
+/**
+ * 图片轮播功能
+ * 支持前后切换和淡入淡出效果
+ */
 function initializeImageSlider() {
     const images = [
         '../images/t_1.jpg',

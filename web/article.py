@@ -7,8 +7,28 @@ import os
 
 db = SQLAlchemy()
 
+# 文章管理模块
+"""
+提供文章相关功能，包括：
+- 文章模型定义
+- 文章的 CRUD 操作
+- 文章搜索
+- 分页显示
+"""
+
 # 创建文章模型
 class Article(db.Model):
+    """文章模型
+    
+    属性:
+        id: 主键
+        article_id: 文章唯一标识
+        title: 标题
+        content: 内容
+        image_url: 配图URL
+        created_at: 创建时间
+        n_date: 发布日期
+    """
     __tablename__ = 'articles'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -32,6 +52,11 @@ class Article(db.Model):
 
 # 创建文章内容模型
 class ArticleContent(db.Model):
+    """文章详情模型
+    
+    用于存储文章的完整内容
+    与 Article 模型通过 article_id 关联
+    """
     __tablename__ = 'articleContent'
     
     id = db.Column(db.Integer, primary_key=True)
@@ -48,7 +73,11 @@ class ArticleContent(db.Model):
         }
 
 def init_db(app):
-    """初始化数据库"""
+    """初始化数据库
+    
+    - 创建所需的数据表
+    - 添加测试数据（如果数据库为空）
+    """
     with app.app_context():
         try:
             # 创建表
@@ -109,6 +138,15 @@ def index():
 
 @article_bp.route('/api/articles')
 def get_articles():
+    """获取文章列表
+    
+    支持分页查询:
+        page: 页码（默认1）
+        per_page: 每页数量（默认10）
+    
+    返回:
+        文章列表、总数、总页数等信息
+    """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 10
@@ -262,7 +300,15 @@ def get_article_content(article_id):
 
 @article_bp.route('/api/articles/search')
 def search_articles():
-    """搜索文章"""
+    """搜索文章
+    
+    参数:
+        keyword: 搜索关键词
+        page: 页码
+    
+    在标题和内容中进行模糊搜索
+    支持分页返回结果
+    """
     try:
         keyword = request.args.get('keyword', '')
         page = request.args.get('page', 1, type=int)

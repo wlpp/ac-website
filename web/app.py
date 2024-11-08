@@ -3,6 +3,7 @@ import os
 from .article import article_bp, db, init_db
 from .user import auth_bp, init_auth_db
 from flask_cors import CORS
+from flask_mail import Mail
 
 def create_app():
     # 获取项目根目录
@@ -22,8 +23,27 @@ def create_app():
     app.config['DEBUG'] = True
     app.config['SQLALCHEMY_ECHO'] = True
     
+    # 邮件配置
+    app.config['MAIL_SERVER'] = 'smtp.qq.com'  # QQ邮箱的SMTP服务器
+    app.config['MAIL_PORT'] = 587  # SMTP端口号
+    app.config['MAIL_USE_TLS'] = True  # 使用TLS加密
+    app.config['MAIL_USERNAME'] = '409974326@qq.com'  # 你的QQ邮箱
+    app.config['MAIL_PASSWORD'] = 'wfcflanbdoiwbhjf'  # 你的邮箱授权码（不是QQ密码）
+    
+    # 静态文件配置
+    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # 禁用缓存
+    app.config['STATIC_FOLDER'] = os.path.join(os.path.dirname(__file__), '..', 'static')
+    
+    # 添加静态文件路由
+    @app.route('/<path:filename>')
+    def serve_static(filename):
+        return send_file(os.path.join(app.config['STATIC_FOLDER'], filename))
+    
     # 初始化数据库
     db.init_app(app)
+    
+    # 初始化Mail
+    mail = Mail(app)
     
     # 注册蓝图
     app.register_blueprint(article_bp)

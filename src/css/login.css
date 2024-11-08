@@ -57,7 +57,7 @@ body {
     margin: 0;
 }
 
-.login-form,.register-form {
+.login-form,.register-form,.forgot-password-form,.reset-password-form {
     display: flex;
     flex-direction: column;
     gap: 1.5rem;
@@ -105,7 +105,7 @@ body {
     color: #666;
 }
 
-.login-btn,.register-btn {
+.login-btn,.register-btn,.forgot-password-btn,.reset-password-btn {
     background: #007bff;
     color: white;
     border: none;

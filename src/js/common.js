@@ -1,11 +1,95 @@
-// 导航栏相关功能初始化
+/**
+ * 导航栏功能初始化
+ * 包含用户界面更新、滚动效果、进度条和移动端菜单
+ * @returns {Function} 清理函数，用于移除事件监听器
+ */
 function initializeNavigation() {
     const header = document.querySelector('.header');
     const menuBtn = document.getElementById('menuBtn');
     const navLinks = document.querySelector('.nav-links');
     const progressBar = document.querySelector('.progress-bar');
+    const userContainer = document.querySelector('.user-container');
 
-    // 滚动检查函数
+    /**
+     * 更新用户界面
+     * 处理用户登录状态显示和下拉菜单
+     */
+    function updateUserInterface() {
+        if (!userContainer) return;
+        
+        try {
+            // 获取加密的用户数据
+            const nameEQ = "userData=";
+            const ca = document.cookie.split(';');
+            let userData = null;
+            
+            for(let c of ca) {
+                c = c.trim();
+                if (c.indexOf(nameEQ) === 0) {
+                    const encryptedData = c.substring(nameEQ.length);
+                    // 解密数据
+                    const decryptedData = decodeURIComponent(atob(encryptedData));
+                    userData = JSON.parse(decryptedData);
+                    break;
+                }
+            }
+
+            if (userData && userData.username) {
+                // 清空现有内容
+                userContainer.innerHTML = '';
+                
+                // 创建用户名显示元素
+                const usernameSpan = document.createElement('span');
+                usernameSpan.textContent = userData.username;
+                usernameSpan.className = 'username';
+                
+                // 创建下拉菜单
+                const dropdownMenu = document.createElement('div');
+                dropdownMenu.className = 'dropdown-menu';
+                dropdownMenu.style.display = 'none';
+                
+                // 创建退出按钮
+                const logoutLink = document.createElement('a');
+                logoutLink.href = '#';
+                logoutLink.className = 'dropdown-item';
+                logoutLink.textContent = '退出';
+                logoutLink.onclick = function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    // 清除所有相关 cookie
+                    document.cookie = 'userData=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
+                    document.cookie = 'savedUsername=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
+                    window.location.reload();
+                };
+                
+                // 组装界面
+                dropdownMenu.appendChild(logoutLink);
+                userContainer.appendChild(usernameSpan);
+                userContainer.appendChild(dropdownMenu);
+                
+                // 添加用户名点击事件
+                usernameSpan.onclick = function(e) {
+                    e.stopPropagation();
+                    const isVisible = dropdownMenu.style.display === 'block';
+                    dropdownMenu.style.display = isVisible ? 'none' : 'block';
+                };
+                
+                // 点击其他地方关闭下拉菜单
+                document.addEventListener('click', function() {
+                    dropdownMenu.style.display = 'none';
+                });
+            }
+        } catch (error) {
+            console.error('更新用户界面失败:', error);
+        }
+    }
+
+    // 初始化时检查用户状态
+    updateUserInterface();
+
+    /**
+     * 检查滚动状态并更新导航栏样式
+     */
     function checkScroll() {
         if (window.scrollY > 0) {
             header.classList.add('scrolled');
@@ -32,7 +116,10 @@ function initializeNavigation() {
         updateProgressBar();
     }
 
-    // 移动端菜单控制
+    /**
+     * 移动端菜单控制
+     * 包含汉堡菜单、点击外部关闭和ESC键关闭
+     */
     if (menuBtn && navLinks) {
         // 点击汉堡菜单
         menuBtn.addEventListener('click', function(e) {
@@ -71,64 +158,6 @@ function initializeNavigation() {
         });
     }
 
-    // 添加用户状态检查
-    function updateUserInterface() {
-        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
-        const username = localStorage.getItem('username') || sessionStorage.getItem('username');
-        
-        const userContainer = document.querySelector('.user-container');
-        if (userContainer && token && username) {
-            // 清空现有内容
-            userContainer.innerHTML = '';
-            
-            // 创建用户名显示元素
-            const usernameSpan = document.createElement('span');
-            usernameSpan.textContent = username;
-            usernameSpan.className = 'username';
-            
-            // 创建下拉菜单容器
-            const dropdownMenu = document.createElement('div');
-            dropdownMenu.className = 'dropdown-menu';
-            
-            // 创建退出按钮
-            const logoutLink = document.createElement('a');
-            logoutLink.href = '#';
-            logoutLink.className = 'dropdown-item';
-            logoutLink.textContent = '退出';
-            logoutLink.onclick = function(e) {
-                e.preventDefault();
-                // 清除存储的用户信息
-                localStorage.removeItem('token');
-                localStorage.removeItem('username');
-                sessionStorage.removeItem('token');
-                sessionStorage.removeItem('username');
-                // 刷新页面
-                window.location.reload();
-            };
-            
-            // 组装界面
-            dropdownMenu.appendChild(logoutLink);
-            userContainer.appendChild(usernameSpan);
-            userContainer.appendChild(dropdownMenu);
-            
-            // 添加用户名点击事件（显示/隐藏下拉菜单）
-            usernameSpan.onclick = function(e) {
-                e.stopPropagation();
-                dropdownMenu.style.opacity = dropdownMenu.style.opacity === '1' ? '0' : '1';
-                dropdownMenu.style.visibility = dropdownMenu.style.visibility === 'visible' ? 'hidden' : 'visible';
-            };
-            
-            // 点击其他地方关闭下拉菜单
-            document.addEventListener('click', function() {
-                dropdownMenu.style.opacity = '0';
-                dropdownMenu.style.visibility = 'hidden';
-            });
-        }
-    }
-
-    // 初始化时检查用户状态
-    updateUserInterface();
-
     // 初始化滚动检查
     checkScroll();
     
@@ -142,11 +171,20 @@ function initializeNavigation() {
             window.removeEventListener('scroll', updateProgressBar);
             window.removeEventListener('load', updateProgressBar);
         }
-        // 其他事件监听器的清理...
+        // 清理用户相关的事件监听器
+        document.removeEventListener('click', () => {
+            const dropdownMenu = userContainer?.querySelector('.dropdown-menu');
+            if (dropdownMenu) {
+                dropdownMenu.style.display = 'none';
+            }
+        });
     };
 }
 
-// 搜索框功能初始化
+/**
+ * 搜索功能初始化
+ * 包含搜索框、结果展示和键盘快捷键
+ */
 function initializeSearch() {
     const searchBtn = document.querySelector('.search');
     const searchModal = document.querySelector('.search-modal');

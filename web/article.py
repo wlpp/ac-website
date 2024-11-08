@@ -300,26 +300,15 @@ def get_article_content(article_id):
 
 @article_bp.route('/api/articles/search')
 def search_articles():
-    """搜索文章
-    
-    参数:
-        keyword: 搜索关键词
-        page: 页码
-    
-    在标题和内容中进行模糊搜索
-    支持分页返回结果
-    """
+    """搜索文章"""
     try:
         keyword = request.args.get('keyword', '')
-        page = request.args.get('page', 1, type=int)
-        per_page = 10
-        
         if not keyword:
             return jsonify({
                 'success': False,
-                'error': '搜索关键词不能为空'
+                'message': '请输入搜索关键词'
             }), 400
-        
+            
         # 使用 SQLAlchemy 的 or_ 进行标题和内容的模糊搜索
         query = Article.query.filter(
             db.or_(
@@ -330,8 +319,8 @@ def search_articles():
         
         articles = db.paginate(
             query,
-            page=page,
-            per_page=per_page,
+            page=1,
+            per_page=10,
             error_out=False
         )
         
@@ -340,12 +329,12 @@ def search_articles():
             'data': [article.to_dict() for article in articles.items],
             'total': articles.total,
             'pages': articles.pages,
-            'current_page': page
+            'current_page': 1
         })
             
     except Exception as e:
+        print("Error searching articles:", str(e))  # 调试日志
         return jsonify({
             'success': False,
-            'error': '服务器内部错误',
-            'message': str(e)
+            'message': '搜索失败，请稍后重试'
         }), 500

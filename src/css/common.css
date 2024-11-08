@@ -1,5 +1,21 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif;
+    line-height: 1.6;
+    color: #333;
+}
+
+
 /* 导航栏基础样式 */
-.header {
+.theader {
     position: fixed;
     top: 0;
     left: 0;
@@ -65,12 +81,12 @@
 }
 
 /* 如果需要在暗色背景下使用 */
-.header.dark .logo {
+.theader.dark .logo {
     color: #FEA23B !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-.header.dark .logo:hover {
+.theader.dark .logo:hover {
     color: #FF8C00!important;
 }
 
@@ -95,6 +111,57 @@
 
 .nav-links a.active {
     color: #FEA23B;
+}
+/* 顶部导航栏响应式 */
+
+
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.nav-links a {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.2em;
+    color: #666;
+    text-decoration: none;
+    position: relative;
+    padding: 5px 0;
+    transition: all 0.3s ease;
+}
+
+.nav-links a::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background-color: #FEA23B;
+    transition: width 0.3s ease;
+}
+
+.nav-links a:hover::after {
+    width: 100%;
+}
+
+.nav-links a.highlight {
+    color: #4CAF50;
+}
+
+/* 容器宽度调整 */
+.container {
+    max-width: 924px; /* 840px * 1.1 = 924px */
+    margin: 20px auto;
+    padding: 0 20px;
+}
+
+/* 区块间距调整 */
+.display-section,
+.article-section {
+    margin: 60px 0;
 }
 
 /* 汉堡菜单按钮 */
@@ -144,7 +211,7 @@
 
 /* 移动端适配 */
 @media (max-width: 768px) {
-    .header {
+    .theader {
         padding: 5px 20px;
     }
 
@@ -375,7 +442,7 @@
     background: rgba(254, 162, 59, 0.7);
 }
 
-/* ��配 */
+/* */
 @media (max-width: 768px) {
     .search-container {
         width: 95%;
@@ -515,34 +582,46 @@
     background-color: rgba(0, 0, 0, 0.02);
 }
 
+/* 用户容器样式 */
 .user-container {
     position: relative;
     display: flex;
     align-items: center;
 }
 
+/* 用户名样式 */
 .username {
     cursor: pointer;
     padding: 5px 10px;
     border-radius: 4px;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .username:hover {
     background-color: rgba(0, 0, 0, 0.05);
 }
 
+/* 下拉菜单样式 */
 .dropdown-menu {
     position: absolute;
     top: 100%;
-    right: 0;
-    min-width: 120px;
+    right: 8px;
+    min-width: 88px;    
     background: white;
-    border: 1px solid #ddd;
     border-radius: 4px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     z-index: 1000;
     margin-top: 5px;
+    /* 移除 display: none，改用可见性控制 */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* 显示下拉菜单 */
+.dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
 }
 
 .dropdown-item {
@@ -554,5 +633,127 @@
 }
 
 .dropdown-item:hover {
-    background-color: #f5f5f5;
+    background-color: rgba(254, 162, 59, 0.1);
+    color: #FEA23B;
+}
+
+/* 用户容器悬停时显示下拉菜单 */
+.user-container:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 移动的导航栏样式 */
+.menu-icon {
+    display: none;
+    width: 30px;
+    height: 24px;
+    position: relative;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    z-index: 1002;
+}
+
+.menu-icon span {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: #666;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    left: 0;
+}
+
+.menu-icon span:nth-child(1) { top: 0; }
+.menu-icon span:nth-child(2) { 
+    top: 50%;
+    transform: translateY(-50%);
+}
+.menu-icon span:nth-child(3) { bottom: 0; }
+
+.menu-icon.active span:nth-child(1) {
+    transform: translateY(11px) rotate(45deg);
+}
+
+.menu-icon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-icon.active span:nth-child(3) {
+    transform: translateY(-11px) rotate(-45deg);
+}
+
+/* 导航图标样式 */
+.nav-icons {
+    display: flex;
+    gap: 15px;
+    margin-left: 20px;
+}
+
+.icon-btn {
+    color: #333;
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: #F9D938;
+}
+
+.icon-btn.search,
+.icon-btn.user {
+    margin-left: auto;
+}
+
+/* 移动端导航样式 */
+@media (max-width: 768px) {
+    .menu-icon {
+        display: block;
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;
+        width: 250px;
+        height: 100vh;
+        background-color: rgba(255, 255, 255, 0.95);
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 80px 20px 20px;
+        transition: right 0.3s ease;
+        z-index: 1001;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .nav-links.active {
+        right: 0;
+    }
+
+    .nav-links a {
+        width: 100%;
+        padding: 12px 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .nav-links a:last-child {
+        border-bottom: none;
+    }
+}
+
+/* 移适配 */
+@media (max-width: 768px) {
+    .nav-links {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
 }

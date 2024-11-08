@@ -4,7 +4,7 @@
  * @returns {Function} 清理函数，用于移除事件监听器
  */
 function initializeNavigation() {
-    const header = document.querySelector('.header');
+    const header = document.querySelector('.theader');
     const menuBtn = document.getElementById('menuBtn');
     const navLinks = document.querySelector('.nav-links');
     const progressBar = document.querySelector('.progress-bar');
@@ -46,7 +46,6 @@ function initializeNavigation() {
                 // 创建下拉菜单
                 const dropdownMenu = document.createElement('div');
                 dropdownMenu.className = 'dropdown-menu';
-                dropdownMenu.style.display = 'none';
                 
                 // 创建退出按钮
                 const logoutLink = document.createElement('a');
@@ -56,7 +55,6 @@ function initializeNavigation() {
                 logoutLink.onclick = function(e) {
                     e.preventDefault();
                     e.stopPropagation();
-                    // 清除所有相关 cookie
                     document.cookie = 'userData=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
                     document.cookie = 'savedUsername=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
                     window.location.reload();
@@ -70,13 +68,12 @@ function initializeNavigation() {
                 // 添加用户名点击事件
                 usernameSpan.onclick = function(e) {
                     e.stopPropagation();
-                    const isVisible = dropdownMenu.style.display === 'block';
-                    dropdownMenu.style.display = isVisible ? 'none' : 'block';
+                    dropdownMenu.classList.toggle('show');
                 };
                 
                 // 点击其他地方关闭下拉菜单
                 document.addEventListener('click', function() {
-                    dropdownMenu.style.display = 'none';
+                    dropdownMenu.classList.remove('show');
                 });
             }
         } catch (error) {
@@ -130,7 +127,7 @@ function initializeNavigation() {
 
         // 点击页面其他区域关闭菜单
         document.addEventListener('click', function(event) {
-            if (!event.target.closest('.header')) {
+            if (!event.target.closest('.theader')) {
                 menuBtn.classList.remove('active');
                 navLinks.classList.remove('active');
             }

@@ -41,6 +41,20 @@ function lazyLoad() {
 }
 
 /**
+ * 格式化日期为中文格式
+ * @param {string} dateStr 日期字符串
+ * @returns {string} 格式化后的中文日期
+ */
+function formatChineseDate(dateStr) {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    
+    return `${year}年${month}月${day}日`;
+}
+
+/**
  * 渲染文章卡片
  * @param {Object} article 文章数据对象
  * @returns {HTMLElement} 文章卡片DOM元素
@@ -48,6 +62,9 @@ function lazyLoad() {
 function renderArticleCard(article) {
     const articleCard = document.createElement('div');
     articleCard.className = 'article-card';
+    
+    // 格式化日期
+    const formattedDate = formatChineseDate(article.n_date);
     
     articleCard.innerHTML = `
         <a href="/article/${article.article_id}" class="article-link">
@@ -60,7 +77,7 @@ function renderArticleCard(article) {
             <div class="article-content">
                 <h3 class="article-title">${article.title || '无标题'}</h3>
                 <p class="article-desc">${article.content || '暂无内容'}</p>
-                <p class="article-date">${article.n_date || '未知日期'}</p>
+                <p class="article-date">${formattedDate}</p>
             </div>
         </a>
     `;

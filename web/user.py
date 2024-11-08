@@ -262,7 +262,7 @@ def forgot_password():
         
         # 发送重置密码邮件
         msg = Message(
-            '重置密码请求 - 雨中蚂蚁',
+            '重置密码请求 - AC.蚂蚁',
             sender='409974326@qq.com',
             recipients=[user.email]
         )

@@ -3,23 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>文章详情 - 雨中蚂蚁</title>
-    <script src="../js/common.js"></script>
-
+    <title>文章详情 - AC.蚂蚁</title>
     <!-- 其他资源引入 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
-    <link rel="stylesheet" href="../css/common.css">
+   
     <link rel="stylesheet" href="../css/article.css">
+    <link rel="stylesheet" href="../css/airticleot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
-    
+    <link rel="stylesheet" href="../css/common.css">
+
 </head>
 <body>
     <canvas id="particleCanvas"></canvas>
     <div class="progress-bar"></div>
-
-    <header class="header">
-        <a href="/" class="logo">雨中蚂蚁</a>
+    <div class="theader">
+        <a href="/" class="logo">AC.蚂蚁</a>
         
         <button type="button" id="menuBtn" class="menu-icon">
             <span></span>
@@ -36,14 +35,14 @@
             <a href="#" class="icon-btn search">🔍</a>
             <div class="user-container">
                 <a href="#" class="icon-btn user">
-                    <i class="fa-solid fa-cat"></i>
+                    <i class="fa-solid fa-user-astronaut"></i>
                 </a>
                 <div class="dropdown-menu">
-                    <a href="#" class="dropdown-item">登录</a>
+                    <a href="/login" class="dropdown-item">登录</a>
                 </div>
             </div>
         </nav>
-    </header>
+    </div>
 
     <main class="article-container">
         <article class="article-content">
@@ -56,7 +55,18 @@
             </div>
             <div class="article-body">        
             </div>
-            <div class="articleSource">转载来源->系统迷</span>
+            <div class="articleSource">转载来源->系统迷</div>
+            
+            <div class="comment-section">
+                <h3>评论</h3>
+                <div class="comment-form">
+                    <textarea class="comment-input" placeholder="写下你的评论..."></textarea>
+                    <button class="comment-submit">发表评论</button>
+                </div>
+                <ul class="comment-list">
+                    <!-- 评论列表将通过 JavaScript 动态加载 -->
+                </ul>
+            </div>
         </article>
     </main>
 
@@ -64,8 +74,18 @@
     <div class="back-to-top">
         <i class="fas fa-rocket"></i>
     </div>
+      <!-- 搜索弹框 -->
+      <div class="search-modal">
+        <button class="close-btn">×</button>
+        <div class="search-container">
+            <div class="search-title">想要找点什么呢?</div>
+            <input type="text" class="search-input" placeholder="输入关键词按回车键搜索...">
+        </div>
+        <img src="../images/iloli.gif" alt="装饰图片" class="decoration-image">
+    </div>
     <script src="../api/config.js"></script>
-    <script src="../js/article.js"></script>
     <script src="../js/common.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.7/dist/layui.min.js"></script>
+    <script src="../js/article.js"></script>
 </body>
 </html>

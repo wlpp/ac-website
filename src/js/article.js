@@ -1,54 +1,67 @@
-// 调试辅助函数：打印所有 cookie
-function printAllCookies() {
-    const cookies = document.cookie.split(';');
-    console.log('All cookies:');
-    cookies.forEach(cookie => {
-        console.log(cookie.trim());
-    });
-}
-
-// 添加加密解密工具函数
-function decrypt(encoded) {
-    try {
-        return decodeURIComponent(atob(encoded));
-    } catch (e) {
-        console.error('解密失败:', e);
-        return null;
-    }
-}
-
-// 修改 getUserData 函数，使用与 user.js 相同的方式获取用户数据
+// 获取用户数据函数
 function getUserData() {
     try {
-        const nameEQ = "userData=";
-        const ca = document.cookie.split(';');
-        for(let i = 0; i < ca.length; i++) {
-            let c = ca[i];
-            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
-            if (c.indexOf(nameEQ) === 0) {
-                const encryptedData = c.substring(nameEQ.length, c.length);
-                const decryptedData = decrypt(encryptedData);
-                if (decryptedData) {
-                    const userData = JSON.parse(decryptedData);
-                    console.log('Found user data:', userData);
-                    return userData;
+        // 从 cookie 中获取用户数据
+        const userDataCookie = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('userData='));
+            
+        if (!userDataCookie) {
+            console.log('No userData cookie found');
+            return null;
+        }
+
+        // 获取 cookie 值
+        const encodedData = userDataCookie.split('=')[1];
+        
+        // Base64 解码
+        const base64Decoded = atob(encodedData);
+        
+        // URL 解码
+        const urlDecoded = decodeURIComponent(base64Decoded);
+        
+        // 解析 JSON 数据
+        const userData = JSON.parse(urlDecoded);
+        
+        // 验证必要的字段是否存在
+        if (!userData || !userData.token || !userData.username) {
+            console.log('Invalid user data structure:', userData);
+            return null;
+        }
+
+        return userData;
+    } catch (error) {
+        console.error('获取用户数据失败:', error);
+        // 输出更详细的错误信息用于调试
+        if (error instanceof SyntaxError) {
+            const userDataCookie = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('userData='));
+            if (userDataCookie) {
+                const encodedData = userDataCookie.split('=')[1];
+                console.log('原始编码数据:', encodedData);
+                try {
+                    const decodedOnce = decodeURIComponent(encodedData);
+                    console.log('第一次解码:', decodedOnce);
+                    const decodedTwice = decodeURIComponent(decodedOnce);
+                    console.log('第二次解码:', decodedTwice);
+                } catch (e) {
+                    console.log('解码过程出错:', e);
                 }
             }
         }
-        console.log('No valid user data found in cookies');
-        return null;
-    } catch (e) {
-        console.error('Error getting user data:', e);
         return null;
     }
 }
 
-// 测试函数
-function testUserData() {
-    console.log('Testing user data retrieval:');
-    console.log('All cookies:', document.cookie);
-    const userData = getUserData();
-    console.log('Retrieved user data:', userData);
+// Cookie 操作辅助函数
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        return parts.pop().split(';').shift();
+    }
+    return null;
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -64,9 +77,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const progressBar = document.querySelector('.progress-bar');
 
     // 获取评论相关元素
-    const commentForm = document.querySelector('.comment-form');
     const commentInput = document.querySelector('.comment-input');
     const commentSubmit = document.querySelector('.comment-submit');
+    const modalOverlay = document.querySelector('.modal-overlay');
 
     // 加载文章内容
     async function loadArticleContent() {
@@ -176,7 +189,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const userData = getUserData();
             console.log('User data for comment:', userData);
 
-            // 检查用户是否登录（使用 token 验证）
+            // 检查用户是否登录
             if (!userData || !userData.token) {
                 const confirmed = await createModal({
                     title: '提示',
@@ -191,10 +204,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // 已登录，检查评论内容
+            // 检查评论内容
             const content = commentInput.value.trim();
             if (!content) {
-                alert('评论内容不能为空');
+                layer.msg('评论内容不能为空', { icon: 2 });
                 return;
             }
 
@@ -202,6 +215,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const commentData = {
                 article_id: articleId,
                 content: content,
+                user_id: userData.user_id, // 从 cookie 中获取用户ID
                 username: userData.username,
                 parent_id: currentReplyId ? parseInt(currentReplyId) : null
             };
@@ -240,11 +254,50 @@ document.addEventListener('DOMContentLoaded', function() {
     // 处理回复点击
     let currentReplyId = null;
     function handleReplyClick(e) {
-        const commentItem = e.target.closest('.comment-item');
-        currentReplyId = commentItem.dataset.id;
+        // 防止事件冒泡
+        e.preventDefault();
+        e.stopPropagation();
+
+        // 查找最近的评论卡片元素
+        const commentCard = e.target.closest('.comment-card');
+        if (!commentCard) {
+            console.error('未找到评论卡片元素');
+            return;
+        }
+
+        currentReplyId = commentCard.dataset.id;
         
-        commentInput.focus();
-        commentInput.placeholder = `回复 ${commentItem.querySelector('.comment-username').textContent}`;
+        // 获取评论表单元素
+        const commentForm = document.querySelector('.comment-form');
+        if (!commentForm) {
+            console.error('未找到评论表单元素');
+            return;
+        }
+        
+        // 获取用户名元素
+        const usernameElement = commentCard.querySelector('.comment-username');
+        if (!usernameElement) {
+            console.error('未找到用户名元素');
+            return;
+        }
+
+        // 动到评论表单
+        commentForm.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'center' 
+        });
+        
+        // 设置焦点和占位符文本
+        if (commentInput) {
+            commentInput.focus();
+            commentInput.placeholder = `回复 ${usernameElement.textContent}`;
+            
+            // 添加视觉反馈
+            commentForm.classList.add('replying');
+            setTimeout(() => {
+                commentForm.classList.remove('replying');
+            }, 1000);
+        }
     }
 
     // 格式化评论时间
@@ -268,14 +321,18 @@ document.addEventListener('DOMContentLoaded', function() {
     async function loadComments() {
         try {
             const response = await fetch(`${baseURL}/api/comments/${articleId}`);
-            if (!response.ok) throw new Error('加载评论失败');
-            
             const data = await response.json();
-            if (data.success) {
+            
+            if (response.ok && data.success) {
+                console.log('评论数据:', data); // 调试日志
                 renderComments(data.data);
+            } else {
+                console.error('加载评论失败:', data.message);
+                layer.msg('加载评论失败', { icon: 2 });
             }
         } catch (error) {
             console.error('加载评论失败:', error);
+            layer.msg('加载评论失败，请稍后重试', { icon: 2 });
         }
     }
 
@@ -284,24 +341,80 @@ document.addEventListener('DOMContentLoaded', function() {
         const commentList = document.querySelector('.comment-list');
         if (!commentList) return;
 
-        commentList.innerHTML = comments.map(comment => `
-            <li class="comment-item" data-id="${comment.id}">
-                <img class="comment-avatar" src="../images/avatar.jpg" alt="用户头像">
-                <div class="comment-content">
-                    <div class="comment-header">
-                        <div class="comment-username">${comment.username}</div>
-                        <span class="comment-time">${formatCommentTime(comment.created_at)}</span>
+        if (!comments || comments.length === 0) {
+            commentList.innerHTML = '<div class="no-comments">暂无评论</div>';
+            return;
+        }
+
+        // 将评论组织成树形结构
+        const commentTree = {};
+        const rootComments = [];
+
+        // 首先将所有评论按 ID 索引
+        comments.forEach(comment => {
+            comment.children = [];
+            commentTree[comment.id] = comment;
+        });
+
+        // 构建树形结构
+        comments.forEach(comment => {
+            if (comment.parent_id) {
+                const parent = commentTree[comment.parent_id];
+                if (parent) {
+                    parent.children.push(comment);
+                }
+            } else {
+                rootComments.push(comment);
+            }
+        });
+
+        // 递归渲染评论及其回复
+        function renderCommentWithReplies(comment) {
+            return `
+                <div class="comment-card" data-id="${comment.id}">
+                    <div class="comment-card-header">
+                        <img class="comment-avatar" src="../images/avatar.jpg" alt="用户头像">
+                        <div class="comment-info">
+                            <div class="comment-username">${comment.username}</div>
+                            <div class="comment-time">${formatCommentTime(comment.created_at)}</div>
+                        </div>
                     </div>
-                    <div class="comment-text">
-                        ${comment.content}
+                    <div class="comment-card-body">
+                        <div class="comment-text">${comment.content}</div>
                     </div>
-                    <div class="comment-actions">
-                        <span class="comment-action reply-btn">回复</span>
+                    <div class="comment-card-footer">
+                        <span class="comment-action reply-btn">
+                            <i class="fas fa-reply"></i> 回复
+                        </span>
                     </div>
-                    ${comment.parent_id ? '<div class="reply-indicator">回复评论</div>' : ''}
+                    ${comment.children.length > 0 ? `
+                        <div class="comment-replies">
+                            ${comment.children.map(reply => `
+                                <div class="comment-card reply" data-id="${reply.id}">
+                                    <div class="comment-card-header">
+                                        <img class="comment-avatar" src="../images/avatar.jpg" alt="用户头像">
+                                        <div class="comment-info">
+                                            <div class="comment-username">${reply.username}</div>
+                                            <div class="comment-time">${formatCommentTime(reply.created_at)}</div>
+                                        </div>
+                                    </div>
+                                    <div class="comment-card-body">
+                                        <div class="comment-text">${reply.content}</div>
+                                    </div>
+                                    <div class="comment-card-footer">
+                                        <span class="comment-action reply-btn">
+                                            <i class="fas fa-reply"></i> 回复
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : ''}
                 </div>
-            </li>
-        `).join('');
+            `;
+        }
+
+        commentList.innerHTML = rootComments.map(renderCommentWithReplies).join('');
 
         // 绑定回复按钮事件
         document.querySelectorAll('.reply-btn').forEach(btn => {
@@ -317,7 +430,7 @@ document.addEventListener('DOMContentLoaded', function() {
         // 添加新的事件监听器
         commentInput.addEventListener('input', handleCommentInput);
         
-        // 初始检查输入框状态
+        // 初始检查入框状态
         handleCommentInput.call(commentInput);
     }
 
@@ -332,6 +445,55 @@ document.addEventListener('DOMContentLoaded', function() {
         // 调试输出
         console.log('Input value changed:', this.value, 'Has content:', hasContent);
     }
+
+    // 检查用户登录状态并处理评论输入
+    function handleCommentAccess() {
+        const userData = getUserData(); // 使用 user.js 中的函数获取用户数据
+
+        if (!userData) {
+            // 未登录状态下点击输入框显示登录提示
+            commentInput.addEventListener('focus', showLoginModal);
+            commentSubmit.addEventListener('click', showLoginModal);
+        } else {
+            // 已登录状态下移除登录提示事件
+            commentInput.removeEventListener('focus', showLoginModal);
+            commentSubmit.removeEventListener('click', showLoginModal);
+        }
+    }
+
+    // 显示登录提示 Modal
+    function showLoginModal(e) {
+        e.preventDefault();
+        modalOverlay.style.display = 'block';
+        
+        // 移除输入框点
+        commentInput.blur();
+    }
+
+    // 处理 Modal 按钮点击
+    if (modalOverlay) {
+        const loginBtn = modalOverlay.querySelector('.login-btn');
+        const cancelBtn = modalOverlay.querySelector('.cancel-btn');
+
+        loginBtn.addEventListener('click', () => {
+            window.location.href = '/login';
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            modalOverlay.style.display = 'none';
+        });
+
+        // 点击遮罩层关闭 Modal
+        modalOverlay.addEventListener('click', (e) => {
+            if (e.target === modalOverlay) {
+                modalOverlay.style.display = 'none';
+            }
+        });
+    }
+
+    // 初始化时检查用户登录状态
+    handleCommentAccess();
+
     // 初始化
     loadArticleContent();
     loadComments();

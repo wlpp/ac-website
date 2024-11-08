@@ -1,394 +1,313 @@
 /* 评论区基础样式 */
 .comment-section {
     margin-top: 30px;
+    padding: 20px;
     background: #fff;
 }
 
-/* 评论列表样式 */
+/* 评论列表容器 */
 .comment-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-/* 评论项样式 */
-.comment-item {
     display: flex;
-    padding: 15px 0;
-    border-bottom: 1px solid #eee;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
 }
 
-/* 头像样式 */
+/* 评论卡片样式 */
+.comment-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+    padding: 16px;
+    width: 100%;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+}
+
+/* 子评论样式 */
+.comment-card[data-parent-id] {
+    margin-left: 40px;
+    width: calc(100% - 40px);
+    background: #f9f9f9;
+    border-left: 3px solid #45B6F7;
+}
+
+.comment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* 评论卡片头部 */
+.comment-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
 .comment-avatar {
-    width: 35px;
-    height: 35px;
+    width: 40px;
+    height: 40px;
     border-radius: 50%;
     margin-right: 12px;
+    object-fit: cover;
 }
 
-/* 评论内容区域 */
-.comment-content {
+.comment-info {
     flex: 1;
-    display: flex;
-    flex-direction: column;
 }
 
-/* 评论头部信息 */
-.comment-header {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    margin-bottom: 8px;
-}
-
-/* 用户ID样式 */
-.comment-user-id {
-    font-size: 14px;
+.comment-username {
+    font-weight: 500;
     color: #333;
+    font-size: 15px;
+    margin-bottom: 4px;
 }
 
-/* 时间样式 */
 .comment-time {
-    color: #999;
     font-size: 12px;
+    color: #999;
 }
 
-/* 评论文本 */
+/* 评论内容 */
+.comment-card-body {
+    padding: 8px 0;
+}
+
 .comment-text {
     font-size: 14px;
     line-height: 1.6;
-    color: #333;
-    margin-bottom: 6px;
+    color: #666;
+    word-break: break-word;
 }
 
-/* 回复按钮 */
-.comment-actions {
-    text-align: right;
+/* 评论底部 */
+.comment-card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f5f5f5;
+    display: flex;
+    justify-content: flex-end;
 }
 
 .comment-action {
     color: #666;
     font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 15px;
+    background: #f8f8f8;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
 
-/* 评论表单 */
+.comment-action:hover {
+    background: #45B6F7;
+    color: #fff;
+}
+
+/* 回复标记 */
+.reply-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 12px;
+    color: #45B6F7;
+    background: rgba(69, 182, 247, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+/* 无评论状态 */
+.no-comments {
+    width: 100%;
+    text-align: center;
+    padding: 40px 0;
+    color: #999;
+    font-size: 14px;
+    background: #f8f8f8;
+    border-radius: 8px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .comment-card[data-parent-id] {
+        margin-left: 20px;
+        width: calc(100% - 20px);
+    }
+}
+
+/* 评论表单式 */
 .comment-form {
-    margin-top: 20px;
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
     padding: 20px;
-    border-top: 1px solid #eee;
+    margin-bottom: 24px;
+    transition: box-shadow 0.3s ease;
 }
 
+.comment-form:focus-within {
+    box-shadow: 0 4px 20px rgba(69, 182, 247, 0.1);
+}
+
+/* 评论输入框 */
 .comment-input {
     width: 100%;
     min-height: 100px;
-    padding: 12px;
-    border: 1px solid #eee;
-    border-radius: 4px;
+    padding: 16px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    background: #f9f9f9;
     resize: vertical;
-    margin-bottom: 10px;
     font-size: 14px;
-    transition: border-color 0.3s ease;
+    line-height: 1.6;
+    color: #333;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
 }
 
 .comment-input:focus {
-    border-color: #45B6F7;
     outline: none;
-}
-
-/* 评论提交按钮 */
-.comment-submit {
-    float: right;
-    padding: 8px 20px;
-    background-color: #818b95; /* 默认颜色 */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-}
-
-/* 当输入框有内容时的按钮样式 */
-.comment-submit.active {
-    background-color: #45B6F7;
-}
-
-.comment-item {
-    display: flex;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--main-border-color);
-}
-
-.comment-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 12px;
-    flex-shrink: 0;
-}
-
-.comment-content {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-.comment-author {
-    display: flex;
-    align-items: center;
-    line-height: 1.4;
-    margin-bottom: 3px;
-}
-
-.comment-author-name {
-    font-size: 14px;
-    color: var(--main-color);
-    font-weight: 500;
-}
-
-.comment-time {
-    color: var(--muted-2-color);
-    font-size: 12px;
-    margin-left: 8px;
-}
-
-.comment-text {
-    margin: 5px 0;
-    line-height: 1.6;
-    font-size: 14px;
-    color: var(--main-color);
-}
-
-.comment-actions {
-    margin-top: 6px;
-    display: flex;
-    align-items: center;
-}
-
-.comment-action {
-    color: var(--muted-2-color);
-    margin-right: 15px;
-    font-size: 12px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-}
-
-.comment-action i {
-    margin-right: 4px;
-    font-size: 14px;
-}
-
-.comment-action:hover {
-    color: var(--focus-color);
-}
-
-.comment-replies {
-    margin-left: 48px;
-    margin-top: 10px;
-}
-
-.comment-replies .comment-item {
-    padding: 10px 0;
-}
-
-.comment-replies .comment-avatar {
-    width: 30px;
-    height: 30px;
-}
-
-.comment-input:focus {
-    border-color: var(--focus-color);
-    outline: none;
-}
-
-.comment-submit {
-    background: var(--focus-color);
-    color: white;
-    border: none;
-    padding: 8px 20px;
-    border-radius: 4px;
-}
-
-/* 评论内容区域样式调整 */
-.comment-item {
-    display: flex;
-    padding: 12px 0;
-    border-bottom: 1px solid var(--main-border-color);
-}
-
-.comment-avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    margin-right: 12px;
-    flex-shrink: 0;
-}
-
-.comment-content {
-    flex: 1;
-    min-width: 0;
-    display: flex;
-    flex-direction: column;
-}
-
-
-
-.comment-user-id {
-    font-size: 14px;
-    color: var(--main-color);
-    display: flex;
-    align-items: center;
-}
-
-.comment-user-id img {
-    width: 16px;
-    height: 16px;
-    margin-left: 4px;
-}
-
-.comment-time {
-    font-size: 12px;
-    color: var(--muted-2-color);
-}
-
-/* 评论文本 */
-.comment-text {
-    font-size: 14px;
-    line-height: 1.6;
-    color: var(--main-color);
-    margin: 4px 0;
-    text-align: left;
-    width: 100%;
-    display: block;
-    white-space: normal;
-    word-wrap: break-word;
-    position: relative;
-    left: 0;
-}
-
-/* 回复按钮 */
-.comment-actions {
-    display: flex;
-    justify-content: flex-end;
-    margin-top: 4px;
-}
-
-.comment-action {
-    color: var(--muted-2-color);
-    font-size: 13px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.comment-action:hover {
-    background-color: var(--muted-border-color);
-}
-
-/* Layui 弹框样式覆盖 */
-.layui-layer-molv .layui-layer-title {
-    background-color: #45B6F7 !important;
-    color: #fff;
-    border-top-left-radius: 10px;
-    border-top-right-radius: 10px;
-}
-
-.layui-layer-molv .layui-layer-btn a {
-    background-color: #45B6F7;
     border-color: #45B6F7;
+    background: #ffffff;
 }
 
-.layui-layer-molv .layui-layer-btn .layui-layer-btn1 {
-    background-color: #fff;
+.comment-input::placeholder {
+    color: #999;
+}
+
+/* 评论提交按钮容器 */
+.comment-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 表情选择器按钮 */
+.emoji-btn {
+    padding: 8px 12px;
     color: #666;
-    border-color: #45B6F7;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.3s ease;
 }
 
-.layui-layer-dialog{
-    border-radius: 10px !important  ; 
+.emoji-btn:hover {
+    color: #45B6F7;
 }
 
-/* 自定义弹框样式 */
+/* 提交按钮 */
+.comment-submit {
+    padding: 8px 24px;
+    border: none;
+    border-radius: 20px;
+    background: #818b95;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.comment-submit.active {
+    background: #45B6F7;
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.comment-submit.active:hover {
+    background: #3aa0e6;
+    box-shadow: 0 4px 12px rgba(69, 182, 247, 0.2);
+}
+
+/* 评论区标题样式 */
+.comment-section h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f5f5f5;
+    position: relative;
+}
+
+.comment-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background: #45B6F7;
+}
+
+/* 登录提示 Modal 样式 */
 .modal-overlay {
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
+    width: 100%;
+    height: 100%;
     background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
     z-index: 1000;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
+    backdrop-filter: blur(5px);
 }
 
-.modal-overlay.show {
-    opacity: 1;
-    visibility: visible;
-}
-
-.modal-container {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
+.login-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
     max-width: 400px;
-    transform: translateY(-20px);
-    transition: all 0.3s ease;
-    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.2);
+    width: 90%;
 }
 
-.modal-overlay.show .modal-container {
-    transform: translateY(0);
-}
-
-.modal-header {
-    font-size: 18px;
-    font-weight: 500;
-    margin-bottom: 15px;
+.login-modal h3 {
     color: #333;
-}
-
-.modal-content {
     margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.login-modal p {
     color: #666;
-    line-height: 1.5;
+    margin-bottom: 25px;
+    line-height: 1.6;
 }
 
-.modal-buttons {
+.login-modal .modal-buttons {
     display: flex;
-    justify-content: flex-end;
-    gap: 10px;
+    gap: 15px;
+    justify-content: center;
 }
 
-.modal-btn {
-    padding: 8px 16px;
+.login-modal .modal-btn {
+    padding: 10px 25px;
+    border-radius: 20px;
     border: none;
-    border-radius: 4px;
     cursor: pointer;
     transition: all 0.3s ease;
     font-size: 14px;
 }
 
-.modal-btn.primary {
+.login-modal .login-btn {
     background: #45B6F7;
     color: white;
 }
 
-.modal-btn.primary:hover {
-    background: #FF8C00;
+.login-modal .login-btn:hover {
+    background: #3aa0e6;
+    transform: translateY(-2px);
 }
 
-.modal-btn.secondary {
+.login-modal .cancel-btn {
     background: #f5f5f5;
     color: #666;
 }
 
-.modal-btn.secondary:hover {
+.login-modal .cancel-btn:hover {
     background: #e8e8e8;
 }

@@ -72,6 +72,29 @@ class ArticleContent(db.Model):
             'content': self.content
         }
 
+# 修改评论模型
+class Comment(db.Model):
+    __tablename__ = 'comments'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.String(50), nullable=False)
+    user_id = db.Column(db.Integer, nullable=False)
+    username = db.Column(db.String(100), nullable=False)
+    content = db.Column(db.Text, nullable=False)
+    parent_id = db.Column(db.Integer, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'article_id': self.article_id,
+            'user_id': self.user_id,
+            'username': self.username,
+            'content': self.content,
+            'parent_id': self.parent_id,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
 def init_db(app):
     """初始化数据库
     
@@ -333,8 +356,83 @@ def search_articles():
         })
             
     except Exception as e:
-        print("Error searching articles:", str(e))  # 调试日志
+        print("Error searching articles:", str(e))  # 调日志
         return jsonify({
             'success': False,
             'message': '搜索失败，请稍后重试'
         }), 500
+
+@article_bp.route('/api/comments', methods=['POST'])
+def create_comment():
+    """创建评论"""
+    try:
+        data = request.get_json()
+        
+        # 验证必要字段
+        if not all(key in data for key in ['article_id', 'content', 'user_id', 'username']):
+            return Response(
+                json.dumps({
+                    'success': False,
+                    'message': '缺少必要字段'
+                }, ensure_ascii=False),
+                status=400,
+                mimetype='application/json; charset=utf-8'
+            )
+
+        comment = Comment(
+            article_id=data['article_id'],
+            user_id=data['user_id'],
+            username=data['username'],
+            content=data['content'],
+            parent_id=data.get('parent_id')
+        )
+        
+        db.session.add(comment)
+        db.session.commit()
+        
+        return Response(
+            json.dumps({
+                'success': True,
+                'message': '评论发表成功',
+                'data': comment.to_dict()
+            }, ensure_ascii=False),
+            mimetype='application/json; charset=utf-8'
+        )
+        
+    except Exception as e:
+        print("Error creating comment:", str(e))
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '评论发表失败'
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json; charset=utf-8'
+        )
+
+@article_bp.route('/api/comments/<string:article_id>', methods=['GET'])
+def get_comments(article_id):
+    """获取文章评论列表"""
+    try:
+        comments = Comment.query.filter_by(article_id=article_id)\
+            .order_by(Comment.created_at.desc()).all()
+        
+        # 即使没有评论也返回成功状态，只是data为空列表
+        return Response(
+            json.dumps({
+                'success': True,
+                'data': [comment.to_dict() for comment in comments] if comments else []
+            }, ensure_ascii=False),
+            mimetype='application/json; charset=utf-8'
+        )
+        
+    except Exception as e:
+        print("Error getting comments:", str(e))
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '获取评论列表失败'
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json; charset=utf-8'
+        )

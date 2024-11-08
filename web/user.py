@@ -103,7 +103,8 @@ def login():
             json.dumps({
                 'message': '登录成功',
                 'token': token,
-                'username': user.username
+                'username': user.username,
+                'id': user.id
             }, ensure_ascii=False)
         )
         response.headers['Content-Type'] = 'application/json; charset=utf-8'

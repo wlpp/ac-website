@@ -159,7 +159,8 @@ function handleLoginForm() {
                 // 将用户数据合并为一个对象并加密存储
                 const userData = {
                     username: data.username,
-                    token: data.token
+                    token: data.token,
+                    user_id: data.id
                 };
                 setUserCookie(userData, 3); // 3天过期
                 
@@ -223,7 +224,7 @@ function updateUserInterface(userData) {
             e.stopPropagation();
             // 只清除用户认证相关的 cookie
             document.cookie = 'userData=;expires=Thu, 01 Jan 1970 00:00:01 GMT;path=/';
-            // 不删���本地存储的用户名，这样下次登录还能使用
+            // 不删本地存储的用户名，这样下次登录还能使用
             // localStorage.removeItem('savedUsername'); // 注释掉这行
             // 刷新页面
             window.location.reload();

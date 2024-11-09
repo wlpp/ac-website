@@ -229,7 +229,7 @@ async function updateArticleImages() {
         const articleImages = document.querySelectorAll('.article-card .article-image img:not([data-updated="true"])');
         if (articleImages.length === 0) return;
         
-        // 先显示加载���效果
+        // 先显示加载效果
         const loadingImageUrl = 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
         articleImages.forEach(img => {
             img.classList.add('loading');
@@ -266,7 +266,7 @@ async function updateArticleImages() {
             });
         }
     } catch (error) {
-        console.error('更新文章图片失败:', error);
+        console.error('更新文章��片失败:', error);
         // 错误时显示占位图
         articleImages.forEach(img => {
             img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
@@ -274,6 +274,66 @@ async function updateArticleImages() {
             img.classList.add('error');
         });
     }
+}
+
+/**
+ * 打字机效果实现
+ * @param {string} text 要显示的文本
+ * @param {HTMLElement} element 目标元素
+ * @param {number} speed 打字速度（毫秒）
+ * @returns {Promise} 完成打字的Promise
+ */
+function typeWriter(text, element, speed = 100) {
+    return new Promise(resolve => {
+        let i = 0;
+        element.textContent = ''; // 清空原有内容
+        
+        function type() {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+                setTimeout(type, speed);
+            } else {
+                resolve();
+            }
+        }
+        
+        type();
+    });
+}
+
+/**
+ * 初始化标题打字效果
+ */
+async function initializeTypeWriter() {
+    const title = document.querySelector('.header-info h2');
+    const subtitle = document.querySelector('.header-info p');
+    
+    // 存储原始文本
+    const titleText = '相遇有缘，更是惊喜！';
+    const subtitleText = '资源在下面！往下滑！';
+    
+    // 清空原有内容
+    title.textContent = '';
+    subtitle.textContent = '';
+    
+    // 添加光标效果的类
+    title.classList.add('typing');
+    
+    // 先打印标题
+    await typeWriter(titleText, title, 150);
+    
+    // 移除标题的光标，给副标题添加光标
+    title.classList.remove('typing');
+    subtitle.classList.add('typing');
+    
+    // 打印副标题
+    await typeWriter(subtitleText, subtitle, 100);
+    
+    // 完成后移除光标
+    setTimeout(() => {
+        subtitle.classList.remove('typing');
+    }, 500);
 }
 
 // 主要的 DOMContentLoaded 事件监听器
@@ -326,5 +386,8 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadMoreArticles(currentPage);
         });
     }
+    
+    // 初始化打字机效果
+    initializeTypeWriter();
 });
 

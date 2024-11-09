@@ -1,10 +1,18 @@
 #!/usr/bin/env python3
 import os
 import sys
+import shutil
 from datetime import datetime
 
 def git_upload():
     try:
+        # 删除所有 __pycache__ 文件夹
+        for root, dirs, files in os.walk('.'):
+            if '__pycache__' in dirs:
+                pycache_path = os.path.join(root, '__pycache__')
+                shutil.rmtree(pycache_path)
+                print(f"已删除: {pycache_path}")
+        
         # 检查是否有更改需要提交
         status = os.popen('git status').read()
         

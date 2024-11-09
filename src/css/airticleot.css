@@ -1,0 +1,354 @@
+/* 评论区基础样式 */
+.comment-section {
+    margin-top: 30px;
+    padding: 20px;
+    background: #fff;
+}
+
+/* 评论列表容器 */
+.comment-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 20px 0;
+}
+
+/* 评论卡片样式 */
+.comment-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 16px;
+    width: 100%;
+    transition: all 0.3s ease;
+    position: relative;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.comment-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(69, 182, 247, 0.12);
+    border-color: rgba(69, 182, 247, 0.1);
+}
+
+/* 子评论样式 */
+.comment-card[data-parent-id] {
+    margin-left: 40px;
+    width: calc(100% - 40px);
+    background: #f9f9f9;
+    /* border-left: 3px solid #45B6F7; */
+}
+
+.comment-card[data-parent-id] {
+    margin-top: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
+}
+
+.comment-card[data-parent-id]:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(69, 182, 247, 0.08);
+}
+
+/* 评论卡片头部 */
+.comment-card-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.comment-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 12px;
+    object-fit: cover;
+}
+
+.comment-info {
+    flex: 1;
+}
+
+.comment-username {
+    font-weight: 500;
+    color: #333;
+    font-size: 15px;
+    margin-bottom: 4px;
+}
+
+.comment-time {
+    font-size: 12px;
+    color: #999;
+}
+
+/* 评论内容 */
+.comment-card-body {
+    padding: 8px 0;
+}
+
+.comment-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #666;
+    word-break: break-word;
+}
+
+/* 评论底部 */
+.comment-card-footer {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid #f5f5f5;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.comment-action {
+    color: #666;
+    font-size: 13px;
+    padding: 4px 12px;
+    border-radius: 15px;
+    background: #f8f8f8;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.comment-action:hover {
+    background: #45B6F7;
+    color: #fff;
+}
+
+/* 回复标记 */
+.reply-badge {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    font-size: 12px;
+    color: #45B6F7;
+    background: rgba(69, 182, 247, 0.1);
+    padding: 4px 8px;
+    border-radius: 12px;
+}
+
+/* 无评论状态 */
+.no-comments {
+    width: 100%;
+    text-align: center;
+    padding: 40px 0;
+    color: #999;
+    font-size: 14px;
+    background: #f8f8f8;
+    border-radius: 8px;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .comment-card[data-parent-id] {
+        margin-left: 20px;
+        width: calc(100% - 20px);
+    }
+}
+
+/* 评论表单式 */
+.comment-form {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.05);
+    padding: 20px;
+    margin-bottom: 24px;
+    transition: box-shadow 0.3s ease;
+}
+
+.comment-form:focus-within {
+    box-shadow: 0 4px 20px rgba(69, 182, 247, 0.1);
+}
+
+/* 评论输入框 */
+.comment-input {
+    width: 100%;
+    min-height: 100px;
+    padding: 16px;
+    border: 1px solid #e8e8e8;
+    border-radius: 8px;
+    background: #f9f9f9;
+    resize: vertical;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #333;
+    transition: all 0.3s ease;
+    margin-bottom: 16px;
+}
+
+.comment-input:focus {
+    outline: none;
+    border-color: #45B6F7;
+    background: #ffffff;
+}
+
+.comment-input::placeholder {
+    color: #999;
+}
+
+/* 评论提交按钮容器 */
+.comment-form-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* 表情选择器按钮 */
+.emoji-btn {
+    padding: 8px 12px;
+    color: #666;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.emoji-btn:hover {
+    color: #45B6F7;
+}
+
+/* 提交按钮 */
+.comment-submit {
+    padding: 8px 24px;
+    border: none;
+    border-radius: 20px;
+    background: #818b95;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    opacity: 0.7;
+}
+
+.comment-submit.active {
+    background: #45B6F7;
+    opacity: 1;
+    transform: translateY(-1px);
+}
+
+.comment-submit.active:hover {
+    background: #3aa0e6;
+    box-shadow: 0 4px 12px rgba(69, 182, 247, 0.2);
+}
+
+/* 评论区标题样式 */
+.comment-section h3 {
+    font-size: 18px;
+    color: #333;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f5f5f5;
+    position: relative;
+}
+
+.comment-section h3::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 50px;
+    height: 2px;
+    background: #45B6F7;
+}
+
+/* 登录提示 Modal 样式 */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.login-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.login-modal h3 {
+    color: #333;
+    margin-bottom: 20px;
+    font-size: 1.5em;
+}
+
+.login-modal p {
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.6;
+}
+
+.login-modal .modal-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.login-modal .modal-btn {
+    padding: 10px 25px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 14px;
+}
+
+.login-modal .login-btn {
+    background: #45B6F7;
+    color: white;
+}
+
+.login-modal .login-btn:hover {
+    background: #3aa0e6;
+    transform: translateY(-2px);
+}
+
+.login-modal .cancel-btn {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.login-modal .cancel-btn:hover {
+    background: #e8e8e8;
+}
+
+/* 子评论样式 */
+.comment-replies {
+    margin-left: 20px;
+    margin-top: 10px;
+    /* border-left: 2px solid #e8e8e8; */
+    padding-left: 20px;
+}
+
+/* 递归样式，每一层缩进更多 */
+.comment-replies .comment-replies {
+    margin-left: 15px;
+    padding-left: 15px;
+}
+
+/* 子评论卡片样式 */
+.comment-card[data-parent-id] {
+    margin-top: 10px;
+    background: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, 0.03);
+}
+
+/* 递归样式，每一层背景色略微变深 */
+.comment-replies .comment-replies .comment-card {
+    background: #f5f5f5;
+}

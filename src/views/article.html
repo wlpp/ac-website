@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文章详情 - AC.蚂蚁</title>
+    <!-- 其他资源引入 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+    <!-- 引入消息样式 -->
+    <link rel="stylesheet" href="../plug/Message/message.css">
+    <link rel="stylesheet" href="../css/article.css">
+    <link rel="stylesheet" href="../css/airticleot.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="../css/common.css">
+
+</head>
+<body>
+    
+    <canvas id="particleCanvas"></canvas>
+    <div class="progress-bar"></div>
+    <div class="theader">
+        <a href="/" class="logo">AC.蚂蚁</a>
+        
+        <button type="button" id="menuBtn" class="menu-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <nav class="nav-links mobile-nav">
+            <a href="/" class="active">首页</a>
+            <a href="#">软件</a>
+            <a href="#">归档</a>
+            <a href="#">友链</a>
+            <a href="#">留言</a>
+            <a href="#" class="icon-btn search">🔍</a>
+            <div class="user-container">
+                <a href="#" class="icon-btn user">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="/login" class="dropdown-item">登录</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <main class="article-container">
+        <article class="article-content">
+            <h1 class="article-title">加载中...</h1>
+            <div class="article-meta">
+                <span class="article-date">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span id="articleDate">加载中...</span>
+                </span>
+            </div>
+            <div class="article-body">        
+            </div>
+            <div class="articleSource">转载来源->系统迷</div>
+            
+            <div class="comment-section">
+                <h3>评论</h3>
+                <div class="comment-form">
+                    <textarea class="comment-input" placeholder="写下你的评论..."></textarea>
+                    <button class="comment-submit">发表评论</button>
+                </div>
+                <ul class="comment-list">
+                    <!-- 评论列表将通过 JavaScript 动态加载 -->
+                </ul>
+            </div>
+        </article>
+    </main>
+
+    <!-- 返回顶部按钮 -->
+    <div class="back-to-top">
+        <i class="fas fa-rocket"></i>
+    </div>
+      <!-- 搜索弹框 -->
+      <div class="search-modal">
+        <button class="close-btn">×</button>
+        <div class="search-container">
+            <div class="search-title">想要找点什么呢?</div>
+            <input type="text" class="search-input" placeholder="输入关键词按回车键搜索...">
+        </div>
+        <img src="../images/iloli.gif" alt="装饰图片" class="decoration-image">
+    </div>
+    <script src="../api/config.js"></script>
+    <!-- 引入消息 -->
+    <script src="../plug/Message/Message.js"></script>
+    <script src="../js/common.js"></script>
+    <script src="../js/article.js"></script>
+    <div class="modal-overlay">
+        <div class="login-modal">
+            <h3>需要登录</h3>
+            <p>亲爱的访客，登录后才能发表评论哦！</p>
+            <div class="modal-buttons">
+                <button class="modal-btn login-btn">去登录</button>
+                <button class="modal-btn cancel-btn">取消</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

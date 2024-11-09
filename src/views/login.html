@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>登录 - AC.蚂蚁 - 技术资源免费分享</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <link rel="shortcut icon" type="image/x-icon" href="../images/favicon.ico">
+    <link href="//unpkg.com/layui@2.9.18/dist/css/layui.css" rel="stylesheet">
+    <link rel="stylesheet" href="../plug/Message/Message.css">
+
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>AC.蚂蚁</h1>
+        </div>
+        
+        <form class="login-form">
+            <div class="form-group">
+                <input type="text" placeholder="用户名/邮箱" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            
+            <div class="form-group">
+                <input type="password" placeholder="密码" required autocomplete="current-password">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            
+            <div class="remember-me">
+                <input type="checkbox" id="remember">
+                <label for="remember">记住我</label>
+            </div>
+            
+            <button type="submit" class="login-btn">登录</button>
+        </form>
+        
+        <div class="login-footer">
+            <p>还没有账号？ <a href="/register">立即注册</a></p>
+            <p><a href="/forgot-password">忘记密码？</a></p>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/layui@2.9.7/dist/layui.min.js"></script>
+    <script src="../plug/Message/Message.js"></script>
+    <script src="../js/user.js"></script>
+</body>
+</html>

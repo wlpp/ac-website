@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>注册 - AC.蚂蚁 - 技术资源免费分享</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+    <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/login.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <link rel="stylesheet" href="../plug/Message/message.css">
+
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>AC.蚂蚁</h1>
+        </div>
+        
+        <form class="register-form">
+            <div class="form-group">
+                <input type="text" placeholder="用户名" required>
+                <i class="fa-solid fa-user"></i>
+            </div>
+            <div class="form-group">
+                <input type="password" placeholder="密码" required autocomplete="new-password">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+            
+            <div class="form-group">
+                <input type="password" placeholder="确认密码" required autocomplete="new-password">
+                <i class="fa-solid fa-lock"></i>
+            </div>
+
+            <div class="form-group">
+                <input type="email" placeholder="电子邮箱地址" required>
+                <i class="fa-solid fa-envelope"></i>
+            </div>
+            
+           
+            
+            <button type="submit" class="register-btn">注册</button>
+        </form>
+        
+        <div class="login-footer">
+            <p>注册确认信息将通过电子邮件发送给您</p>
+            <p>已有账号？ <a href="/login">立即登录</a></p>
+        </div>
+    </div>
+     
+    <script src="../api/config.js"></script>
+    <script src="../js/user.js"></script>
+    <script src="../plug/Message/Message.js"></script>
+</body>
+</html>

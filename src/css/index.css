@@ -1,0 +1,1093 @@
+
+/* 移除 display-section 的内边距和背景 */
+.display-section {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+}
+
+/* 图片网格样式 */
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+.image-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease;
+}
+
+.image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.image-card img {
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.image-card img.loaded {
+    opacity: 1;
+}
+
+/* Article 样式优化 */
+.article-card {
+    display: flex;
+    background: #fff;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+/* 图片容器样式 */
+.article-image {
+    width: 280px;
+    min-width: 280px;
+    height: 180px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.article-card:hover .article-image img {
+    transform: scale(1.05);
+}
+
+/* 文章内容样式 */
+.article-content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    width: calc(100% - 40%); /* 减去图片宽度 */
+    min-width: 0; /* 关键属性：允许内容收缩 */
+}
+
+.article-title {
+    margin: 0 0 10px 0;
+    font-size: 1.4em;
+    color: #333;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    max-height: 2.6em;
+    font-weight: 500;
+    white-space: normal;
+}
+
+.article-title a {
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: inherit;
+    text-decoration: none;
+    width: 100%;
+}
+
+/* 悬停时的样式（可选） */
+.article-title:hover {
+    color: #FEA23B;
+}
+
+.article-desc {
+    font-family: 'LXGW WenKai', sans-serif;
+    font-size: 0.95em;
+    color: #666;
+    line-height: 1.6;
+    margin: 0;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-height: 3.2em;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .article-card {
+        flex-direction: column;
+    }
+    
+    .article-image {
+        width: 100%;
+        min-width: 100%;
+        height: 200px;
+    }
+    
+    .article-title {
+        font-size: 1.3em;
+    }
+    
+    .article-desc {
+        font-size: 0.9em;
+    }
+}
+
+/* 移除文章卡片整体的悬浮效果 */
+.article-card:hover {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* 移除文章卡片悬浮时标题颜色变化 */
+.article-card:hover .article-title {
+    color: #333;
+}
+
+/* 保持图片悬浮放大效果 */
+.article-image {
+    width: 40%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    flex-shrink: 0;
+    border-radius: 10px 0 0 10px;
+}
+
+.article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+}
+
+.article-image:hover img {
+    transform: scale(1.1);
+}
+.article-date{
+    text-align: right;
+    margin-top: 15px;
+    font-weight: normal;
+    /* color: #999; */
+
+}
+/* 响应式调整 */
+@media (max-width: 1024px) {
+    .image-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .image-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .container {
+        padding: 0 15px;
+    }
+
+    .display-section,
+    .article-section {
+        padding: 15px;
+    }
+
+    .article-card {
+        flex-direction: column;
+    }
+
+    .article-image {
+        width: 100%;
+        border-radius: 10px 10px 0 0;
+    }
+
+    .article-content {
+        width: 100%;
+        padding: 20px;
+    }
+
+    .display-section {
+        padding: 0;
+    }
+}
+
+/* 优化图片加载动画 */
+.image-card img,
+.article-image img {
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.image-card img.loaded,
+.article-image img.loaded {
+    opacity: 1;
+}
+
+/* 优化图片卡片悬浮效果 */
+.image-card {
+    overflow: hidden;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.image-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+.image-card img {
+    transition: transform 0.3s ease;
+}
+
+.image-card:hover img {
+    transform: scale(1.1);
+}
+
+/* 汉堡菜单图标样式 */
+.menu-icon {
+    display: none;
+    width: 30px;
+    height: 24px;
+    position: relative;
+    cursor: pointer;
+    background: none;
+    border: none;
+    padding: 0;
+    z-index: 1002;
+}
+
+.menu-icon span {
+    display: block;
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: #666;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    left: 0;
+}
+
+/* 分别设置三条线的位置 */
+.menu-icon span:nth-child(1) {
+    top: 0;
+}
+
+.menu-icon span:nth-child(2) {
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.menu-icon span:nth-child(3) {
+    bottom: 0;
+}
+
+/* 菜单打开时的动画效果 */
+.menu-icon.active span:nth-child(1) {
+    transform: translateY(11px) rotate(45deg);
+}
+
+.menu-icon.active span:nth-child(2) {
+    opacity: 0;
+}
+
+.menu-icon.active span:nth-child(3) {
+    transform: translateY(-11px) rotate(-45deg);
+}
+
+/* 移适配 */
+@media (max-width: 768px) {
+    .nav-links {
+        background-color: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+    }
+}
+
+/* 调整标题下边距 */
+.section-title {
+    font-family: 'Ma Shan Zheng', cursive;
+    font-size: 1.8em;
+    color: #333;
+    margin: 40px 0 20px;
+    text-align: center;
+    position: relative;
+}
+
+.section-title::after {
+    content: '';
+    display: block;
+    width: 50px;
+    height: 2px;
+    background-color: #333;
+    margin-top: 10px;
+}
+
+/* 相关区块的上边距也可需要调整 */
+.display-section,
+.article-section {
+    margin: 60px 0;
+}
+
+.image-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 25px;
+}
+
+/* 响应式保持不变 */
+@media (max-width: 768px) {
+    .section-title {
+        margin-bottom: 10px;
+    }
+}
+
+/* 向上滚动时显示，向下滚动时隐藏 */
+.header.nav-up {
+    transform: translateY(-100%);
+}
+
+.header.nav-down {
+    transform: translateY(0);
+}
+
+/* 可选：滚动时增加不透明度 */
+.header.scrolled {
+    background-color: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    padding: 15px 20px;
+}
+
+/* 底部样式 */
+.footer {
+    margin-top: 60px;
+    text-align: center;
+    padding: 20px 0 40px;
+}
+
+/* 加载更多钮 */
+.load-more {
+    text-align: center;
+    margin: 40px 0;
+}
+
+.load-more-btn {
+    background-color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+    background-color: #f5f5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.load-more-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+/* 底部信息 */
+.footer-info {
+    color: #666;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.copyright {
+    margin-bottom: 10px;
+}
+
+.online-count {
+    color: #999;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .footer {
+        padding: 20px 15px 30px;
+    }
+
+    .load-more-btn {
+        width: 80%;
+        max-width: 300px;
+    }
+}
+
+/* 样式调整 */
+.progress-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 0;
+    height: 3px;
+    background-color: #FEA23B;
+    z-index: 10000;
+    transition: width 0.2s ease;
+    pointer-events: none;
+}
+
+/* 确保 header 的 z-index 小于进度条 */
+.header {
+    z-index: 9999;
+}
+
+/* 导航栏样式 */
+/* .header {
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1001;
+    transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+} */
+
+/* 确保进度条在最顶部 */
+
+
+/* 落叶画样式 */
+#falling-leaves {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+/* 加载更多按钮样化 */
+.load-more-btn {
+    background-color: #fff;
+    border: none;
+    padding: 10px 30px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+    background-color: #f5f5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.load-more-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+
+
+/* 确保其他内容在粒子上层 */
+.container {
+    position: relative;
+    z-index: 1;
+    background: transparent;
+}
+
+.header {
+    position: fixed;
+    z-index: 2;
+}
+
+/* 全屏图片区域 */
+.full-screen-section {
+    height: 100vh;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 60px;
+}
+
+.image-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+.image-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: opacity 0.3s ease;
+}
+
+/* 文字叠加层样式 */
+.text-overlay {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    width: 100%;
+    padding: 20px;
+    background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8), transparent);
+}
+
+.text-content {
+    margin-bottom: 20px;
+    font-size: 16px;
+}
+
+.text-content h2 {
+    font-size: 1.5em;
+    color: #333;
+    margin-bottom: 10px;
+}
+
+.text-content p {
+    font-size: 1em;
+    color: #666;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .text-content .avatar {
+        width: 60px;
+        height: 60px;
+    }
+
+    .text-content h2 {
+        font-size: 1.25em;
+    }
+
+    .text-content p {
+        font-size: 0.875em;
+    }
+}
+
+/* 按钮组样式 */
+.button-group {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+/* 导航按钮基础样式 */
+.nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.8);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* 按钮悬停效果 */
+.nav-btn:hover {
+    background: rgba(255, 255, 255, 1);
+    transform: scale(1.1);
+}
+
+/* 图标样式 */
+.nav-btn i {
+    font-size: 1.2em;
+    color: #666;
+    transition: all 0.3s ease;
+}
+
+/* 邮件按钮特殊样式 */
+.nav-btn.email {
+    background: #FEA23B;
+}
+
+.nav-btn.email i {
+    color: white;
+}
+
+.nav-btn.email:hover {
+    background: #ff9416;
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* 上一页/下一页按钮悬停效果 */
+.nav-btn.prev:hover i {
+    transform: translateX(-2px);
+}
+
+.header-info {
+    background-color: rgba(255, 255, 255, 0.5);
+    width: 35%;
+    margin: auto;
+    font-size: 15px;
+    color: #505050;
+    padding: 15px;
+    margin-top: 22px;
+    letter-spacing: 0;
+    line-height: 30px;
+    border-radius: 15px;
+    box-sizing: initial;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+    transition: all 0.8s ease !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.typing {
+    border-right: 2px solid #505050;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    animation: typing 4s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: #505050; }
+}
+
+/* 子元素样式保持不变 */
+.header-info h2,
+.header-info p {
+    margin: 0;
+    color: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    font-weight: inherit;
+}
+
+/* 移除 text-content 的背景和模糊效果，因为现在在 header-info 中设置 */
+.text-content {
+    text-align: center;
+    margin-bottom: 20px;
+    background: none;
+    backdrop-filter: none;
+}
+
+/* 头像容器样式 */
+.avatar {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s ease;
+}
+
+.avatar img:hover {
+    transform: rotate(360deg);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .avatar {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+/* 图标区域样式 */
+.nav-icons {
+    display: flex;
+    gap: 15px;
+    margin-left: 20px;
+}
+
+.icon-btn {
+    color: #333;
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: #F9D938;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .nav-icons {
+        gap: 10px;
+        margin-left: 15px;
+    }
+    
+    .icon-btn {
+        font-size: 16px;
+    }
+}
+
+/* 更新 nav-links 样式 */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+/* 图标按钮样式 */
+.icon-btn {
+    color: #333;
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: #F9D938;
+}
+
+/* 让图标靠右 */
+.icon-btn.search,
+.icon-btn.user {
+    margin-left: auto;
+}
+
+.icon-btn.search {
+    margin-left: auto;
+}
+
+.icon-btn.user {
+    margin-left: auto;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .icon-btn {
+        font-size: 16px;
+    }
+    
+    .icon-btn.user {
+        margin-left: 10px;
+    }
+}
+
+/* 添加下拉菜单样式 */
+.user-container {
+    position: relative;
+}
+
+
+/* 显示下拉菜单 */
+.user-container:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        position: static;
+        transform: none;
+        box-shadow: none;
+        margin-top: 5px;
+        width: 100%;
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .dropdown-item {
+        padding: 12px 0;
+    }
+}
+
+
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  #mo-nav::-webkit-scrollbar {
+    width: 0;
+    opacity: 0;
+  }
+  
+  ::-webkit-scrollbar-track,
+  body.dark::-webkit-scrollbar-thumb {
+    background-color: #eee;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #FEA23B;
+    border-radius: 25px;
+  }
+
+.article-card {
+    cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.article-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.article-link {
+    display: flex;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+}
+
+.article-content {
+    flex: 1;
+    padding: 20px;
+    min-width: 0; /* 确保文本可以正确截断 */
+}
+
+.article-title {
+    margin: 0 0 10px 0;
+    font-size: 1.3em;
+    color: #333;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    max-height: 2.6em;
+    font-weight: 500;
+    white-space: normal;
+}
+
+.article-desc {
+    color: #666;
+    font-size: 1em;
+    line-height: 1.6;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-height: 3.2em;
+    font-family: 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', 'Source Han Sans SC', sans-serif;
+  
+}
+
+/* 移动端配 */
+@media (max-width: 768px) {
+    .article-title {
+        font-size: 1.3em;
+    }
+    
+    .article-desc {
+        font-size: 0.9em;
+    }
+}
+
+/* 文章卡片基础样式 */
+.article-card {
+    display: flex;
+    background: #fff;
+    border-radius: 10px;
+    margin-bottom: 30px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.article-link {
+    display: flex;
+    text-decoration: none;
+    color: inherit;
+    width: 100%;
+}
+
+.article-image {
+    width: 40%;
+    height: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.article-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.article-content {
+    flex: 1;
+    padding: 20px;
+    min-width: 0;  /* 确保文本可以正确截断 */
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .article-card {
+        flex-direction: column;
+    }
+    
+    .article-link {
+        flex-direction: column;
+        height: auto;  /* 确保高度自适应 */
+    }
+
+    .article-image {
+        width: 100%;
+        height: 200px;
+        position: relative;  /* 重置定位 */
+    }
+
+    .article-content {
+        position: relative;  /* 确保内容在图片下方 */
+        width: 100%;
+        padding: 15px;
+        background: #fff;  /* 确保背景色 */
+        z-index: 1;  /* 确保内容在片上层 */
+    }
+
+    .article-title {
+        font-size: 1.3em;
+        margin-bottom: 8px;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+
+    .article-desc {
+        font-size: 0.9em;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+}
+
+/* 移动端导航样式 */
+@media (max-width: 768px) {
+    .menu-icon {
+        display: block;  /* 显示汉堡菜单图标 */
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 0;
+        right: -100%;  /* 初始隐藏在右侧 */
+        width: 250px;
+        height: 100vh;
+        background-color: rgba(255, 255, 255, 0.95);
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 80px 20px 20px;
+        transition: right 0.3s ease;
+        z-index: 1001;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        box-shadow: -2px 0 10px rgba(0,0,0,0.1);
+    }
+
+    .nav-links.active {
+        right: 0;  /* 菜单展开时滑入 */
+    }
+
+    .nav-links a {
+        width: 100%;
+        padding: 12px 0;
+        text-align: center;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+
+    .nav-links a:last-child {
+        border-bottom: none;
+    }
+
+    /* 用户图标和搜索图标在移动端的样式 */
+    .icon-btn {
+        padding: 12px 0;
+        width: 100%;
+        text-align: center;
+    }
+
+    .user-container {
+        width: 100%;
+    }
+
+    .dropdown-menu {
+        position: static;
+        width: 100%;
+        box-shadow: none;
+        margin-top: 5px;
+        opacity: 1;
+        visibility: visible;
+        background: rgba(255, 255, 255, 0.5);
+    }
+}
+
+/* 添加淡入动画的关键帧 */
+@keyframes fadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* 应用动画到 text-content */
+.text-content {
+    animation: fadeInDown 0.8s ease-out forwards;
+    opacity: 0;  /* 初始状态设为透明 */
+}
+
+/* 为子元素添加延迟动画 */
+.text-content > * {
+    animation: fadeInDown 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.text-content h2 {
+    animation-delay: 0.2s;
+}
+
+.text-content p {
+    animation-delay: 0.4s;
+}
+
+.text-content .button-group {
+    animation-delay: 0.6s;
+}

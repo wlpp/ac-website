@@ -8,7 +8,7 @@ function getUserData() {
             .find(row => row.startsWith('userData='));
             
         if (!userDataCookie) {
-            console.log('No userData cookie found');
+            debug.log('No userData cookie found');
             return null;
         }
 
@@ -26,7 +26,7 @@ function getUserData() {
         
         // 验证必要的字段是否存在
         if (!userData || !userData.token || !userData.username) {
-            console.log('Invalid user data structure:', userData);
+            debug.log('Invalid user data structure:', userData);
             return null;
         }
 
@@ -40,14 +40,14 @@ function getUserData() {
                 .find(row => row.startsWith('userData='));
             if (userDataCookie) {
                 const encodedData = userDataCookie.split('=')[1];
-                console.log('原始编码数据:', encodedData);
+                debug.log('原始编码数据:', encodedData);
                 try {
                     const decodedOnce = decodeURIComponent(encodedData);
-                    console.log('第一次解码:', decodedOnce);
+                    debug.log('第一次解码:', decodedOnce);
                     const decodedTwice = decodeURIComponent(decodedOnce);
-                    console.log('第二次解码:', decodedTwice);
+                    debug.log('第二次解码:', decodedTwice);
                 } catch (e) {
-                    console.log('解码过程出错:', e);
+                    debug.log('解码过程出错:', e);
                 }
             }
         }
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
     async function handleCommentSubmit() {
         try {
             const userData = getUserData();
-            console.log('User data for comment:', userData);
+            debug.log('User data for comment:', userData);
 
             // 检查用户是否登录
             if (!userData || !userData.token) {
@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 parent_id: currentReplyId ? parseInt(currentReplyId) : null
             };
 
-            console.log('Sending comment data:', commentData);
+            debug.log('Sending comment data:', commentData);
 
             const response = await fetch(`${baseURL}/api/comments`, {
                 method: 'POST',
@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             const data = await response.json();
-            console.log('Response:', data);
+            debug.log('Response:', data);
 
             if (!response.ok) {
                 throw new Error(data.message || '发表评论失败');
@@ -321,7 +321,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                console.log('评论数据:', data); // 调试日志
+                debug.log('评论数据:', data); // 调试日志
                 renderComments(data.data);
             } else {
                 console.error('加载评论失败:', data.message);
@@ -357,7 +357,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return `
             <div class="comment-card" data-id="${comment.id}" ${comment.parent_id ? `data-parent-id="${comment.parent_id}"` : ''}>
                 <div class="comment-card-header">
-                    <img class="comment-avatar" src="../images/avatar.jpg" alt="用户头像">
+                    <img class="comment-avatar" src="../images/avatar.webp" alt="用户头像">
                     <div class="comment-info">
                         <div class="comment-username">${comment.username}</div>
                         <div class="comment-time">${formatCommentTime(comment.created_at)}</div>
@@ -404,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
             commentSubmit.classList.remove('active');
         }
         // 调试输出
-        console.log('Input value changed:', this.value, 'Has content:', hasContent);
+        debug.log('Input value changed:', this.value, 'Has content:', hasContent);
     }
 
     // 检查用户登录状态并处理评论输入

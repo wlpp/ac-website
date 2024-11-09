@@ -172,7 +172,7 @@ function handleLoginForm() {
                 message.error(data.message || '登录失败，请稍后重试');
             }
         } catch (error) {
-            console.error('登录请求失败:', error);
+            debug.error('登录请求失败:', error);
             message.error('登录失败，请稍后重试');
         }
     });
@@ -246,10 +246,10 @@ function updateUserInterface(userData) {
 function checkUserStatus() {
     const userData = getUserCookie();
     if (userData) {
-        console.log('检测到用户数据:', userData); // 添加调试日志
+        debug.log('检测到用户数据:', userData);
         updateUserInterface(userData);
     } else {
-        console.log('未检测到用户数据'); // 添加调试日志
+        debug.log('未检测到用户数据');
     }
 }
 
@@ -379,7 +379,7 @@ function handleRegisterForm() {
                 message.error(data.message || '注册失败，请稍后重试');
             }
         } catch (error) {
-            console.error('注册请求失败:', error);
+            debug.error('注册请求失败:', error);
             message.error('注册失败，请稍后重试');
         }
     });
@@ -554,6 +554,6 @@ document.addEventListener('DOMContentLoaded', initializeForms);
 
 // 确保在页面加载完成后执行检查
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('页面加载完成，开始检查用户状态'); // 添加调试日志
+    debug.log('页面加载完成，开始检查用户状态'); // 添加调试日志
     checkUserStatus();
 });

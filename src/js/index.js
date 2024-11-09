@@ -69,7 +69,7 @@ function renderArticleCard(article) {
     articleCard.innerHTML = `
         <a href="/article/${article.article_id}" class="article-link">
             <div class="article-image">
-                <img data-src="${article.image_url || 'https://via.placeholder.com/800x600'}" 
+                <img data-src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur" 
                      alt="${article.title || '无标题'}"
                      class="loading"
                      src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur">
@@ -146,6 +146,9 @@ async function loadMoreArticles(page = 1) {
         // 重新初始化懒加载
         lazyLoad();
         
+        // 更新新加载的文章卡片图片
+        await updateArticleImages();
+        
         // 更新加载更多按钮状态
         if (loadMoreBtn) {
             loadMoreBtn.textContent = '加载更多';
@@ -165,36 +168,112 @@ async function loadMoreArticles(page = 1) {
  * 图片轮播功能
  * 支持前后切换和淡入淡出效果
  */
-function initializeImageSlider() {
-    const images = [
-        '../images/t_1.jpg',
-        '../images/t_2.jpg',
-        '../images/t_3.jpg'
-    ];
+async function initializeImageSlider() {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const imageContainer = document.querySelector('.image-container img');
+    const emailBtn = document.querySelector('.nav-btn.email i');
     
-    let currentImageIndex = 0;
-    const bannerImage = document.querySelector('.image-container img');
-    const prevBtn = document.querySelector('.nav-btn.prev');
-    const nextBtn = document.querySelector('.nav-btn.next');
-
-    if (!bannerImage || !prevBtn || !nextBtn) return;
-
-    function changeImage(direction) {
-        if (direction === 'prev') {
-            currentImageIndex = (currentImageIndex - 1 + images.length) % images.length;
-        } else {
-            currentImageIndex = (currentImageIndex + 1) % images.length;
-        }
+    // 页面加载时获取一次随机图片
+    try {
+        emailBtn.className = 'fa-solid fa-spinner fa-spin'; // 显示加载图标
+        const response = await fetch('/api/random-image');
+        const data = await response.json();
         
-        bannerImage.style.opacity = '0';
-        setTimeout(() => {
-            bannerImage.src = images[currentImageIndex];
-            bannerImage.style.opacity = '1';
-        }, 300);
+        if (data.success) {
+            imageContainer.src = data.data.image_url;
+            // 图片加载完成后再改回原图标
+            imageContainer.onload = () => {
+                emailBtn.className = 'fa-solid fa-paw';
+            };
+        } else {
+            console.error('初始化图片失败:', data.message);
+            emailBtn.className = 'fa-solid fa-paw'; // 失败时也改回原图标
+        }
+    } catch (error) {
+        console.error('初始化图片请求失败:', error);
+        emailBtn.className = 'fa-solid fa-paw'; // 错误时也改回原图标
     }
+    
+    // 为每个导航按钮添加点击事件
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            try {
+                emailBtn.className = 'fa-solid fa-spinner fa-spin'; // 显示加载图标
+                const response = await fetch('/api/random-image');
+                const data = await response.json();
+                
+                if (data.success) {
+                    imageContainer.src = data.data.image_url;
+                    // 图片加载完成后再改回原图标
+                    imageContainer.onload = () => {
+                        emailBtn.className = 'fa-solid fa-paw';
+                    };
+                } else {
+                    console.error('获取图片失败:', data.message);
+                    emailBtn.className = 'fa-solid fa-paw'; // 失败时也改回原图标
+                }
+            } catch (error) {
+                console.error('请求图片时出错:', error);
+                emailBtn.className = 'fa-solid fa-paw'; // 错误时也改回原图标
+            }
+        });
+    });
+}
 
-    prevBtn.addEventListener('click', () => changeImage('prev'));
-    nextBtn.addEventListener('click', () => changeImage('next'));
+/**
+ * 更新文章卡片图片
+ * 获取随机图片并更新到文章卡片
+ */
+async function updateArticleImages() {
+    try {
+        const articleImages = document.querySelectorAll('.article-card .article-image img:not([data-updated="true"])');
+        if (articleImages.length === 0) return;
+        
+        // 先显示加载���效果
+        const loadingImageUrl = 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
+        articleImages.forEach(img => {
+            img.classList.add('loading');
+            img.src = loadingImageUrl;
+        });
+        
+        // 请求随机图片
+        const response = await fetch(`/api/random-image?count=${articleImages.length}`);
+        const data = await response.json();
+        
+        if (data.success && data.data.image_urls) {
+            articleImages.forEach((img, index) => {
+                if (index < data.data.image_urls.length) {
+                    const newImg = new Image();
+                    newImg.src = data.data.image_urls[index];
+                    
+                    newImg.onload = function() {
+                        img.src = data.data.image_urls[index];
+                        img.dataset.src = data.data.image_urls[index];
+                        img.classList.remove('loading');
+                        img.classList.add('loaded');
+                        img.dataset.updated = 'true';
+                        img.dataset.loaded = 'true';
+                    };
+                    
+                    newImg.onerror = function() {
+                        img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
+                        img.classList.remove('loading');
+                        img.classList.add('error');
+                        img.dataset.updated = 'true';
+                        img.dataset.loaded = 'true';
+                    };
+                }
+            });
+        }
+    } catch (error) {
+        console.error('更新文章图片失败:', error);
+        // 错误时显示占位图
+        articleImages.forEach(img => {
+            img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
+            img.classList.remove('loading');
+            img.classList.add('error');
+        });
+    }
 }
 
 // 主要的 DOMContentLoaded 事件监听器
@@ -206,8 +285,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // 初始化懒加载
     lazyLoad();
     
-    // 初始化文章加载
-    loadMoreArticles();
+    // 初始化文章加载，但不立即更新图片
+    loadMoreArticles().then(() => {
+        // 等待页面完全加载后再更新图片
+        window.onload = async () => {
+            await updateArticleImages();
+        };
+    });
     
     // 返回顶部功能
     if (backToTop) {

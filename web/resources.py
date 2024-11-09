@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request
+from flask import Blueprint, jsonify, request, make_response
 from flask_cors import CORS
 import asyncio
 import aiohttp
@@ -29,48 +29,42 @@ async def fetch_multiple_images(count):
 
 @resources_bp.route('/api/random-image')
 def get_random_image():
-    """获取随机图片
-    
-    从 dmoe.cc 获取随机动漫图片
-    
-    参数:
-        count: 获取图片数量（可选，默认1）
-    
-    返回:
-        成功: 图片URL列表
-        失败: 错误信息
-    """
+    """获取随机图片"""
     try:
-        # 获取请求参数
         count = request.args.get('count', 1, type=int)
         
-        # 创建事件循环
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
         
-        # 执行异步请求
         image_urls = loop.run_until_complete(fetch_multiple_images(count))
         
-        # 如果只请求一张图片，保持原有的返回格式
+        # 创建响应
         if count == 1:
-            return jsonify({
+            response_data = {
                 'success': True,
                 'data': {
                     'image_url': image_urls[0]
                 }
-            })
-        
-        # 多张图片时返回数组
-        return jsonify({
-            'success': True,
-            'data': {
-                'image_urls': image_urls
             }
-        })
+        else:
+            response_data = {
+                'success': True,
+                'data': {
+                    'image_urls': image_urls
+                }
+            }
+        
+        # 使用make_response创建响应对象
+        response = make_response(jsonify(response_data))
+        # 设置响应头，指定UTF-8编码
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
             
     except Exception as e:
         print("Error fetching random image:", str(e))
-        return jsonify({
+        error_response = make_response(jsonify({
             'success': False,
             'message': '服务器错误'
-        }), 500
+        }), 500)
+        error_response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return error_response

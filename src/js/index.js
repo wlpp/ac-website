@@ -172,6 +172,7 @@ async function initializeImageSlider() {
     const navBtns = document.querySelectorAll('.nav-btn');
     const imageContainer = document.querySelector('.image-container img');
     const emailBtn = document.querySelector('.nav-btn.email i');
+    const defaultImage = '../images/login_bg.jpg';
     
     // 页面加载时获取一次随机图片
     try {
@@ -187,11 +188,13 @@ async function initializeImageSlider() {
             };
         } else {
             console.error('初始化图片失败:', data.message);
-            emailBtn.className = 'fa-solid fa-paw'; // 失败时也改回原图标
+            imageContainer.src = defaultImage;
+            emailBtn.className = 'fa-solid fa-paw';
         }
     } catch (error) {
         console.error('初始化图片请求失败:', error);
-        emailBtn.className = 'fa-solid fa-paw'; // 错误时也改回原图标
+        imageContainer.src = defaultImage;
+        emailBtn.className = 'fa-solid fa-paw';
     }
     
     // 为每个导航按钮添加点击事件
@@ -266,7 +269,7 @@ async function updateArticleImages() {
             });
         }
     } catch (error) {
-        console.error('更新文章��片失败:', error);
+        console.error('更新文章片失败:', error);
         // 错误时显示占位图
         articleImages.forEach(img => {
             img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';

@@ -393,7 +393,7 @@ body {
 
 /* 表格容器 */
 .table-container {
-    background: white;
+    /* background: white; */
     border-radius: 8px;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
     overflow: hidden;

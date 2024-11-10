@@ -57,25 +57,25 @@
     </div>
 
     <div class="table-container">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th width="40">
-                        <input type="checkbox" onclick="toggleAllUsers(this)">
-                    </th>
-                    <th>ID</th>
-                    <th>用户名</th>
-                    <th>邮箱</th>
-                    <th>角色</th>
-                    <th>状态</th>
-                    <th>创建时间</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="userList">
-                <!-- 用户数据将通过JS动态插入 -->
-            </tbody>
-        </table>
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox"></th>
+                        <th>ID</th>
+                        <th>用户名</th>
+                        <th>邮箱</th>
+                        <th>角色</th>
+                        <th>状态</th>
+                        <th>创建时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="userList">
+                    <!-- 用户列表将通过 JS 动态渲染 -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="pagination" id="pagination">

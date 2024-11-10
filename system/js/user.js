@@ -158,46 +158,44 @@ function searchUsers(keyword) {
 
 // 渲染用户列表
 function renderUserList(users) {
-    const tbody = document.getElementById('userList');
-    const pagination = document.getElementById('pagination');
+    const userList = document.getElementById('userList');
+    if (!userList) return;
     
-    if (!tbody || !pagination) {
-        console.error('找不到必要的DOM元素');
-        return;
-    }
+    const startIndex = (pageConfig.currentPage - 1) * pageConfig.pageSize;
+    const endIndex = startIndex + pageConfig.pageSize;
+    const pageUsers = users.slice(startIndex, endIndex);
     
-    // 计算分页数据
+    let html = '';
+    pageUsers.forEach(user => {
+        html += `
+            <tr>
+                <td><input type="checkbox"></td>
+                <td>${user.id}</td>
+                <td>${user.username}</td>
+                <td>${user.email}</td>
+                <td>${formatRole(user.role)}</td>
+                <td>
+                    <span class="status-badge ${user.status ? 'active' : 'inactive'}">
+                        ${user.status ? '启用' : '禁用'}
+                    </span>
+                </td>
+                <td>${user.createTime}</td>
+                <td>
+                    <div class="action-buttons">
+                        <button class="btn-edit" title="编辑" onclick="editUser(${user.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" title="删除" onclick="deleteUser(${user.id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    });
+    userList.innerHTML = html;
+    
     const totalPages = Math.ceil(users.length / pageConfig.pageSize);
-    const start = (pageConfig.currentPage - 1) * pageConfig.pageSize;
-    const end = start + pageConfig.pageSize;
-    const currentPageData = users.slice(start, end);
-    
-    // 渲染用户数据
-    tbody.innerHTML = currentPageData.map(user => `
-        <tr>
-            <td><input type="checkbox" value="${user.id}"></td>
-            <td>${user.id}</td>
-            <td>${user.username}</td>
-            <td>${user.email}</td>
-            <td>${formatRole(user.role)}</td>
-            <td>
-                <span class="status-badge ${user.status ? 'active' : 'inactive'}">
-                    ${user.status ? '启用' : '禁用'}
-                </span>
-            </td>
-            <td>${user.createTime}</td>
-            <td>
-                <button class="btn-icon" onclick="editUser(${user.id})" title="编辑">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="btn-icon delete" onclick="deleteUser(${user.id})" title="删除">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-    
-    // 渲染分页控件
     renderPagination(totalPages, users.length);
 }
 
@@ -266,9 +264,12 @@ function formatRole(role) {
 
 // 页面初始化函数
 function initPage() {
+    // 重置分页配置
+    pageConfig.currentPage = 1;
+    
     // 渲染初始用户列表
     renderUserList(mockUsers);
-
+    
     // 绑定添加用户按钮
     const addUserBtn = document.querySelector('.btn-primary');
     if (addUserBtn) {
@@ -295,7 +296,7 @@ function initPage() {
     }
 }
 
-// 导出���始化函数
+// 导出始化函数
 window.initPage = initPage; 
 
 // 渲染分页控件

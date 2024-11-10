@@ -135,4 +135,192 @@
 .modal .btn-primary {
     padding: 8px 16px;
     font-size: 0.875rem;
+}
+
+/* 内容区域布局 */
+.content {
+    padding: 24px;
+    height: calc(100vh - 60px);
+    position: relative;
+    overflow: hidden;  /* 防止内容区域出现滚动条 */
+}
+
+/* 表格容器样式 */
+.table-container {
+    height: 65vh;  /* 使用固定的视窗高度比例 */
+    min-height: 300px;  /* 设置最小高度 */
+    /* background: white; */
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+    display: flex;  /* 使用flex布局 */
+    flex-direction: column;  /* 垂直排列 */
+    overflow: hidden;  /* 先隐藏容器自身的滚动条 */
+}
+
+/* 表格包装器 */
+.table-wrapper {
+    flex: 1;  /* 占用剩余空间 */
+    overflow-y: auto;  /* 只在包装器上启用滚动 */
+    overflow-x: hidden;  /* 禁用水平滚动 */
+}
+
+/* 表格样式 */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table thead {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+}
+
+.data-table th {
+    padding: 16px;
+    text-align: left;
+    font-weight: 500;
+    color: #4a5568;
+    border-bottom: 2px solid #e2e8f0;
+    background: white;  /* 确保表头背景色 */
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+/* 表格滚动条样式 */
+.table-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.table-container::-webkit-scrollbar-track {
+    background: #f7fafc;
+}
+
+.table-container::-webkit-scrollbar-thumb {
+    background: #cbd5e0;
+    border-radius: 3px;
+}
+
+.table-container::-webkit-scrollbar-thumb:hover {
+    background: #a0aec0;
+}
+
+/* 表格行悬停效果 */
+.data-table tbody tr:hover {
+    background-color: #f7fafc;
+}
+
+/* 表格内容溢出处理 */
+.data-table td {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 200px;  /* 设置最大宽度 */
+}
+
+/* 操作按钮容器 */
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* 编辑按钮 */
+.btn-edit {
+    padding: 6px;
+    border: none;
+    background: #ebf8ff;
+    color: #3182ce;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.btn-edit:hover {
+    background: #bee3f8;
+    color: #2b6cb0;
+    transform: translateY(-1px);
+}
+
+/* 删除按钮 */
+.btn-delete {
+    padding: 6px;
+    border: none;
+    background: #fff5f5;
+    color: #e53e3e;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+}
+
+.btn-delete:hover {
+    background: #fed7d7;
+    color: #c53030;
+    transform: translateY(-1px);
+}
+
+/* 按钮图标大小 */
+.btn-edit i,
+.btn-delete i {
+    font-size: 14px;
+}
+
+/* 按钮激活状态 */
+.btn-edit:active,
+.btn-delete:active {
+    transform: translateY(0);
+}
+
+/* 按钮禁用状态 */
+.btn-edit:disabled,
+.btn-delete:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* 状态标签样式 */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.status-badge.active {
+    background: #e6fffa;
+    color: #2c7a7b;
+}
+
+.status-badge.inactive {
+    background: #fff5f5;
+    color: #c53030;
+}
+
+/* 表格单元格对齐 */
+.data-table td {
+    vertical-align: middle;
+}
+
+/* 操作列宽度 */
+.data-table td:last-child {
+    width: 100px;
+    text-align: center;
 } 

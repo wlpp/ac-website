@@ -228,7 +228,7 @@ class ArticleManager {
         });
         
         // 在新标签页打开编辑页面
-        window.open(`/article/edit?${params.toString()}`, '_blank');
+        window.open(`/system/views/article/edit.html?${params.toString()}`, '_blank');
     }
 }
 

@@ -512,5 +512,57 @@ def system_login():
     response.headers['Content-Type'] = 'application/json; charset=utf-8'
     return response, 401
 
+@auth_bp.route('/api/users', methods=['GET'])
+@token_required
+def get_users(current_user):
+    """获取用户列表
+    
+    Query参数:
+    - page: 页码（默认1）
+    - per_page: 每页数量（默认10）
+    - username: 用户名搜索（可选）
+    - role: 角色筛选（可选）
+    - status: 状态筛选（可选）
+    """
+    # 检查是否是管理员
+    if current_user.role != 0:
+        return jsonify({'message': '权限不足'}), 403
+    
+    # 获取查询参数
+    page = request.args.get('page', 1, type=int)
+    per_page = request.args.get('per_page', 10, type=int)
+    username = request.args.get('username', '')
+    role = request.args.get('role', type=int)
+    status = request.args.get('status', type=int)
+    
+    # 构建查询
+    query = User.query
+    
+    # 添加过滤条件
+    if username:
+        query = query.filter(User.username.like(f'%{username}%'))
+    if role is not None:
+        query = query.filter(User.role == role)
+    if status is not None:
+        query = query.filter(User.status == status)
+    
+    # 执行分页查询
+    pagination = query.order_by(User.created_at.desc()).paginate(
+        page=page, 
+        per_page=per_page,
+        error_out=False
+    )
+    
+    # 构建响应数据
+    response_data = {
+        'users': [user.to_dict() for user in pagination.items],
+        'total': pagination.total,
+        'pages': pagination.pages,
+        'current_page': page,
+        'per_page': per_page
+    }
+    
+    return jsonify(response_data)
+
 if __name__ == '__main__':
     app.run(debug=True)

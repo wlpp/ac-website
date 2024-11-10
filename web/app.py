@@ -1,4 +1,4 @@
-from flask import Flask, send_file
+from flask import Flask, send_file, make_response
 import os
 from .article import article_bp, db, init_db
 from .user import auth_bp, init_auth_db
@@ -6,6 +6,7 @@ from .resources import resources_bp
 from .system import system_bp
 from flask_cors import CORS
 from flask_mail import Mail
+import json
 
 def create_app():
     # 获取项目根目录
@@ -62,6 +63,10 @@ def create_app():
         except Exception as e:
             print(f"Error creating tables or initializing data: {str(e)}")
     
+    # 添加 JSON 配置
+    app.config['JSON_AS_ASCII'] = False
+    app.config['JSONIFY_MIMETYPE'] = "application/json;charset=utf-8"
+    
     return app
 
 app = create_app()
@@ -81,6 +86,41 @@ def index():
     except Exception as e:
         print(f"Error serving index page: {str(e)}")
         return str(e), 500
+
+# 修改 after_request 处理器
+@app.after_request
+def after_request(response):
+    # 只对 JSON 响应进行处理
+    if response.mimetype == 'application/json':
+        try:
+            # 获取原始数据
+            data = response.get_json()
+            # 重新设置响应，移除 encoding 参数
+            response.set_data(json.dumps(data, ensure_ascii=False).encode('utf-8'))
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        except Exception as e:
+            print(f"Error in after_request: {str(e)}")
+            pass
+    
+    # 添加 CORS 头
+    response.headers['Access-Control-Allow-Origin'] = '*'
+    response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization'
+    response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+    
+    return response
+
+# 添加错误处理器
+@app.errorhandler(Exception)
+def handle_error(error):
+    response = make_response(
+        json.dumps({
+            'message': str(error),
+            'error': True
+        }, ensure_ascii=False).encode('utf-8'),
+        500 if not hasattr(error, 'code') else error.code
+    )
+    response.headers['Content-Type'] = 'application/json; charset=utf-8'
+    return response
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

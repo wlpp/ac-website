@@ -60,23 +60,21 @@
                     }
                 },
                 onChange() {
-                    content = editor.getHtml();
-                    selectionTextLength = editor.getSelectionText().length // 选中文字长度
-                    textLength = editor.getText().replace(/\n|\r/mg, '').length // 内容长度
-                    // 内容
-                    console.log(content, 'content')
-                    if (textLength > 0) {
+                    const content = editor.getHtml();
+                    // 只在内容不为空时保存
+                    if (content.trim()) {
                         localStorage.setItem('editorContent', content);
-                    } else {
-                        if (localStorage.getItem('editorContent')) {
-                            console.log(localStorage.getItem('editorContent'), 'localStorage.getItem')
-                            E.SlateTransforms.setNodes(editor, { type: 'paragraph' }, { mode: 'highest' })
-                            editor.dangerouslyInsertHtml(localStorage.getItem('editorContent'))
-                        }
                     }
                 }
             }
         })
+
+        // 初始化编辑器后，设置已保存的内容
+        const savedContent = localStorage.getItem('editorContent')
+        if (savedContent) {
+            // 使用 setHtml 方法替代 dangerouslyInsertHtml
+            editor.setHtml(savedContent)
+        }
 
         window.toolbar = E.createToolbar({
             editor,

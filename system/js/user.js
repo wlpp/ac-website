@@ -119,10 +119,13 @@ class UserManager {
             showModal('编辑用户');
             const form = document.querySelector('#userForm');
             if (form) {
+                form.dataset.userId = user.id;  // 保存用户ID到表单
                 form.username.value = user.username;
                 form.email.value = user.email;
                 form.role.value = user.role;
                 form.status.value = user.status;
+                // 清空密码字段
+                form.password.value = '';
             }
         }
     }
@@ -212,6 +215,38 @@ class UserManager {
                 return '未知角色';
         }
     }
+
+    // 更新用户
+    static async updateUser(userId, userData) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('未找到登录凭证');
+            }
+
+            const response = await fetch(`${window.baseURL}/api/users/${userId}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || '更新用户失败');
+            }
+
+            console.log('更新用户成功:', data);
+            await this.refreshPage(); // 刷新用户列表
+            return data;
+        } catch (error) {
+            console.error('更新用户错误:', error);
+            throw error;
+        }
+    }
 }
 
 // 修改筛选函数
@@ -255,7 +290,7 @@ async function initPage() {
             btn.addEventListener('click', hideModal);
         });
 
-        // 绑定表单提交
+        // 绑定表提交
         const userForm = document.querySelector('#userForm');
         if (userForm) {
             userForm.addEventListener('submit', function(e) {
@@ -327,6 +362,7 @@ function renderPagination(totalPages, totalItems) {
 function showModal(title) {
     const modal = document.querySelector('.modal');
     const modalTitle = document.querySelector('.modal-header h3');
+    const passwordInput = document.querySelector('#password');
     
     if (modal && modalTitle) {
         modal.classList.add('show');
@@ -336,6 +372,14 @@ function showModal(title) {
         const form = document.querySelector('#userForm');
         if (form) {
             form.reset();
+            // 根据标题判断是添加还是编辑
+            if (title === '编辑用户') {
+                passwordInput.removeAttribute('required');
+                passwordInput.placeholder = '不修改请留空';
+            } else {
+                passwordInput.setAttribute('required', 'required');
+                passwordInput.placeholder = '';
+            }
         }
     }
 }

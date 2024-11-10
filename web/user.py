@@ -564,5 +564,86 @@ def get_users(current_user):
     
     return jsonify(response_data)
 
+@auth_bp.route('/api/users/<int:user_id>', methods=['PUT'])
+@token_required
+def update_user(current_user, user_id):
+    """更新用户信息"""
+    try:
+        data = request.get_json()
+        user = User.query.get(user_id)
+        
+        if not user:
+            response = make_response(
+                json.dumps({
+                    'message': '用户不存在'
+                }, ensure_ascii=False)
+            )
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            return response, 404
+
+        # 检查用户名是否已存在（排除当前用户）
+        if 'username' in data:
+            existing_user = User.query.filter(
+                User.username == data['username'],
+                User.id != user_id
+            ).first()
+            if existing_user:
+                response = make_response(
+                    json.dumps({
+                        'message': '用户名已存在'
+                    }, ensure_ascii=False)
+                )
+                response.headers['Content-Type'] = 'application/json; charset=utf-8'
+                return response, 400
+
+        # 检查邮箱是否已存在（排除当前用户）
+        if 'email' in data:
+            existing_user = User.query.filter(
+                User.email == data['email'],
+                User.id != user_id
+            ).first()
+            if existing_user:
+                response = make_response(
+                    json.dumps({
+                        'message': '邮箱已存在'
+                    }, ensure_ascii=False)
+                )
+                response.headers['Content-Type'] = 'application/json; charset=utf-8'
+                return response, 400
+            
+        # 更新用户信息
+        if 'username' in data:
+            user.username = data['username']
+        if 'email' in data:
+            user.email = data['email']
+        if 'role' in data:
+            user.role = data['role']
+        if 'status' in data:
+            user.status = data['status']
+        if 'password' in data and data['password']:
+            user.set_password(data['password'])
+            
+        db.session.commit()
+        
+        response = make_response(
+            json.dumps({
+                'message': '更新成功',
+                'data': user.to_dict()
+            }, ensure_ascii=False)
+        )
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response
+        
+    except Exception as e:
+        print(f"Error updating user: {str(e)}")
+        response = make_response(
+            json.dumps({
+                'message': '更新用户失败',
+                'error': str(e)
+            }, ensure_ascii=False)
+        )
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response, 500
+
 if __name__ == '__main__':
     app.run(debug=True)

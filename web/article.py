@@ -315,23 +315,46 @@ def update_article(article_id):
             mimetype='application/json'
         )
     
-    if 'title' in data:
-        article.title = data['title']
-    if 'content' in data:
-        article.content = data['content']
-    if 'image_url' in data:
-        article.image_url = data['image_url']
-    if 'tag' in data:
-        article.tag = data['tag']
-    if 'n_date' in data:
-        article.n_date = datetime.strptime(data['n_date'], '%Y-%m-%d')
-    
-    db.session.commit()
-    
-    return Response(
-        json.dumps(article.to_dict(), ensure_ascii=False),
-        mimetype='application/json'
-    )
+    try:
+        # 更新字段
+        if 'title' in data:
+            article.title = data['title']
+        if 'content' in data:
+            article.content = data['content']
+        if 'image_url' in data:
+            article.image_url = data['image_url']
+        if 'tag' in data:
+            article.tag = data['tag']
+        if 'status' in data:  # 添加 status 字段处理
+            article.status = data['status']
+            # 如果发布文章，设置发布日期
+            if data['status'] == 1:
+                article.n_date = datetime.now().date()
+        if 'n_date' in data:
+            article.n_date = datetime.strptime(data['n_date'], '%Y-%m-%d')
+        
+        db.session.commit()
+        
+        return Response(
+            json.dumps({
+                'success': True,
+                'message': '文章状态更新成功',
+                'data': article.to_dict()
+            }, ensure_ascii=False),
+            mimetype='application/json'
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return Response(
+            json.dumps({
+                'success': False,
+                'error': '更新文章失败',
+                'message': str(e)
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json'
+        )
 
 @article_bp.route('/articles/<int:article_id>', methods=['DELETE'])
 def delete_article(article_id):

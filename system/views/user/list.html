@@ -12,7 +12,7 @@
     <div class="page-header">   
         <h2>用户管理</h2>
         <div class="header-actions">
-            <button class="btn-primary" onclick="showAddUserModal()">
+            <button class="btn-primary" >
                 <i class="fas fa-plus"></i> 添加用户
             </button>
         </div>
@@ -91,9 +91,12 @@
     <!-- 用户添加/编辑弹窗 -->
     <div class="modal" id="userModal">
         <div class="modal-content">
+            <button class="close-btn">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="modal-header">
                 <h3 id="modalTitle">添加用户</h3>
-                <button class="close-btn" onclick="closeUserModal()">×</button>
+                <!-- <button class="close-btn" onclick="closeUserModal()">×</button> -->
             </div>
             <div class="modal-body">
                 <form id="userForm">

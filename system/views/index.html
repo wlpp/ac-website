@@ -6,10 +6,9 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/system/css/common.css">
     <link rel="stylesheet" href="/system/css/main.css">
-    <link rel="stylesheet" href="/system/css/user.css">
 </head>
 <body>
-    <!-- 添加粒子背景 -->
+    <!-- 粒子背景容器必须在最外层 -->
     <div id="particles-js"></div>
     
     <div class="layout">
@@ -64,7 +63,7 @@
         </div>
     </div>
 
-    <!-- 添加粒子效果JS -->
+    <!-- 确保 particles.js 在其他脚本之前加载 -->
     <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
     <script src="/system/js/common.js"></script>
 </body>

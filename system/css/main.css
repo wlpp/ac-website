@@ -5,26 +5,33 @@ body {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     background: #0a192f;
     color: #fff;
+    min-height: 100vh;
+    position: relative;
     overflow: hidden;
+    perspective: 1000px;
 }
 
 /* 粒子效果容器 */
 #particles-js {
     position: fixed;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    background: linear-gradient(to bottom, #0a192f, #172a45);
-    z-index: 1;
+    background: transparent;
+    z-index: 10;
+    pointer-events: none;
 }
 
-/* 布局 */
+/* 布局容器 */
 .layout {
+    position: relative;
+    z-index: 1;
     display: flex;
     min-height: 100vh;
-    position: relative;
-    z-index: 2;
-    background: rgba(10, 25, 47, 0.7);
-    backdrop-filter: blur(10px);
+    background: rgba(10, 25, 47, 0.9);
+    transform-style: preserve-3d;
+    transform: translateZ(-10px);
 }
 
 /* 侧边栏 */
@@ -36,6 +43,8 @@ body {
     transition: all 0.3s;
     position: relative;
     overflow: hidden;
+    backdrop-filter: blur(5px);
+    transform: translateZ(5px);
 }
 
 /* 添加侧边栏发光效果 */
@@ -174,9 +183,10 @@ body {
 /* 主内容区 */
 .main {
     flex: 1;
-    background: rgba(13, 25, 48, 0.7);
-    backdrop-filter: blur(10px);
+    background: rgba(13, 25, 48, 0.85);
     position: relative;
+    backdrop-filter: blur(5px);
+    transform: translateZ(5px);
 }
 
 /* 头部 */
@@ -189,6 +199,7 @@ body {
     align-items: center;
     padding: 0 20px;
     position: relative;
+    transform: translateZ(8px);
 }
 
 .header::after {
@@ -263,10 +274,11 @@ body {
 
 /* 内容区 */
 .content {
-    padding: 20px;
+    padding: 24px;
     height: calc(100vh - 60px);
     overflow-y: auto;
     position: relative;
+    transform: translateZ(5px);
 }
 
 /* 表格样式 */
@@ -342,7 +354,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba(13, 25, 48, 0.8);
+    background: rgba(13, 25, 48, 0.3);
 }
 
 ::-webkit-scrollbar-thumb {
@@ -688,4 +700,22 @@ body {
     outline: none;
     border-color: #667eea;
     box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+}
+
+/* 滚动条样式 */
+.content::-webkit-scrollbar {
+    width: 8px;
+}
+
+.content::-webkit-scrollbar-track {
+    background: rgba(13, 25, 48, 0.3);
+}
+
+.content::-webkit-scrollbar-thumb {
+    background: rgba(66, 153, 225, 0.3);
+    border-radius: 4px;
+}
+
+.content::-webkit-scrollbar-thumb:hover {
+    background: rgba(66, 153, 225, 0.5);
 }

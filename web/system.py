@@ -79,19 +79,21 @@ def serve_js(filename):
         return str(e), 404
 
 @system_bp.route('/login')
+@system_bp.route('/login.html')
 def system_login():
     """系统登录页面路由"""
     try:
         root_dir = get_root_dir()
-        file_path = os.path.join(root_dir, 'system', 'login.html')
+        file_path = os.path.join(root_dir, 'system', 'views', 'login.html')
         print(f"Login path: {file_path}")  # 调试信息
         
         if os.path.exists(file_path):
             return send_file(file_path)
         else:
+            print(f"Login file not found at: {file_path}")  # 添加更详细的调试信息
             return "Login page not found", 404
     except Exception as e:
-        print(f"Error serving login page: {str(e)}")  # 调试信息
+        print(f"Error serving login page: {str(e)}")
         return str(e), 500
 
 # 添加静态文件路由

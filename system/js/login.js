@@ -69,9 +69,52 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 登录表单提交处理
-    document.getElementById('loginForm').addEventListener('submit', function(e) {
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
         e.preventDefault();
-        // TODO: 处理登录逻辑
+        
+        // 获取表单数据
+        const username = document.querySelector('input[name="username"]').value;
+        const password = document.querySelector('input[name="password"]').value;
+        
+        // 验证表单
+        if (!username || !password) {
+            MessageBox.error('请填写用户名和密码');
+            return;
+        }
+        
+        try {
+            // 发送登录请求
+            const response = await fetch('/api/system/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok) {
+                // 登录成功
+                MessageBox.success('登录成功');
+                // 保存 token 和用户信息
+                localStorage.setItem('token', data.token);
+                localStorage.setItem('user', JSON.stringify(data.data));
+                // 跳转到管理后台
+                setTimeout(() => {
+                    window.location.href = '/system/index.html';
+                }, 1000);
+            } else {
+                // 登录失败
+                MessageBox.error(data.message || '登录失败');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            MessageBox.error('登录请求失败，请稍后重试');
+        }
     });
 });
 

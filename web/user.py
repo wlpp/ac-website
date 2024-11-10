@@ -39,12 +39,17 @@ class User(db.Model):
     username = db.Column(db.String(80), unique=True, nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     pwd = db.Column(db.String(128))  # 存储明文密码
+    role = db.Column(db.Integer, nullable=False, default=1)  # 0: 管理员, 1: 用户
+    status = db.Column(db.Integer, nullable=False, default=0)  # 0: 启用, 1: 禁用
     created_at = db.Column(db.DateTime, default=datetime.now)
 
     def to_dict(self):
         return {
             'id': self.id,
             'username': self.username,
+            'email': self.email,
+            'role': self.role,
+            'status': self.status,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
 
@@ -416,6 +421,96 @@ def init_auth_db():
     except Exception as e:
         print(f"User database initialization error: {str(e)}")
         db.session.rollback()
+
+# 添加系统登录路由
+@auth_bp.route('/api/system/login', methods=['POST'])
+def system_login():
+    """处理系统管理员登录请求
+    
+    接受 POST 请求，包含:
+        username: 用户名或邮箱
+        password: 密码
+    
+    返回:
+        成功: JWT token 和用户信息
+        失败: 错误信息和状态码
+    """
+    data = request.get_json()
+    
+    if not data or not data.get('username') or not data.get('password'):
+        response = make_response(
+            json.dumps({
+                'message': '请提供用户名和密码'
+            }, ensure_ascii=False)
+        )
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response, 400
+    
+    # 支持用户名或邮箱登录
+    username_or_email = data.get('username')
+    user = User.query.filter(
+        (User.username == username_or_email) | 
+        (User.email == username_or_email)
+    ).first()
+    
+    # 验证用户存在、密码正确且是管理员
+    if user and user.check_password(data.get('password')):
+        # 检查用户角色
+        if user.role != 0:
+            response = make_response(
+                json.dumps({
+                    'message': '权限不足，仅管理员可登录'
+                }, ensure_ascii=False)
+            )
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            return response, 403
+            
+        # 检查用户状态
+        if user.status != 0:
+            response = make_response(
+                json.dumps({
+                    'message': '账号已被禁用'
+                }, ensure_ascii=False)
+            )
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            return response, 403
+        
+        # 生成 JWT token
+        token_data = {
+            'user_id': user.id,
+            'username': user.username,
+            'role': user.role,
+            'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+        }
+        
+        token = jwt.encode(token_data, JWT_SECRET_KEY, algorithm='HS256')
+        if isinstance(token, bytes):
+            token = token.decode('utf-8')
+        
+        # 返回成功响应
+        response = make_response(
+            json.dumps({
+                'message': '登录成功',
+                'token': token,
+                'data': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'role': user.role
+                }
+            }, ensure_ascii=False)
+        )
+        response.headers['Content-Type'] = 'application/json; charset=utf-8'
+        return response, 200
+    
+    # 返回错误信息
+    response = make_response(
+        json.dumps({
+            'message': '用户名或密码错误'
+        }, ensure_ascii=False)
+    )
+    response.headers['Content-Type'] = 'application/json; charset=utf-8'
+    return response, 401
 
 if __name__ == '__main__':
     app.run(debug=True)

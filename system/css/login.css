@@ -192,4 +192,75 @@ html, body {
 
 .form-item button:hover::before {
     left: 100%;
+}
+
+/* 添加到现有样式的末尾 */
+.message-box {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 10px 20px;
+    border-radius: 4px;
+    font-size: 14px;
+    display: none;
+    z-index: 1000;
+    animation: slideDown 0.3s ease-out;
+}
+
+.message-box.success {
+    background-color: #48bb78;
+    color: white;
+}
+
+.message-box.error {
+    background-color: #f56565;
+    color: white;
+}
+
+.message-box.info {
+    background-color: #4299e1;
+    color: white;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+/* 添加按钮loading状态 */
+button[type="submit"].loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.8;
+}
+
+button[type="submit"].loading .button-text {
+    visibility: hidden;
+}
+
+button[type="submit"].loading::after {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(255,255,255,0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s infinite linear;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 } 

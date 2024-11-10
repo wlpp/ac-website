@@ -1,0 +1,127 @@
+/* 消息提示样式 */
+.message-box {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    display: none;
+    z-index: 1000;
+    animation: slideDown 0.3s ease-out;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1),
+                0 0 0 1px rgba(255, 255, 255, 0.1);
+    min-width: 280px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* 成功消息样式 */
+.message-box.success {
+    background: rgba(72, 187, 120, 0.95);
+    color: white;
+    border: 1px solid rgba(72, 187, 120, 0.2);
+}
+
+/* 错误消息样式 */
+.message-box.error {
+    background: rgba(245, 101, 101, 0.95);
+    color: white;
+    border: 1px solid rgba(245, 101, 101, 0.2);
+}
+
+/* 信息消息样式 */
+.message-box.info {
+    background: rgba(66, 153, 225, 0.95);
+    color: white;
+    border: 1px solid rgba(66, 153, 225, 0.2);
+}
+
+/* 消息图标 */
+.message-box::before {
+    font-family: "Font Awesome 6 Free";
+    font-weight: 900;
+    font-size: 18px;
+    min-width: 24px;
+    text-align: center;
+    margin-right: 4px;
+}
+
+.message-box.success::before {
+    content: "\f00c";  /* FontAwesome check icon */
+}
+
+.message-box.error::before {
+    content: "\f071";  /* FontAwesome exclamation-triangle icon */
+}
+
+.message-box.info::before {
+    content: "\f05a";  /* FontAwesome info-circle icon */
+}
+
+/* 消息内容 */
+.message-content {
+    flex: 1;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    padding: 2px 0;
+    line-height: 1.5;
+}
+
+/* 发光效果 */
+.message-box::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    border-radius: 8px;
+    animation: pulse 2s infinite;
+    pointer-events: none;
+}
+
+.message-box.success::after {
+    box-shadow: 0 0 0 rgba(72, 187, 120, 0.4);
+}
+
+.message-box.error::after {
+    box-shadow: 0 0 0 rgba(245, 101, 101, 0.4);
+}
+
+.message-box.info::after {
+    box-shadow: 0 0 0 rgba(66, 153, 225, 0.4);
+}
+
+/* 动画效果 */
+@keyframes slideDown {
+    from {
+        transform: translate(-50%, -100%);
+        opacity: 0;
+    }
+    to {
+        transform: translate(-50%, 0);
+        opacity: 1;
+    }
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(255, 255, 255, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(255, 255, 255, 0);
+    }
+}
+
+/* 关闭按钮 */
+.message-box .close-btn {
+    margin-left: 8px;
+    padding: 6px;
+} 

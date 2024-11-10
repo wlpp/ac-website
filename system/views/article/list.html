@@ -1,105 +1,127 @@
-<!-- 筛选器和搜索框 -->
-<div class="filter-box">
-    <div class="filter-left">
-        <div class="filter-group">
-            <label>分类：</label>
-            <select onchange="ArticleManager.filterArticles('category', this.value)">
-                <option value="">全部</option>
-                <option value="news">新闻</option>
-                <option value="tech">技术</option>
-                <option value="other">其他</option>
-            </select>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>文章管理</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/system/css/common.css">
+    <link rel="stylesheet" href="/system/css/main.css">
+    <link rel="stylesheet" href="/system/css/article.css">
+
+</head>
+<body>
+    <div class="filter-box">
+        <div class="filter-left">
+            <div class="filter-group">
+                <label>分类：</label>
+                <select onchange="ArticleManager.filterArticles('category', this.value)">
+                    <option value="">全部</option>
+                    <option value="news">新闻</option>
+                    <option value="tech">技术</option>
+                    <option value="other">其他</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>状态：</label>
+                <select onchange="ArticleManager.filterArticles('status', this.value)">
+                    <option value="">全部</option>
+                    <option value="1">已发布</option>
+                    <option value="0">草稿</option>
+                </select>
+            </div>
+            <div class="search-box">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" placeholder="搜索文章标题..." onkeyup="ArticleManager.searchArticles(this.value)">
+            </div>
         </div>
-        <div class="filter-group">
-            <label>状态：</label>
-            <select onchange="ArticleManager.filterArticles('status', this.value)">
-                <option value="">全部</option>
-                <option value="published">已发布</option>
-                <option value="draft">草稿</option>
-            </select>
-        </div>
-        <div class="search-box">
-            <i class="fas fa-search"></i>
-            <input type="text" class="search-input" placeholder="搜索文章标题..." onkeyup="ArticleManager.searchArticles(this.value)">
+        <div class="filter-right">
+            <button class="btn-primary">
+                <i class="fas fa-plus"></i>
+                创建文章
+            </button>
         </div>
     </div>
-    <div class="filter-right">
-        <button class="btn-primary">
-            <i class="fas fa-plus"></i>
-            创建文章
-        </button>
+
+    <div class="bulk-actions" id="bulkActions" style="display: none;">
+        <span>已选择 <b id="selectedCount">0</b> 项</span>
+        <select onchange="ArticleManager.handleBulkAction(this.value)">
+            <option value="">批量操作</option>
+            <option value="publish">发布</option>
+            <option value="draft">设为草稿</option>
+            <option value="delete">删除</option>
+        </select>
     </div>
-</div>
 
-<div class="table-container">
-    <div class="table-wrapper">
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th><input type="checkbox"></th>
-                    <th>ID</th>
-                    <th>标题</th>
-                    <th>分类</th>
-                    <th>作者</th>
-                    <th>状态</th>
-                    <th>发布时间</th>
-                    <th>操作</th>
-                </tr>
-            </thead>
-            <tbody id="articleList">
-                <!-- 文章数据将通过JS动态插入 -->
-            </tbody>
-        </table>
-    </div>
-</div>
-
-<div class="pagination" id="pagination">
-    <!-- 分页按钮将通过JS动态插入 -->
-</div>
-
-<!-- 文章添加/编辑弹窗 -->
-<div class="modal">
-    <div class="modal-content">
-        <button class="close-btn">
-            <i class="fas fa-times"></i>
-        </button>
-        <div class="modal-header">
-            <h3>添加文章</h3>
+    <div class="table-container">
+        <div class="table-wrapper">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th><input type="checkbox" onclick="ArticleManager.toggleSelectAll(this)"></th>
+                        <th>ID</th>
+                        <th>标题</th>
+                        <th>分类</th>
+                        <th>作者</th>
+                        <th>状态</th>
+                        <th>发布时间</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="articleList">
+                    <!-- 文章数据将通过JS动态插入 -->
+                </tbody>
+            </table>
         </div>
-        <div class="modal-body">
+    </div>
+
+    <div class="pagination" id="pagination">
+        <!-- 分页按钮将通过JS动态插入 -->
+    </div>
+
+    <!-- 空状态显示 -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+        <i class="fas fa-file-alt"></i>
+        <p>暂无文章数据</p>
+    </div>
+
+    <!-- 文章添加/编辑模态框 -->
+    <div class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>创建文章</h3>
+                <button type="button" class="close-btn">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
             <form id="articleForm">
                 <div class="form-group">
-                    <label>标题</label>
-                    <input type="text" name="title" required>
+                    <label for="title">标题</label>
+                    <input type="text" id="title" name="title" required>
                 </div>
                 <div class="form-group">
-                    <label>分类</label>
-                    <select name="category">
+                    <label for="category">分类</label>
+                    <select id="category" name="category">
                         <option value="news">新闻</option>
                         <option value="tech">技术</option>
                         <option value="other">其他</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>作者</label>
-                    <input type="text" name="author" required>
+                    <label for="content">内容</label>
+                    <textarea id="content" name="content" rows="6" required></textarea>
                 </div>
                 <div class="form-group">
-                    <label>内容</label>
-                    <textarea name="content" rows="4" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label>状态</label>
-                    <select name="status">
-                        <option value="published">已发布</option>
-                        <option value="draft">草稿</option>
+                    <label for="status">状态</label>
+                    <select id="status" name="status">
+                        <option value="1">发布</option>
+                        <option value="0">草稿</option>
                     </select>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">保存</button>
                 </div>
             </form>
         </div>
-        <div class="modal-footer">
-            <button class="btn-secondary">取消</button>
-            <button class="btn-primary">保存</button>
-        </div>
     </div>
-</div> 
+</body>
+</html> 

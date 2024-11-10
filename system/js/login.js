@@ -103,10 +103,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 保存 token 和用户信息
                 localStorage.setItem('token', data.token);
                 localStorage.setItem('user', JSON.stringify(data.data));
-                // 跳转到管理后台
+                
+                // 检查是否有重定向URL
+                const redirectUrl = localStorage.getItem('redirectUrl');
+                
+                // 延迟跳转
                 setTimeout(() => {
-                    window.location.href = '/system/index.html';
+                    if (redirectUrl && redirectUrl !== '/system/views/login.html') {
+                        // 清除存储的重定向URL
+                        localStorage.removeItem('redirectUrl');
+                        window.location.href = redirectUrl;
+                    } else {
+                        // 默认跳转到系统首页
+                        window.location.href = '/system/views/index.html';
+                    }
                 }, 1000);
+                
             } else {
                 // 登录失败
                 MessageBox.error(data.message || '登录失败');

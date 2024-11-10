@@ -1,38 +1,108 @@
 <div class="page-header">   
     <h2>文章管理</h2>
     <div class="header-actions">
-        <button class="btn-primary" onclick="loadPage('article/edit')">
+        <button class="btn-primary">
             <i class="fas fa-plus"></i> 创建文章
         </button>
     </div>
 </div>
 
-<div class="search-box">
-    <input type="text" class="search-input" placeholder="搜索文章标题..." onkeyup="searchArticles(this.value)">
+<!-- 筛选器和搜索框 -->
+<div class="filter-box">
+    <div class="filter-left">
+        <div class="filter-group">
+            <label>分类：</label>
+            <select onchange="ArticleManager.filterArticles('category', this.value)">
+                <option value="">全部</option>
+                <option value="news">新闻</option>
+                <option value="tech">技术</option>
+                <option value="other">其他</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label>状态：</label>
+            <select onchange="ArticleManager.filterArticles('status', this.value)">
+                <option value="">全部</option>
+                <option value="published">已发布</option>
+                <option value="draft">草稿</option>
+            </select>
+        </div>
+    </div>
+    <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input type="text" class="search-input" placeholder="搜索文章标题..." onkeyup="ArticleManager.searchArticles(this.value)">
+    </div>
 </div>
 
 <div class="table-container">
-    <table class="data-table">
-        <thead>
-            <tr>
-                <th width="40">
-                    <input type="checkbox" onclick="toggleAllArticles(this)">
-                </th>
-                <th>ID</th>
-                <th>标题</th>
-                <th>分类</th>
-                <th>作者</th>
-                <th>状态</th>
-                <th>发布时间</th>
-                <th>操作</th>
-            </tr>
-        </thead>
-        <tbody id="articleList">
-            <!-- 文章数据将通过JS动态插入 -->
-        </tbody>
-    </table>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th><input type="checkbox"></th>
+                    <th>ID</th>
+                    <th>标题</th>
+                    <th>分类</th>
+                    <th>作者</th>
+                    <th>状态</th>
+                    <th>发布时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="articleList">
+                <!-- 文章数据将通过JS动态插入 -->
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <div class="pagination" id="pagination">
     <!-- 分页按钮将通过JS动态插入 -->
+</div>
+
+<!-- 文章添加/编辑弹窗 -->
+<div class="modal">
+    <div class="modal-content">
+        <button class="close-btn">
+            <i class="fas fa-times"></i>
+        </button>
+        <div class="modal-header">
+            <h3>添加文章</h3>
+        </div>
+        <div class="modal-body">
+            <form id="articleForm">
+                <div class="form-group">
+                    <label>标题</label>
+                    <input type="text" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label>分类</label>
+                    <select name="category">
+                        <option value="news">新闻</option>
+                        <option value="tech">技术</option>
+                        <option value="other">其他</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>作者</label>
+                    <input type="text" name="author" required>
+                </div>
+                <div class="form-group">
+                    <label>内容</label>
+                    <textarea name="content" rows="4" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label>状态</label>
+                    <select name="status">
+                        <option value="published">已发布</option>
+                        <option value="draft">草稿</option>
+                    </select>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-secondary">取消</button>
+            <button class="btn-primary">保存</button>
+        </div>
+    </div>
 </div> 

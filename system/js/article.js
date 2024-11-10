@@ -47,14 +47,13 @@ class ArticleManager {
                 <td>${article.article_id || '-'}</td>
                 <td class="article-title">${article.title}</td>
                 <td>${this.getTagName(article.tag)}</td>
-                <td>${article.created_at}</td>
                 <td>
                     <button class="status-btn ${article.status === 1 ? 'published' : 'draft'}"
                             onclick="ArticleManager.toggleStatus(${article.id}, ${article.status})">
                         ${article.status === 1 ? '已发布' : '待发布'}
                     </button>
                 </td>
-                <td>${article.n_date || '-'}</td>
+                <td>${article.created_at || '-'}</td>
                 <td>
                     <button class="btn-icon" onclick="ArticleManager.editArticle(${article.id})">
                         <i class="fas fa-edit"></i>
@@ -183,25 +182,53 @@ class ArticleManager {
     }
 
      // 处理表单提交
-     static handleSubmit(event) {
+     static async handleSubmit(event) {
         event.preventDefault();
         const form = event.target;
-        const title = form.title.value;
-        const description = form.description.value;
-        const tag = form.tag.value;
+        
+        try {
+            // 获取表单数据
+            const formData = {
+                title: form.title.value,
+                content: form.description.value || '', // 使用描述作为初始内容
+                tag: parseInt(form.tags.value),
+                status: 0 // 默认为草稿状态
+            };
 
+            // 发送创建文章请求
+            const response = await fetch('/api/articles', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                MessageBox.success(result.message || '文章创建成功');
+                await this.fetchArticles(); // 刷新文章列表
+                this.hideModal(); // 关闭模态框
+            } else {
+                throw new Error(result.message || '创建文章失败');
+            }
+        } catch (error) {
+            console.error('创建文章错误:', error);
+            MessageBox.error(error.message);
+        }
+    }
+
+    // 编辑文章
+    static editArticle(id) {
         // 构建 URL 参数
         const params = new URLSearchParams({
-            title: title,
-            description: description,
-            tag: tag
+            article_id: id
         });
-
+        
         // 在新标签页打开编辑页面
         window.open(`/article/edit?${params.toString()}`, '_blank');
-        
-        // 关闭模态框
-        this.hideModal();
     }
 }
 
@@ -210,16 +237,6 @@ async function initPage() {
     try {
         // 获取并渲染文章列表
         await ArticleManager.fetchArticles();
-
-        // 绑定模态框事件
-        // const modal = document.querySelector('.modal');
-        // if (modal) {
-        //     modal.addEventListener('click', (e) => {
-        //         if (e.target === modal) {
-        //             ArticleManager.hideModal();
-        //         }
-        //     });
-        // }
 
         // 绑定表单提交事件
         const form = document.getElementById('articleForm');

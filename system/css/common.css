@@ -147,7 +147,7 @@
 
 /* 表格容器样式 */
 .table-container {
-    height: 65vh;  /* 使用固定的视窗高度比例 */
+    height: 75vh;  /* 使用固定的视窗高度比例 */
     min-height: 300px;  /* 设置最小高度 */
     /* background: white; */
     border-radius: 8px;

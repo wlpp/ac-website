@@ -342,9 +342,9 @@ function renderPagination(totalPages, totalItems) {
 
 // 切换页码
 function changePage(page) {
-    const totalPages = Math.ceil(mockUsers.length / pageConfig.pageSize);
+    const totalPages = Math.ceil(UserManager.users.length / pageConfig.pageSize);  // 使用 UserManager.users
     if (page < 1 || page > totalPages) return;
     
     pageConfig.currentPage = page;
-    applyFilters();  // 重新应用筛选并渲染列表
+    UserManager.refreshPage();
 } 

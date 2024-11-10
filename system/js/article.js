@@ -55,7 +55,7 @@ class ArticleManager {
                 </td>
                 <td>${article.created_at || '-'}</td>
                 <td>
-                    <button class="btn-icon" onclick="ArticleManager.editArticle(${article.id})">
+                    <button class="btn-icon" onclick="ArticleManager.editArticle(${article.article_id})">
                         <i class="fas fa-edit"></i>
                     </button>
                     <button class="btn-icon delete" onclick="ArticleManager.deleteArticle(${article.id})">
@@ -221,10 +221,10 @@ class ArticleManager {
     }
 
     // 编辑文章
-    static editArticle(id) {
+    static editArticle(article_id) {
         // 构建 URL 参数
         const params = new URLSearchParams({
-            article_id: id
+            article_id
         });
         
         // 在新标签页打开编辑页面

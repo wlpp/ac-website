@@ -238,7 +238,7 @@ def create_article():
             
             return Response(
                 json.dumps({
-                    'message': '文章已更新',
+                    'message': '章已更新',
                     'data': existing_article.to_dict()
                 }, ensure_ascii=False),
                 status=200,
@@ -540,4 +540,85 @@ def get_comments(article_id):
             }, ensure_ascii=False),
             status=500,
             mimetype='application/json; charset=utf-8'
+        )
+
+@article_bp.route('/api/article-content', methods=['POST'])
+def create_article_content():
+    """创建或更新文章详情内容"""
+    try:
+        data = request.get_json()
+        
+        # 验证必要字段
+        if not data or 'article_id' not in data or 'content' not in data:
+            return Response(
+                json.dumps({
+                    'success': False,
+                    'message': '缺少必要字段'
+                }, ensure_ascii=False),
+                status=400,
+                mimetype='application/json'
+            )
+            
+        # 根据 article_id 查询原文章标题
+        article = Article.query.filter_by(article_id=data['article_id']).first()
+        if not article:
+            return Response(
+                json.dumps({
+                    'success': False,
+                    'message': '原文章不存在'
+                }, ensure_ascii=False),
+                status=404,
+                mimetype='application/json'
+            )
+            
+        # 查询是否存在文章详情
+        existing_content = ArticleContent.query.filter_by(article_id=data['article_id']).first()
+        
+        if existing_content:
+            # 如果存在，更新内容
+            existing_content.content = data['content']
+            existing_content.title = article.title  # 同步更新标题
+            db.session.commit()
+            
+            return Response(
+                json.dumps({
+                    'success': True,
+                    'message': '文章详情更新成功',
+                    'data': existing_content.to_dict()
+                }, ensure_ascii=False),
+                status=200,
+                mimetype='application/json'
+            )
+        else:
+            # 如果不存在，创建新的文章详情
+            article_content = ArticleContent(
+                article_id=data['article_id'],
+                title=article.title,
+                content=data['content']
+            )
+            
+            db.session.add(article_content)
+            db.session.commit()
+            
+            return Response(
+                json.dumps({
+                    'success': True,
+                    'message': '文章详情创建成功',
+                    'data': article_content.to_dict()
+                }, ensure_ascii=False),
+                status=201,
+                mimetype='application/json'
+            )
+        
+    except Exception as e:
+        db.session.rollback()
+        print("Error creating/updating article content:", str(e))
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '操作文章详情失败',
+                'error': str(e)
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json'
         )

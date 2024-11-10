@@ -160,42 +160,38 @@
             try {
                 const content = editor.getHtml();
                 const urlParams = new URLSearchParams(window.location.search);
-                const title = urlParams.get('title');
-                const tag = parseInt(urlParams.get('tag'));
+                const article_id = urlParams.get('article_id');
 
                 // 验证必填字段
-                if (!title || !content) {
-                    MessageBox.error('标题和内容不能为空！');
+                if (!article_id || !content) {
+                    MessageBox.error('文章ID和内容不能为空！');
                     return;
                 }
 
                 // 准备请求数据
                 const articleData = {
-                    title,
-                    content,
-                    tag,
-                    status: 1 // 1 表示发布
+                    article_id,
+                    content
                 };
 
-                // 发送创建文章请求
-                const response = await fetch('/api/articles', {
+                // 发送创建文章详情请求
+                const response = await fetch('/api/article-content', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // 如果需要 token 验证，添加 Authorization header
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
                     body: JSON.stringify(articleData)
                 });
 
-                if (!response.ok) {
-                    throw new Error('创建文章失败');
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || '创建文章详情失败');
                 }
 
-                const result = await response.json();
-                
                 // 创建成功
-                MessageBox.success('文章发布成功！');
+                MessageBox.success('文章详情保存成功！');
                 
                 // 清除本地存储的草稿
                 localStorage.removeItem('editorContent');
@@ -204,8 +200,8 @@
                 window.location.href = '/system/views/article/list.html';
 
             } catch (error) {
-                console.error('发布文章错误:', error);
-                MessageBox.error('发布失败：' + error.message);
+                console.error('保存文章详情错误:', error);
+                MessageBox.error('保存失败：' + error.message);
             }
         }
 

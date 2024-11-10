@@ -28,6 +28,8 @@ class Article(db.Model):
         image_url: 配图URL
         created_at: 创建时间
         n_date: 发布日期
+        tag: 文章标签 (0:软件, 1:游戏, 2:小说)
+        status: 文章状态 (0:草稿, 1:已发布)
     """
     __tablename__ = 'articles'
     
@@ -38,6 +40,8 @@ class Article(db.Model):
     image_url = db.Column(db.String(255))
     created_at = db.Column(db.DateTime, default=datetime.now)
     n_date = db.Column(db.Date, nullable=True)
+    tag = db.Column(db.Integer, nullable=False, default=0)
+    status = db.Column(db.Integer, nullable=False, default=0)
 
     def to_dict(self):
         return {
@@ -47,7 +51,9 @@ class Article(db.Model):
             'content': self.content,
             'image_url': self.image_url,
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S') if isinstance(self.created_at, datetime) else self.created_at,
-            'n_date': self.n_date.strftime('%Y-%m-%d') if isinstance(self.n_date, datetime) else self.n_date
+            'n_date': self.n_date.strftime('%Y-%m-%d') if isinstance(self.n_date, datetime) else self.n_date,
+            'tag': self.tag,
+            'status': self.status
         }
 
 # 创建文章内容模型
@@ -72,7 +78,7 @@ class ArticleContent(db.Model):
             'content': self.content
         }
 
-# 修改评论模型
+# 改评论模型
 class Comment(db.Model):
     __tablename__ = 'comments'
     
@@ -217,21 +223,63 @@ def create_article():
             mimetype='application/json'
         )
     
-    article = Article(
-        title=data['title'],
-        content=data['content'],
-        image_url=data.get('image_url'),
-        n_date=datetime.strptime(data['n_date'], '%Y-%m-%d') if 'n_date' in data else None
-    )
-    
-    db.session.add(article)
-    db.session.commit()
-    
-    return Response(
-        json.dumps(article.to_dict(), ensure_ascii=False),
-        status=201,
-        mimetype='application/json'
-    )
+    try:
+        # 查询是否存在相同标题的文章
+        existing_article = Article.query.filter_by(title=data['title']).first()
+        
+        if existing_article:
+            # 如果存在，更新现有文章
+            existing_article.content = data['content']
+            existing_article.image_url = data.get('image_url')
+            existing_article.tag = data.get('tag', 0)
+            existing_article.status = data.get('status', 0)
+            db.session.commit()
+            
+            return Response(
+                json.dumps({
+                    'message': '文章已更新',
+                    'data': existing_article.to_dict()
+                }, ensure_ascii=False),
+                status=200,
+                mimetype='application/json'
+            )
+        else:
+            # 如果不存在，创建新文章
+            article = Article(
+                title=data['title'],
+                content=data['content'],
+                image_url=data.get('image_url'),
+                tag=data.get('tag', 0),
+                status=data.get('status', 0)
+            )
+            
+            # 先保存以获取 id
+            db.session.add(article)
+            db.session.commit()
+            
+            # 更新 article_id
+            article.article_id = f'a{article.id}'
+            db.session.commit()
+            
+            return Response(
+                json.dumps({
+                    'message': '文章已创建',
+                    'data': article.to_dict()
+                }, ensure_ascii=False),
+                status=201,
+                mimetype='application/json'
+            )
+            
+    except Exception as e:
+        db.session.rollback()
+        return Response(
+            json.dumps({
+                'error': '创建文章失败',
+                'message': str(e)
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json'
+        )
 
 @article_bp.route('/articles/<int:article_id>', methods=['GET'])
 def get_article(article_id):
@@ -273,6 +321,8 @@ def update_article(article_id):
         article.content = data['content']
     if 'image_url' in data:
         article.image_url = data['image_url']
+    if 'tag' in data:
+        article.tag = data['tag']
     if 'n_date' in data:
         article.n_date = datetime.strptime(data['n_date'], '%Y-%m-%d')
     

@@ -92,6 +92,16 @@ def login():
     ).first()
     
     if user and user.check_password(data.get('password')):
+        # 检查用户状态
+        if user.status != 0:
+            response = make_response(
+                json.dumps({
+                    'message': '账号已被禁用'
+                }, ensure_ascii=False)
+            )
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            return response, 403
+
         # 生成 JWT token
         token_data = {
             'user_id': user.id,

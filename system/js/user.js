@@ -7,6 +7,86 @@ const mockUsers = [
         role: 'admin',
         status: 1,
         createTime: '2024-03-20 10:00:00'
+    },
+    {
+        id: 2,
+        username: 'john_doe',
+        email: 'john@example.com',
+        role: 'user',
+        status: 1,
+        createTime: '2024-03-20 10:30:00'
+    },
+    {
+        id: 3,
+        username: 'jane_smith',
+        email: 'jane@example.com',
+        role: 'user',
+        status: 0,
+        createTime: '2024-03-20 11:00:00'
+    },
+    {
+        id: 4,
+        username: 'manager',
+        email: 'manager@example.com',
+        role: 'admin',
+        status: 1,
+        createTime: '2024-03-20 11:30:00'
+    },
+    {
+        id: 5,
+        username: 'sarah_wilson',
+        email: 'sarah@example.com',
+        role: 'user',
+        status: 1,
+        createTime: '2024-03-20 12:00:00'
+    },
+    {
+        id: 6,
+        username: 'mike_brown',
+        email: 'mike@example.com',
+        role: 'user',
+        status: 1,
+        createTime: '2024-03-20 12:30:00'
+    },
+    {
+        id: 7,
+        username: 'lisa_taylor',
+        email: 'lisa@example.com',
+        role: 'user',
+        status: 0,
+        createTime: '2024-03-20 13:00:00'
+    },
+    {
+        id: 8,
+        username: 'tech_support',
+        email: 'support@example.com',
+        role: 'admin',
+        status: 1,
+        createTime: '2024-03-20 13:30:00'
+    },
+    {
+        id: 9,
+        username: 'david_miller',
+        email: 'david@example.com',
+        role: 'user',
+        status: 1,
+        createTime: '2024-03-20 14:00:00'
+    },
+    {
+        id: 10,
+        username: 'emma_davis',
+        email: 'emma@example.com',
+        role: 'user',
+        status: 0,
+        createTime: '2024-03-20 14:30:00'
+    },
+    {
+        id: 11,
+        username: 'super_admin',
+        email: 'super@example.com',
+        role: 'admin',
+        status: 1,
+        createTime: '2024-03-20 15:00:00'
     }
 ];
 
@@ -18,13 +98,19 @@ let filters = {
 
 let searchKeyword = '';
 
+// 添加分页配置
+const pageConfig = {
+    pageSize: 10,  // 每页显示数量
+    currentPage: 1  // 当前页码
+};
+
 // 显示模态框
 function showModal(title) {
     const modal = document.querySelector('.modal');
     const modalTitle = document.querySelector('.modal-header h3');
     
     if (modal && modalTitle) {
-        modal.style.display = 'block';
+        modal.classList.add('show');
         modalTitle.textContent = title;
         
         // 重置表单
@@ -39,7 +125,7 @@ function showModal(title) {
 function hideModal() {
     const modal = document.querySelector('.modal');
     if (modal) {
-        modal.style.display = 'none';
+        modal.classList.remove('show');
     }
 }
 
@@ -73,12 +159,21 @@ function searchUsers(keyword) {
 // 渲染用户列表
 function renderUserList(users) {
     const tbody = document.getElementById('userList');
-    if (!tbody) {
-        console.error('找不到userList元素');
+    const pagination = document.getElementById('pagination');
+    
+    if (!tbody || !pagination) {
+        console.error('找不到必要的DOM元素');
         return;
     }
     
-    tbody.innerHTML = users.map(user => `
+    // 计算分页数据
+    const totalPages = Math.ceil(users.length / pageConfig.pageSize);
+    const start = (pageConfig.currentPage - 1) * pageConfig.pageSize;
+    const end = start + pageConfig.pageSize;
+    const currentPageData = users.slice(start, end);
+    
+    // 渲染用户数据
+    tbody.innerHTML = currentPageData.map(user => `
         <tr>
             <td><input type="checkbox" value="${user.id}"></td>
             <td>${user.id}</td>
@@ -101,6 +196,9 @@ function renderUserList(users) {
             </td>
         </tr>
     `).join('');
+    
+    // 渲染分页控件
+    renderPagination(totalPages, users.length);
 }
 
 // 编辑用户
@@ -197,5 +295,55 @@ function initPage() {
     }
 }
 
-// 导出初始化函数
+// 导出���始化函数
 window.initPage = initPage; 
+
+// 渲染分页控件
+function renderPagination(totalPages, totalItems) {
+    const pagination = document.getElementById('pagination');
+    if (!pagination) return;
+    
+    let paginationHTML = `
+        <div class="pagination-info">共 ${totalItems} 条记录，每页 ${pageConfig.pageSize} 条</div>
+        <div class="pagination-buttons">
+    `;
+    
+    // 上一页按钮
+    paginationHTML += `
+        <button class="btn-page" 
+                onclick="changePage(${pageConfig.currentPage - 1})"
+                ${pageConfig.currentPage === 1 ? 'disabled' : ''}>
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    `;
+    
+    // 页码按钮
+    for (let i = 1; i <= totalPages; i++) {
+        paginationHTML += `
+            <button class="btn-page ${i === pageConfig.currentPage ? 'active' : ''}"
+                    onclick="changePage(${i})">
+                ${i}
+            </button>
+        `;
+    }
+    
+    // 下一页按钮
+    paginationHTML += `
+        <button class="btn-page" 
+                onclick="changePage(${pageConfig.currentPage + 1})"
+                ${pageConfig.currentPage === totalPages ? 'disabled' : ''}>
+            <i class="fas fa-chevron-right"></i>
+        </button>
+    </div>`;
+    
+    pagination.innerHTML = paginationHTML;
+}
+
+// 切换页码
+function changePage(page) {
+    const totalPages = Math.ceil(mockUsers.length / pageConfig.pageSize);
+    if (page < 1 || page > totalPages) return;
+    
+    pageConfig.currentPage = page;
+    applyFilters();  // 重新应用筛选并渲染列表
+} 

@@ -851,7 +851,7 @@ body {
 }
 
 /* 表单样式 */
-#userForm {
+.typeForm {
     padding: 24px;
 }
 

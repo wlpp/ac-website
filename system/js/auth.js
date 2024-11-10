@@ -3,6 +3,15 @@ function checkAuth() {
     const token = localStorage.getItem('token');
     const currentPath = window.location.pathname;
     
+    // 只允许访问登录页和主页
+    const allowedPaths = ['/system/login.html', '/system/index.html'];
+    
+    // 如果不是允许的路径，重定向到首页
+    if (!allowedPaths.includes(currentPath)) {
+        window.location.href = '/system/index.html';
+        return;
+    }
+    
     // 如果是登录页面，已有token则直接跳转到首页
     if (currentPath.includes('login.html') && token) {
         window.location.href = '/system/views/index.html';

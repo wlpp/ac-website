@@ -140,9 +140,12 @@ const menuConfig = {
 // 加载页面内容
 async function loadPage(path) {
     try {
-        // 添加 views 到路径中
-        const response = await fetch(`/system/views/${path}.html`);
-        console.log('Loading page:', `/system/views/${path}.html`); // 调试日志
+        // 添加 AJAX 标识头
+        const response = await fetch(`/system/views/${path}.html`, {
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        });
         
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -167,7 +170,8 @@ async function loadPage(path) {
         }
     } catch (error) {
         console.error('Error loading page:', error);
-        console.error('Path attempted:', `/system/views/${path}.html`); // 额外的调试信息
+        // 如果加载失败，可以重定向到首页
+        window.location.href = '/system/index.html';
     }
 }
 

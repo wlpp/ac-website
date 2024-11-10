@@ -1,4 +1,5 @@
-from flask import Blueprint, send_file
+from flask import Blueprint, send_file, request, redirect, url_for
+from functools import wraps
 import os
 
 # 创建系统管理蓝图
@@ -28,22 +29,35 @@ def system_index():
         print(f"Error: {str(e)}")  # 调试信息
         return str(e), 500
 
-# 添加新的路由处理子页面
+def require_main_entry(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        # 检查 Referer 头，确保请求来自合法页面
+        referer = request.headers.get('Referer', '')
+        allowed_paths = ['/system/index.html', '/system/views/index.html']
+        
+        # 如果是直接访问子页面（非 AJAX 请求）且不是来自允许的页面
+        if (not request.headers.get('X-Requested-With') == 'XMLHttpRequest' and 
+            not any(path in referer for path in allowed_paths)):
+            return redirect('/system/index.html')
+            
+        return f(*args, **kwargs)
+    return decorated_function
+
+# 修改子页面路由
 @system_bp.route('/views/<path:subpath>.html')
+@require_main_entry
 def serve_views(subpath):
     """处理视图文件的路由"""
     try:
         root_dir = get_root_dir()
         file_path = os.path.join(root_dir, 'system', 'views', f"{subpath}.html")
-        print(f"View path: {file_path}")  # 调试日志
         
         if os.path.exists(file_path):
             return send_file(file_path)
         else:
-            print(f"View file not found: {file_path}")  # 调试日志
             return f"View not found: {subpath}.html", 404
     except Exception as e:
-        print(f"Error serving view: {str(e)}")  # 调试日志
         return str(e), 404
 
 @system_bp.route('/css/<path:filename>')

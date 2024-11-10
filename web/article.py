@@ -4,6 +4,7 @@ from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import desc
 from flask_cors import CORS
 import os
+from random import randint
 
 db = SQLAlchemy()
 
@@ -257,8 +258,9 @@ def create_article():
             db.session.add(article)
             db.session.commit()
             
-            # 更新 article_id
-            article.article_id = f'a{article.id}'
+            # 生成带随机数的 article_id
+            random_num = randint(100, 1000)
+            article.article_id = f'{article.id}{random_num}'
             db.session.commit()
             
             return Response(

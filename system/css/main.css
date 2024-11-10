@@ -961,3 +961,26 @@ body {
     background-position: right 12px center;
     padding-right: 30px;
 }
+
+.form-group textarea {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    resize: vertical;
+    min-height: 80px;
+    font-size: 14px;
+    line-height: 1.5;
+    transition: border-color 0.3s ease;
+    box-sizing: border-box;
+}
+
+.form-group textarea:focus {
+    border-color: #40a9ff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+}
+
+.form-group textarea::placeholder {
+    color: #999;
+}

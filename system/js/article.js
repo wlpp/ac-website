@@ -19,7 +19,7 @@ class ArticleManager {
             if (!response.ok) {
                 throw new Error('获取文章列表失败');
             }
-            
+
             const result = await response.json();
             if (result.success) {
                 this.articles = result.data;
@@ -97,7 +97,7 @@ class ArticleManager {
                 下一页
             </button>
         `;
-        
+
         pagination.innerHTML = paginationHtml;
     }
 
@@ -115,7 +115,7 @@ class ArticleManager {
                 const response = await fetch(`/articles/${id}`, {
                     method: 'DELETE'
                 });
-                
+
                 if (response.ok) {
                     MessageBox.success('删除成功');
                     await this.fetchArticles(); // 重新获取列表
@@ -156,6 +156,53 @@ class ArticleManager {
             MessageBox.error(error.message);
         }
     }
+
+    // 显示模态框
+    static showModal() {
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.classList.add('show');
+            // 重置表单
+            const form = document.getElementById('articleForm');
+            if (form) {
+                form.reset();
+            }
+        }
+    }
+
+    // 关闭模态框
+    static hideModal() {
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.classList.add('closing');
+            // 等待动画完成后再隐藏
+            setTimeout(() => {
+                modal.classList.remove('show', 'closing');
+            }, 300); // 与 CSS 动画时长匹配
+        }
+    }
+
+     // 处理表单提交
+     static handleSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const title = form.title.value;
+        const description = form.description.value;
+        const tag = form.tag.value;
+
+        // 构建 URL 参数
+        const params = new URLSearchParams({
+            title: title,
+            description: description,
+            tag: tag
+        });
+
+        // 在新标签页打开编辑页面
+        window.open(`/article/edit?${params.toString()}`, '_blank');
+        
+        // 关闭模态框
+        this.hideModal();
+    }
 }
 
 // 页面初始化
@@ -163,16 +210,16 @@ async function initPage() {
     try {
         // 获取并渲染文章列表
         await ArticleManager.fetchArticles();
-        
+
         // 绑定模态框事件
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    ArticleManager.closeModal();
-                }
-            });
-        }
+        // const modal = document.querySelector('.modal');
+        // if (modal) {
+        //     modal.addEventListener('click', (e) => {
+        //         if (e.target === modal) {
+        //             ArticleManager.hideModal();
+        //         }
+        //     });
+        // }
 
         // 绑定表单提交事件
         const form = document.getElementById('articleForm');

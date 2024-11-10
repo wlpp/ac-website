@@ -300,12 +300,12 @@ async function initPage() {
         }
 
         // 绑定模态框外部点击关闭
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) hideModal();
-            });
-        }
+        // const modal = document.querySelector('.modal');
+        // if (modal) {
+        //     modal.addEventListener('click', (e) => {
+        //         if (e.target === modal) hideModal();
+        //     });
+        // }
     } catch (error) {
         console.error('初始化页面失败:', error);
     }

@@ -1,0 +1,60 @@
+<div class="page-header">   
+    <h2>菜单管理</h2>
+    <div class="header-actions">
+        <button class="btn-primary" onclick="showAddMenuModal()">
+            <i class="fas fa-plus"></i> 添加菜单
+        </button>
+    </div>
+</div>
+
+<div class="table-container">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>名称</th>
+                <th>链接</th>
+                <th>图标</th>
+                <th>排序</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody id="menuList">
+            <!-- 菜单数据将通过JS动态插入 -->
+        </tbody>
+    </table>
+</div>
+
+<!-- 菜单添加/编辑弹窗 -->
+<div class="modal" id="menuModal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle">添加菜单</h3>
+            <button class="close-btn" onclick="closeMenuModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <form id="menuForm">
+                <div class="form-group">
+                    <label>名称</label>
+                    <input type="text" name="name" required>
+                </div>
+                <div class="form-group">
+                    <label>链接</label>
+                    <input type="text" name="url" required>
+                </div>
+                <div class="form-group">
+                    <label>图标</label>
+                    <input type="text" name="icon" placeholder="例如: fas fa-home">
+                </div>
+                <div class="form-group">
+                    <label>父级菜单</label>
+                    <select name="parentId">
+                        <option value="0">无</option>
+                        <!-- 父级菜单选项将通过JS动态生成 -->
+                    </select>
+                </div>
+            </form>
+        </div>
+    </div>
+</div> 

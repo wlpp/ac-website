@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>用户管理</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/system/css/common.css">
+    <link rel="stylesheet" href="/system/css/main.css">
+    <link rel="stylesheet" href="/system/css/user.css">
+</head>
+<body>
+    <div class="page-header">   
+        <h2>用户管理</h2>
+        <div class="header-actions">
+            <button class="btn-primary" onclick="showAddUserModal()">
+                <i class="fas fa-plus"></i> 添加用户
+            </button>
+        </div>
+    </div>
+
+    <div class="search-box">
+        <input type="text" class="search-input" placeholder="搜索用户名或邮箱..." onkeyup="searchUsers(this.value)">
+    </div>
+
+    <div class="bulk-actions" id="bulkActions" style="display: none;">
+        <span>已选择 <b id="selectedCount">0</b> 项</span>
+        <select onchange="handleBulkAction(this.value)">
+            <option value="">批量操作</option>
+            <option value="enable">启用</option>
+            <option value="disable">禁用</option>
+            <option value="delete">删除</option>
+        </select>
+    </div>
+
+    <div class="table-container">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th width="40">
+                        <input type="checkbox" onclick="toggleAllUsers(this)">
+                    </th>
+                    <th>ID</th>
+                    <th>用户名</th>
+                    <th>邮箱</th>
+                    <th>角色</th>
+                    <th>状态</th>
+                    <th>创建时间</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="userList">
+                <!-- 用户数据将通过JS动态插入 -->
+            </tbody>
+        </table>
+    </div>
+
+    <div class="pagination" id="pagination">
+        <!-- 分页按钮将通过JS动态插入 -->
+    </div>
+
+    <!-- 空状态显示 -->
+    <div class="empty-state" id="emptyState" style="display: none;">
+        <i class="fas fa-users"></i>
+        <p>暂无用户数据</p>
+    </div>
+
+    <!-- 用户添加/编辑弹窗 -->
+    <div class="modal" id="userModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">添加用户</h3>
+                <button class="close-btn" onclick="closeUserModal()">×</button>
+            </div>
+            <div class="modal-body">
+                <form id="userForm">
+                    <div class="form-group">
+                        <label>用户名</label>
+                        <input type="text" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label>邮箱</label>
+                        <input type="email" name="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>密码</label>
+                        <input type="password" name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>角色</label>
+                        <select name="role">
+                            <option value="admin">管理员</option>
+                            <option value="editor">编辑</option>
+                            <option value="user">普通用户</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>状态</label>
+                        <select name="status">
+                            <option value="1">启用</option>
+                            <option value="0">禁用</option>
+                        </select>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-secondary" onclick="closeUserModal()">取消</button>
+                <button class="btn-primary" onclick="saveUser()">保存</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

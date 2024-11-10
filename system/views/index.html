@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>后台管理系统</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/system/css/common.css">
+    <link rel="stylesheet" href="/system/css/main.css">
+    <link rel="stylesheet" href="/system/css/user.css">
+</head>
+<body>
+    <!-- 添加粒子背景 -->
+    <div id="particles-js"></div>
+    
+    <div class="layout">
+        <div class="sidebar">
+            <div class="logo">
+                <div class="logo-circle">
+                    <i class="fas fa-cube"></i>
+                </div>
+                <span>后台管理系统</span>
+            </div>
+            <ul class="menu">
+                <li>        
+                    <a href="#" data-page="user/list" class="active">
+                        <i class="fas fa-users"></i>
+                        <span>用户管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-page="article/list">
+                        <i class="fas fa-newspaper"></i>
+                        <span>文章管理</span>
+                    </a>
+                </li>
+                <li>
+                    <a href="#" data-page="menu/list">
+                        <i class="fas fa-bars"></i>
+                        <span>菜单管理</span>
+                    </a>
+                </li>
+            </ul>
+        </div>
+        <div class="main">
+            <div class="header">
+                <div class="breadcrumb">
+                    <i class="fas fa-home"></i>
+                    <span>首页</span>
+                </div>
+                <div class="user-info">
+                    <div class="user-avatar">
+                        <i class="fas fa-user-circle"></i>
+                    </div>
+                    <span id="username">管理员</span>
+                    <a href="#" id="logout">
+                        <i class="fas fa-sign-out-alt"></i>
+                        退出
+                    </a>
+                </div>
+            </div>
+            <div class="content" id="mainContent">
+                <!-- 页面内容将通过JS动态加载 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 添加粒子效果JS -->
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script src="/system/js/common.js"></script>
+</body>
+</html> 

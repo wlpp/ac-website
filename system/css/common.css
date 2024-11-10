@@ -443,4 +443,13 @@
 .breadcrumb span:last-child {
     color: #2d3748;  /* 更深的颜色 */
     font-weight: 600;  /* 更粗 */
+}
+
+/* 增加选择器优先级 */
+.modal .modal-header h3,
+.modal-content .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #333;
+    font-weight: 500;
 } 

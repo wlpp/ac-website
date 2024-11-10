@@ -6,7 +6,6 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="/system/css/common.css">
     <link rel="stylesheet" href="/system/css/main.css">
-    <link rel="stylesheet" href="/system/css/article.css">
 
 </head>
 <body>
@@ -35,7 +34,7 @@
             </div>
         </div>
         <div class="filter-right">
-            <button class="btn-primary" onclick="window.open('/system/views/article/edit.html', '_blank')">
+            <button class="btn-primary" onclick="ArticleManager.showModal()">
                 <i class="fas fa-plus"></i>
                 创建文章
             </button>
@@ -82,6 +81,37 @@
     <div class="empty-state" id="emptyState" style="display: none;">
         <i class="fas fa-file-alt"></i>
         <p>暂无文章数据</p>
+    </div>
+
+    <!-- 创建文章模态框 -->
+    <div class="modal" >
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>创建文章</h3>
+                <button type="button" class="close-btn" onclick="ArticleManager.closeModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <form id="articleForm" class="typeForm" onsubmit="ArticleManager.handleSubmit(event)">
+                <div class="form-group">
+                    <label for="title">文章标题</label>
+                    <input type="text" id="title" name="title" required>
+                </div>
+                <div class="form-group">
+                    <label for="tags">文章标签</label>
+                    <select id="tags" name="tags" required>
+                        <option value="">请选择标签</option>
+                        <option value="0">软件</option>
+                        <option value="1">游戏</option>
+                        <option value="2">小说</option>
+                    </select>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="ArticleManager.closeModal()">取消</button>
+                    <button type="submit" class="btn-primary">创建</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/system/js/article.js"></script>

@@ -366,7 +366,6 @@ function showModal(title) {
     
     if (modal && modalTitle) {
         modal.classList.add('show');
-        modalTitle.textContent = title;
         
         // 重置表单
         const form = document.querySelector('#userForm');

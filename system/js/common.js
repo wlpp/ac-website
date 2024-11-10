@@ -118,7 +118,9 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // 默认加载用户列表页面
-    loadPage('user/list');
+    // loadPage('user/list');
+    loadPage('article/list');
+    
 });
 
 // 菜单配置

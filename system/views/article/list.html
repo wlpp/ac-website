@@ -7,8 +7,7 @@
     <link rel="stylesheet" href="/system/css/common.css">
     <link rel="stylesheet" href="/system/css/main.css">
     <link rel="stylesheet" href="/system/css/article.css">
-    <!-- <script src="/system/js/common.js"></script> -->
-    <script src="/system/js/article.js"></script>
+
 </head>
 <body>
     <div class="filter-box">
@@ -36,7 +35,7 @@
             </div>
         </div>
         <div class="filter-right">
-            <button class="btn-primary">
+            <button class="btn-primary" onclick="window.open('/system/views/article/edit.html', '_blank')">
                 <i class="fas fa-plus"></i>
                 创建文章
             </button>
@@ -85,44 +84,6 @@
         <p>暂无文章数据</p>
     </div>
 
-    <!-- 文章添加/编辑模态框 -->
-    <div class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>创建文章</h3>
-                <button type="button" class="close-btn">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <form id="articleForm" class="typeForm">
-                <div class="form-group">
-                    <label for="title">标题</label>
-                    <input type="text" id="title" name="title" required>
-                </div>
-                <div class="form-group">
-                    <label for="category">分类</label>
-                    <select id="category" name="category">
-                        <option value="news">新闻</option>
-                        <option value="tech">技术</option>
-                        <option value="other">其他</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label for="content">内容</label>
-                    <textarea id="content" name="content" rows="6" required></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="status">状态</label>
-                    <select id="status" name="status">
-                        <option value="1">发布</option>
-                        <option value="0">草稿</option>
-                    </select>
-                </div>
-                <div class="form-actions">
-                    <button type="submit" class="btn-primary">保存</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <script src="/system/js/article.js"></script>
 </body>
 </html> 

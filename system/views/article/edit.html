@@ -1,39 +1,90 @@
-<div class="page-header">   
-    <h2>
-        <a href="#" onclick="loadPage('article/list')" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-        </a>
-        <span id="pageTitle">创建文章</span>
-    </h2>
-    <div class="header-actions">
-        <button class="btn-secondary" onclick="saveDraft()">
-            <i class="fas fa-save"></i> 保存草稿
-        </button>
-        <button class="btn-primary" onclick="publishArticle()">
-            <i class="fas fa-paper-plane"></i> 发布
-        </button>
-    </div>
-</div>
+<!DOCTYPE html>
+<html lang="en">
 
-<div class="article-edit-container">
-    <div class="form-group">
-        <input type="text" id="articleTitle" class="title-input" placeholder="请输入文章标题">
-    </div>
-    
-    <div class="article-meta">
-        <div class="form-group">
-            <label>分类</label>
-            <select id="articleCategory">
-                <option value="">选择分类</option>
-            </select>
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>wangEditor simple mode</title>
+    <link href="https://cdn.bootcdn.net/ajax/libs/normalize/8.0.1/normalize.min.css" rel="stylesheet">
+    <!-- <link href="https://cdn.jsdelivr.net/npm/@wangeditor/editor@latest/dist/css/style.css" rel="stylesheet"> -->
+    <link href="https://unpkg.com/@wangeditor/editor@latest/dist/css/style.css" rel="stylesheet">
+    <style>
+
+
+    </style>
+
+</head>
+
+<body>
+
+    <demo-nav title="wangEditor simple mode"></demo-nav>
+    <div class="page-container">
+        <div class="page-left">
+            <demo-menu></demo-menu>
         </div>
-        <div class="form-group">
-            <label>标签</label>
-            <input type="text" id="articleTags" placeholder="输入标签，用逗号分隔">
+        <div class="page-right">
+            <!-- 编辑器 DOM -->
+            <div style="border: 1px solid #ccc;">
+                <div id="editor-toolbar" style="border-bottom: 1px solid #ccc;"></div>
+                <div id="editor-text-area" style="height: 500px"></div>
+            </div>
+
+
         </div>
     </div>
 
-    <div class="form-group">
-        <textarea id="articleContent" rows="20" placeholder="请输入文章内容..."></textarea>
-    </div>
-</div> 
+    <!-- <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@latest/dist/index.min.js"></script> -->
+    <script src="https://unpkg.com/@wangeditor/editor@latest/dist/index.js"></script>
+    <script>
+        const E = window.wangEditor
+
+        // 切换语言
+        const LANG = location.href.indexOf('lang=en') > 0 ? 'en' : 'zh-CN'
+        E.i18nChangeLanguage(LANG)
+
+        // 默认内容
+        var html = ``
+        var content, selectionTextLength, textLength
+        var textarea = document.getElementById('editor-content-textarea')
+        window.editor = E.createEditor({
+            selector: '#editor-text-area',
+            html,
+            mode: 'simple',
+            config: {
+                placeholder: 'Type here...',
+                MENU_CONF: {
+                    uploadImage: {
+                        fieldName: 'your-fileName',
+                        base64LimitSize: 10 * 1024 * 1024 // 10M 以下插入 base64
+                    }
+                },
+                onChange() {
+                    content = editor.getHtml();
+                    selectionTextLength = editor.getSelectionText().length // 选中文字长度
+                    textLength = editor.getText().replace(/\n|\r/mg, '').length // 内容长度
+                    // 内容
+                    console.log(content, 'content')
+                    if (textLength > 0) {
+                        localStorage.setItem('editorContent', content);
+                    } else {
+                        if (localStorage.getItem('editorContent')) {
+                            console.log(localStorage.getItem('editorContent'), 'localStorage.getItem')
+                            E.SlateTransforms.setNodes(editor, { type: 'paragraph' }, { mode: 'highest' })
+                            editor.dangerouslyInsertHtml(localStorage.getItem('editorContent'))
+                        }
+                    }
+                }
+            }
+        })
+
+        window.toolbar = E.createToolbar({
+            editor,
+            mode: 'simple',
+            selector: '#editor-toolbar',
+            config: {}
+        })
+    </script>
+</body>
+
+</html>

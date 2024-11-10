@@ -34,7 +34,7 @@ class UserManager {
 
             // 使用 window.baseURL
             const url = `${window.baseURL}/api/users?${params}`;
-            console.log('请求URL:', url);
+            console.log('URL:', url);
 
             const response = await fetch(url, {
                 headers: {
@@ -138,32 +138,67 @@ class UserManager {
         }
     }
 
-    // 处理表单提交
-    static handleSubmit(e) {
-        e.preventDefault();
-        const form = e.target;
-        const userData = {
-            username: form.username.value,
-            email: form.email.value,
-            role: form.role.value,
-            status: parseInt(form.status.value),
-            createTime: new Date().toLocaleString()
-        };
-
-        // 如果是新用户，添加ID
-        if (!form.dataset.userId) {
-            userData.id = this.users.length + 1;
-            this.users.push(userData);
-        } else {
-            // 更新现有用户
-            const index = this.users.findIndex(u => u.id === parseInt(form.dataset.userId));
-            if (index > -1) {
-                this.users[index] = { ...this.users[index], ...userData };
+    // 添加用户
+    static async addUser(userData) {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                throw new Error('未找到登录凭证');
             }
-        }
 
-        hideModal();
-        this.renderUserList();
+            const response = await fetch(`${window.baseURL}/api/register`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.message || '添加用户失败');
+            }
+
+            console.log('添加用户成功:', data);
+            MessageBox.success('添加用户成功');
+            await this.refreshPage(); // 刷新用户列表
+            return data;
+        } catch (error) {
+            console.error('添加用户错误:', error);
+            MessageBox.error(error.message);
+            throw error;
+        }
+    }
+
+    // 修改表单提交处理
+    static async handleSubmit(e) {
+        e.preventDefault();
+        try {
+            const form = e.target;
+            const userData = {
+                username: form.username.value,
+                email: form.email.value,
+                password: form.password.value,
+                role: parseInt(form.role.value),
+                status: parseInt(form.status.value)
+            };
+
+            if (!form.dataset.userId) {
+                // 新增用户
+                await UserManager.addUser(userData);
+                hideModal();
+            } else {
+                // 更新用户
+                const userId = parseInt(form.dataset.userId);
+                await UserManager.updateUser(userId, userData);
+                hideModal();
+                MessageBox.success('更新用户成功');
+            }
+        } catch (error) {
+            MessageBox.error(error.message);
+        }
     }
 
     // 格式化角色
@@ -207,7 +242,7 @@ async function initPage() {
 
         console.log('开始初始化页面');
         await UserManager.refreshPage();
-        console.log('页面初始化完成');
+        console.log('页面初始完成');
         
         // 绑定添加用户按钮
         const addUserBtn = document.querySelector('.btn-primary');
@@ -223,7 +258,10 @@ async function initPage() {
         // 绑定表单提交
         const userForm = document.querySelector('#userForm');
         if (userForm) {
-            userForm.addEventListener('submit', UserManager.handleSubmit);
+            userForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                UserManager.handleSubmit.call(UserManager, e);
+            });
         }
 
         // 绑定模态框外部点击关闭
@@ -244,7 +282,7 @@ function changePage(page) {
     UserManager.refreshPage();
 }
 
-// 渲染分��控件
+// 渲染分控件
 function renderPagination(totalPages, totalItems) {
     const pagination = document.getElementById('pagination');
     if (!pagination) return;
@@ -306,7 +344,11 @@ function showModal(title) {
 function hideModal() {
     const modal = document.querySelector('.modal');
     if (modal) {
-        modal.classList.remove('show');
+        modal.classList.add('closing');
+        // 等待动画完成后再隐藏
+        setTimeout(() => {
+            modal.classList.remove('show', 'closing');
+        }, 300); // 与 CSS 动画时长匹配
     }
 }
 

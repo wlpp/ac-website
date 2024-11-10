@@ -1,7 +1,8 @@
 // 页面加载管理
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('Initializing particles...');  // 添加调试日志
+    console.log('Initializing...');  // 添加调试日志
     
+    // 初始化粒子效果
     if (window.particlesJS) {
         particlesJS('particles-js', {
             particles: {
@@ -61,7 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             },
             interactivity: {
-                detect_on: 'window',  // 改为window以提高检测范围
+                detect_on: 'window',  // 改为window提高检测范围
                 events: {
                     onhover: {
                         enable: true,
@@ -98,15 +99,12 @@ document.addEventListener('DOMContentLoaded', function() {
             retina_detect: true,
             fps_limit: 60  // 限制帧率以优化性能
         });
-        console.log('Particles initialized successfully');  // 添加成功日志
+        console.log('Particles initialized successfully');
     } else {
-        console.error('particles.js not loaded!');  // 添加错误日志
+        console.error('particles.js not loaded!');
     }
 
-    // 默认加载用户管理页面
-    loadPage('user/list');
-
-    // 为菜单项添加点击事件
+    // 绑定菜单点击事件
     document.querySelectorAll('.menu a').forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
@@ -118,57 +116,96 @@ document.addEventListener('DOMContentLoaded', function() {
             this.classList.add('active');
         });
     });
+
+    // 默认加载用户列表页面
+    loadPage('user/list');
 });
 
+// 菜单配置
+const menuConfig = {
+    'user/list': {  // 恢复完整路径
+        icon: 'fa-users',
+        text: '用户管理'
+    },
+    'article/list': {
+        icon: 'fa-newspaper',
+        text: '文章管理'
+    },
+    'menu/list': {
+        icon: 'fa-bars',
+        text: '菜单管理'
+    }
+};
+
 // 加载页面内容
-function loadPage(page) {
-    const contentDiv = document.getElementById('mainContent');
-    
-    // 显示加载状态
-    contentDiv.innerHTML = '<div class="loading"></div>';
-    
-    // 使用XMLHttpRequest
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/system/${page}.html`, true);
-    
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            // 更新内容
-            contentDiv.innerHTML = xhr.responseText;
-            
-            // 加载对应的JS文件
-            const scriptPath = `/system/js/${page.split('/')[0]}.js`;
-            loadScript(scriptPath);
-        } else {
-            contentDiv.innerHTML = `<div class="error">页面加载失败: ${xhr.status}</div>`;
-            console.error('加载失败:', xhr.status);
+async function loadPage(path) {
+    try {
+        // 添加 views 到路径中
+        const response = await fetch(`/system/views/${path}.html`);
+        console.log('Loading page:', `/system/views/${path}.html`); // 调试日志
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
-    };
-    
-    xhr.onerror = function(e) {
-        contentDiv.innerHTML = '<div class="error">页面加载失败</div>';
-        console.error('加载错误:', e);
-    };
-    
-    xhr.send();
+        
+        const html = await response.text();
+        document.getElementById('mainContent').innerHTML = html;
+        
+        // 更新面包屑
+        updateBreadcrumb(path);
+        
+        // 更新菜单激活状态
+        updateMenuActive(path);
+        
+        // 加载对应的JS文件
+        const module = path.split('/')[0];
+        await loadModuleScript(module);
+        
+        // 初始化页面
+        if (typeof window.initPage === 'function') {
+            window.initPage();
+        }
+    } catch (error) {
+        console.error('Error loading page:', error);
+        console.error('Path attempted:', `/system/views/${path}.html`); // 额外的调试信息
+    }
 }
 
-// 添加新的函数来加载脚本
-function loadScript(src) {
-    // 移除旧脚本
-    const oldScript = document.querySelector(`script[src="${src}"]`);
-    if (oldScript) {
-        oldScript.remove();
+// 加载模块JS文件
+async function loadModuleScript(module) {
+    // 检查是否已加载
+    const existingScript = document.querySelector(`script[src="/system/js/${module}.js"]`);
+    if (!existingScript) {
+        return new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = `/system/js/${module}.js`;
+            script.onload = resolve;
+            script.onerror = reject;
+            document.body.appendChild(script);
+        });
     }
-    
-    // 添加新脚本
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = function() {
-        // 脚本加载完成后，如果有初始化函数就调用它
-        if (typeof initPage === 'function') {
-            initPage();
+}
+
+// 更新面包屑
+function updateBreadcrumb(path) {
+    const breadcrumb = document.querySelector('.breadcrumb');
+    if (breadcrumb && menuConfig[path]) {
+        breadcrumb.innerHTML = `
+            <i class="fas fa-home"></i>
+            <span>首页</span>
+            <i class="fas fa-chevron-right"></i>
+            <i class="fas ${menuConfig[path].icon}"></i>
+            <span>${menuConfig[path].text}</span>
+        `;
+    }
+}
+
+// 更新菜单激活状态
+function updateMenuActive(path) {
+    document.querySelectorAll('.menu a').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.page === path) {
+            link.classList.add('active');
         }
-    };
-    document.body.appendChild(script);
-} 
+    });
+}

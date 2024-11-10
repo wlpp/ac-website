@@ -45,7 +45,7 @@
 .modal-body {
     padding: 20px;
     flex: 1;  /* 占用剩余空间 */
-    overflow-y: auto;  /* 如果内容过多，只在body部分滚动 */
+    overflow-y: auto;  /* 如果内容过，只在body部分滚动 */
 }
 
 .modal-footer {
@@ -323,4 +323,124 @@
 .data-table td:last-child {
     width: 100px;
     text-align: center;
+}
+
+/* 筛选器和搜索框布局 */
+.filter-box {
+    background: white;
+    padding: 16px 20px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+/* 筛选器左侧 */
+.filter-left {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+    flex: 1;
+}
+
+/* 筛选器组样式 */
+.filter-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 180px;  /* 设置最小宽度 */
+}
+
+/* 搜索框容器 */
+.search-box {
+    position: relative;
+    width: 300px;
+    margin-left: auto;  /* 将搜索框推到右边 */
+}
+
+/* 筛选器右侧 */
+.filter-right {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+}
+
+/* 主要按钮样式优化 */
+.btn-primary {
+    background: #4299e1;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.3s;
+    height: 36px;  /* 统一高度 */
+}
+
+.btn-primary:hover {
+    background: #3182ce;
+    transform: translateY(-1px);
+}
+
+.btn-primary i {
+    font-size: 0.875rem;
+}
+
+/* 响应式布局 */
+@media (max-width: 768px) {
+    .filter-box {
+        flex-direction: column;
+        gap: 16px;
+    }
+    
+    .filter-left {
+        width: 100%;
+        flex-wrap: wrap;
+    }
+    
+    .search-box {
+        width: 100%;
+    }
+}
+
+/* 面包屑导航 */
+.breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+/* 面包屑图标 */
+.breadcrumb i {
+    font-size: 14px;
+    color: #3182ce;  /* 使用主题蓝色 */
+}
+
+/* 分隔符图标 */
+.breadcrumb i.fa-chevron-right {
+    color: #a0aec0;
+    font-size: 12px;
+}
+
+/* 面包屑文字 */
+.breadcrumb span {
+    color: #4a5568;  /* 更深的灰色 */
+    font-weight: 500;  /* 稍微加粗 */
+}
+
+/* 最后一个span是当前页面 */
+.breadcrumb span:last-child {
+    color: #2d3748;  /* 更深的颜色 */
+    font-weight: 600;  /* 更粗 */
 } 

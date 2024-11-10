@@ -30,21 +30,12 @@ function loadPage(page) {
     
     xhr.onload = function() {
         if (xhr.status === 200) {
+            // 更新内容
             contentDiv.innerHTML = xhr.responseText;
             
-            // 使用相对路径加载JS
+            // 加载对应的JS文件
             const scriptPath = `/system/js/${page.split('/')[0]}.js`;
-            
-            // 移除旧脚本
-            const oldScript = document.querySelector(`script[src="${scriptPath}"]`);
-            if (oldScript) {
-                oldScript.remove();
-            }
-            
-            // 添加新脚本
-            const script = document.createElement('script');
-            script.src = scriptPath;
-            document.body.appendChild(script);
+            loadScript(scriptPath);
         } else {
             contentDiv.innerHTML = `<div class="error">页面加载失败: ${xhr.status}</div>`;
             console.error('加载失败:', xhr.status);
@@ -57,4 +48,24 @@ function loadPage(page) {
     };
     
     xhr.send();
+}
+
+// 添加新的函数来加载脚本
+function loadScript(src) {
+    // 移除旧脚本
+    const oldScript = document.querySelector(`script[src="${src}"]`);
+    if (oldScript) {
+        oldScript.remove();
+    }
+    
+    // 添加新脚本
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = function() {
+        // 脚本加载完成后，如果有初始化函数就调用它
+        if (typeof initPage === 'function') {
+            initPage();
+        }
+    };
+    document.body.appendChild(script);
 } 

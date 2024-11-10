@@ -18,8 +18,32 @@
         </div>
     </div>
 
-    <div class="search-box">
-        <input type="text" class="search-input" placeholder="搜索用户名或邮箱..." onkeyup="searchUsers(this.value)">
+    <!-- 筛选器和搜索框 -->
+    <div class="filter-box">
+        <div class="filter-left">
+            <div class="filter-group">
+                <label>角色：</label>
+                <select onchange="filterUsers('role', this.value)">
+                    <option value="">全部</option>
+                    <option value="admin">管理员</option>
+                    <option value="editor">编辑</option>
+                    <option value="user">普通用户</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label>状态：</label>
+                <select onchange="filterUsers('status', this.value)">
+                    <option value="">全部</option>
+                    <option value="1">启用</option>
+                    <option value="0">禁用</option>
+                </select>
+            </div>
+        </div>
+        <!-- 搜索框放在右侧 -->
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" class="search-input" placeholder="搜索用户名或邮箱..." onkeyup="searchUsers(this.value)">
+        </div>
     </div>
 
     <div class="bulk-actions" id="bulkActions" style="display: none;">

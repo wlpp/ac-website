@@ -107,6 +107,37 @@ class Comment(db.Model):
             'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
         }
 
+# 游戏下载信息模型
+class GameDownload(db.Model):
+    """游戏下载信息模型
+    
+    属性:
+        id: 主键
+        article_id: 关联的文章ID
+        url: 下载链接
+        code: 提取码
+        decryption: 解压密码
+        created_at: 创建时间
+    """
+    __tablename__ = 'game_downloads'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    article_id = db.Column(db.String(50), db.ForeignKey('articles.article_id'), nullable=False)
+    url = db.Column(db.String(255), nullable=False)
+    code = db.Column(db.String(50))
+    decryption = db.Column(db.String(50))
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'article_id': self.article_id,
+            'url': self.url,
+            'code': self.code,
+            'decryption': self.decryption,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
 def init_db(app):
     """初始化数据库
     
@@ -320,10 +351,10 @@ def create_article():
             mimetype='application/json'
         )
 
-@article_bp.route('/articles/<int:article_id>', methods=['GET'])
+@article_bp.route('/articles/<string:article_id>', methods=['GET'])
 def get_article(article_id):
     """获取指定文章"""
-    article = Article.query.get(article_id)
+    article = Article.query.filter_by(article_id=article_id).first()
     if article is None:
         return Response(
             json.dumps({'error': '文章不存在'}, ensure_ascii=False),
@@ -335,10 +366,10 @@ def get_article(article_id):
         mimetype='application/json'
     )
 
-@article_bp.route('/articles/<int:article_id>', methods=['PUT'])
+@article_bp.route('/articles/<string:article_id>', methods=['PUT'])
 def update_article(article_id):
     """更新指定文章"""
-    article = Article.query.get(article_id)
+    article = Article.query.filter_by(article_id=article_id).first()
     if article is None:
         return Response(
             json.dumps({'error': '文章不存在'}, ensure_ascii=False),
@@ -395,10 +426,10 @@ def update_article(article_id):
             mimetype='application/json'
         )
 
-@article_bp.route('/articles/<int:article_id>', methods=['DELETE'])
+@article_bp.route('/articles/<string:article_id>', methods=['DELETE'])
 def delete_article(article_id):
     """删除指定文章"""
-    article = Article.query.get(article_id)
+    article = Article.query.filter_by(article_id=article_id).first()
     if article is None:
         return Response(
             json.dumps({'error': '文章不存在'}, ensure_ascii=False),
@@ -411,7 +442,7 @@ def delete_article(article_id):
     
     return '', 204
 
-@article_bp.route('/article/<int:article_id>')
+@article_bp.route('/article/<string:article_id>')
 def article_page(article_id):
     """文章详情页面路由"""
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -747,3 +778,102 @@ def game_page():
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     file_path = os.path.join(current_dir, 'src', 'views', 'game.html')
     return send_file(file_path)
+
+# 添加游戏下载相关的路由
+@article_bp.route('/api/game-download/<string:article_id>', methods=['GET'])
+def get_game_download(article_id):
+    """获取游戏下载信息"""
+    try:
+        # 检查文章是否存在且是游戏类型
+        article = Article.query.filter_by(article_id=article_id).first()
+        if not article:
+            return jsonify({
+                'success': False,
+                'message': '文章不存在'
+            }), 404
+            
+        if article.tag != 1:  # 确保是游戏类型
+            return jsonify({
+                'success': False,
+                'message': '该文章不是游戏类型'
+            }), 400
+            
+        # 获取下载信息
+        download_info = GameDownload.query.filter_by(article_id=article_id).first()
+        if not download_info:
+            return jsonify({
+                'success': False,
+                'message': '暂无下载信息'
+            }), 404
+            
+        return jsonify({
+            'success': True,
+            'data': download_info.to_dict()
+        })
+        
+    except Exception as e:
+        print("Error getting game download:", str(e))
+        return jsonify({
+            'success': False,
+            'message': '获取下载信息失败'
+        }), 500
+
+@article_bp.route('/api/game-download', methods=['POST'])
+def create_game_download():
+    """创建游戏下载信息"""
+    try:
+        data = request.get_json()
+        
+        # 验证必要字段
+        if not data or 'article_id' not in data or 'url' not in data:
+            return jsonify({
+                'success': False,
+                'message': '缺少必要字段'
+            }), 400
+            
+        # 检查文章是否存在且是游戏类型
+        article = Article.query.filter_by(article_id=data['article_id']).first()
+        if not article:
+            return jsonify({
+                'success': False,
+                'message': '文章不存在'
+            }), 404
+            
+        if article.tag != 1:
+            return jsonify({
+                'success': False,
+                'message': '该文章不是游戏类型'
+            }), 400
+            
+        # 检查是否已存在下载信息
+        existing_download = GameDownload.query.filter_by(article_id=data['article_id']).first()
+        if existing_download:
+            return jsonify({
+                'success': False,
+                'message': '下载信息已存在'
+            }), 400
+            
+        # 创建新的下载信息
+        game_download = GameDownload(
+            article_id=data['article_id'],
+            url=data['url'],
+            code=data.get('code', ''),  # 可选字段
+            decryption=data.get('decryption', '')  # 可选字段
+        )
+        
+        db.session.add(game_download)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'message': '下载信息创建成功',
+            'data': game_download.to_dict()
+        }), 201
+        
+    except Exception as e:
+        db.session.rollback()
+        print("Error creating game download:", str(e))
+        return jsonify({
+            'success': False,
+            'message': '创建下载信息失败'
+        }), 500

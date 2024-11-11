@@ -46,6 +46,7 @@ class ArticleManager {
                 <td><input type="checkbox" value="${article.id}"></td>
                 <td>${article.article_id || '-'}</td>
                 <td class="article-title">${article.title}</td>
+                <td>${article.content}</td>
                 <td>${this.getTagName(article.tag)}</td>
                 <td>
                     <button class="status-btn ${article.status === 1 ? 'published' : 'draft'}"
@@ -55,12 +56,17 @@ class ArticleManager {
                 </td>
                 <td>${article.created_at || '-'}</td>
                 <td>
-                    <button class="btn-icon" onclick="ArticleManager.editArticle(${article.article_id})">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn-icon delete" onclick="ArticleManager.deleteArticle(${article.id})">
-                        <i class="fas fa-trash"></i>
-                    </button>
+                    <div class="action-buttons">
+                        <button class="btn-icon" onclick="ArticleManager.editArticle(${article.article_id})" title="编辑基本信息">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-icon" onclick="ArticleManager.editContent(${article.article_id})" title="编辑文章内容">
+                            <i class="fas fa-file-alt"></i>
+                        </button>
+                        <button class="btn-icon delete" onclick="ArticleManager.deleteArticle(${article.id})" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('') : '<tr><td colspan="8" class="empty-message">暂无文章数据</td></tr>';
@@ -160,14 +166,19 @@ class ArticleManager {
     }
 
     // 显示模态框
-    static showModal() {
+    static showModal(title = '添加文章') {
         const modal = document.querySelector('.modal');
-        if (modal) {
+        const modalTitle = document.querySelector('.modal-header h3');
+        
+        if (modal && modalTitle) {
+            modalTitle.textContent = title;
             modal.classList.add('show');
+            
             // 重置表单
             const form = document.getElementById('articleForm');
             if (form) {
                 form.reset();
+                form.dataset.articleId = ''; // 清除之前的文章ID
             }
         }
     }
@@ -193,14 +204,23 @@ class ArticleManager {
             // 获取表单数据
             const formData = {
                 title: form.title.value,
-                content: form.description.value || '', // 使用描述作为初始内容
-                tag: parseInt(form.tags.value),
-                status: 0 // 默认为草稿状态
+                description: form.description.value || '',
+                tag: parseInt(form.tags.value)
             };
 
-            // 发送创建文章请求
-            const response = await fetch('/api/articles', {
-                method: 'POST',
+            const article_id = form.dataset.articleId;
+            let url = '/api/articles';
+            let method = 'POST';
+
+            // 如果有文章ID，则为编辑模式
+            if (article_id) {
+                url = `/api/articles/${article_id}`;
+                method = 'PUT';
+            }
+
+            // 发送请求
+            const response = await fetch(url, {
+                method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -211,23 +231,57 @@ class ArticleManager {
             const result = await response.json();
 
             if (response.ok) {
-                MessageBox.success(result.message || '文章创建成功');
+                MessageBox.success(result.message || (article_id ? '文章更新成功' : '文章创建成功'));
                 await this.fetchArticles(); // 刷新文章列表
                 this.hideModal(); // 关闭模态框
             } else {
-                throw new Error(result.message || '创建文章失败');
+                throw new Error(result.message || '操作失败');
             }
         } catch (error) {
-            console.error('创建文章错误:', error);
+            console.error('提交文章错误:', error);
             MessageBox.error(error.message);
         }
     }
 
     // 编辑文章
-    static editArticle(article_id) {
+    static async editArticle(article_id) {
+        try {
+            // 获取文章详情
+            const response = await fetch(`/api/articles/${article_id}`);
+            if (!response.ok) {
+                throw new Error('获取文章详情失败');
+            }
+
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.message || '获取文章详情失败');
+            }
+
+            const article = result.data;
+            
+            // 显示模态框
+            this.showModal('编辑文章');
+            
+            // 填充表单数据
+            const form = document.getElementById('articleForm');
+            if (form) {
+                form.title.value = article.title || '';
+                form.description.value = article.content || '';
+                form.tags.value = article.tag || 0;
+                form.dataset.articleId = article_id; // 保存文章ID用于提交时识别
+            }
+        } catch (error) {
+            console.error('编辑文章错误:', error);
+            MessageBox.error(error.message);
+        }
+    }
+
+    // 添加编辑文章内容的方法
+    static editContent(article_id) {
         // 构建 URL 参数
         const params = new URLSearchParams({
-            article_id
+            article_id,
+            type: 'content'  // 添加类型参数，表示编辑内容
         });
         
         // 在新标签页打开编辑页面

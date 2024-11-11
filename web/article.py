@@ -632,3 +632,84 @@ def create_article_content():
             status=500,
             mimetype='application/json'
         )
+
+# 修改获取文章详情的路由，支持通过 article_id 查询
+@article_bp.route('/api/articles/<string:article_id>', methods=['GET'])
+def get_article_by_id(article_id):
+    """获取指定文章"""
+    article = Article.query.filter_by(article_id=article_id).first()
+    if article is None:
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '文章不存在'
+            }, ensure_ascii=False),
+            status=404,
+            mimetype='application/json'
+        )
+    
+    return Response(
+        json.dumps({
+            'success': True,
+            'data': article.to_dict()
+        }, ensure_ascii=False),
+        mimetype='application/json'
+    )
+
+# 修改更新文章的路由，支持通过 article_id 更新
+@article_bp.route('/api/articles/<string:article_id>', methods=['PUT'])
+def update_article_by_id(article_id):
+    """更新指定文章"""
+    article = Article.query.filter_by(article_id=article_id).first()
+    if article is None:
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '文章不存在'
+            }, ensure_ascii=False),
+            status=404,
+            mimetype='application/json'
+        )
+    
+    data = request.get_json()
+    if not data:
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '更新数据不能为空'
+            }, ensure_ascii=False),
+            status=400,
+            mimetype='application/json'
+        )
+    
+    try:
+        # 更新字段
+        if 'title' in data:
+            article.title = data['title']
+        if 'description' in data:
+            article.description = data['description']
+        if 'tag' in data:
+            article.tag = data['tag']
+        
+        db.session.commit()
+        
+        return Response(
+            json.dumps({
+                'success': True,
+                'message': '文章更新成功',
+                'data': article.to_dict()
+            }, ensure_ascii=False),
+            mimetype='application/json'
+        )
+        
+    except Exception as e:
+        db.session.rollback()
+        return Response(
+            json.dumps({
+                'success': False,
+                'message': '更新文章失败',
+                'error': str(e)
+            }, ensure_ascii=False),
+            status=500,
+            mimetype='application/json'
+        )

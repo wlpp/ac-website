@@ -29,22 +29,31 @@ body {
     z-index: 1;
     display: flex;
     min-height: 100vh;
+    min-width: 1250px;
     background: rgba(10, 25, 47, 0.9);
     transform-style: preserve-3d;
     transform: translateZ(-10px);
+    overflow-x: auto;
 }
 
 /* 侧边栏 */
 .sidebar {
     width: 250px;
+    min-width: 250px;
     background: rgba(13, 25, 48, 0.95);
     border-right: 1px solid rgba(66, 153, 225, 0.2);
     padding: 20px 0;
-    transition: all 0.3s;
+    transition: all 0.3s ease;
     position: relative;
     overflow: hidden;
     backdrop-filter: blur(5px);
     transform: translateZ(5px);
+}
+
+/* 侧边栏收缩状态 */
+.sidebar.collapsed {
+    width: 64px;
+    min-width: 64px;
 }
 
 /* 添加侧边栏发光效果 */
@@ -183,10 +192,12 @@ body {
 /* 主内容区 */
 .main {
     flex: 1;
+    min-width: 1000px;
     background: rgba(13, 25, 48, 0.85);
     position: relative;
     backdrop-filter: blur(5px);
     transform: translateZ(5px);
+    transition: margin-left 0.3s ease;
 }
 
 /* 头部 */
@@ -277,6 +288,7 @@ body {
     padding: 24px;
     height: calc(100vh - 60px);
     overflow-y: auto;
+    overflow-x: hidden;
     position: relative;
     transform: translateZ(5px);
 }
@@ -640,7 +652,7 @@ body {
     align-items: center;
 }
 
-/* 头部右侧操作区域 */
+/* 头部侧操作区域 */
 .header-actions {
     display: flex;
     gap: 16px;
@@ -983,4 +995,86 @@ body {
 
 .form-group textarea::placeholder {
     color: #999;
+}
+
+/* 切换按钮样式 */
+.sidebar-toggle {
+    position: absolute;
+    bottom: 80px;
+    right: 18px;
+    width: 32px;
+    height: 32px;
+    /* background: linear-gradient(135deg, #4299e1, #667eea); */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 100;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(66, 153, 225, 0.3);
+    backdrop-filter: blur(5px);
+}
+
+.sidebar-toggle::after {
+    content: '';
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 2px solid rgba(66, 153, 225, 0.3);
+    animation: pulse 2s infinite;
+}
+
+.sidebar-toggle:hover {
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(66, 153, 225, 0.4);
+}
+
+.sidebar-toggle i {
+    color: white;
+    font-size: 16px;
+    transition: transform 0.3s ease;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+/* 收缩状态下的图标旋转 */
+.sidebar.collapsed .sidebar-toggle i {
+    transform: rotate(180deg);
+}
+
+/* 收缩状态下的菜单项样式 */
+.sidebar.collapsed .logo span,
+.sidebar.collapsed .menu span {
+    display: none;
+}
+
+.sidebar.collapsed .menu a {
+    justify-content: center;
+    padding: 12px 0;
+}
+
+.sidebar.collapsed .menu i {
+    margin-right: 0;
+}
+
+/* 收缩状态下的 tooltip */
+.sidebar.collapsed .menu a:hover::after {
+    content: attr(data-title);
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: rgba(13, 25, 48, 0.95);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* 主内容区域适应侧边栏宽度变化 */
+.main.expanded {
+    /* margin-left: -186px; */
 }

@@ -231,3 +231,40 @@ function updateMenuActive(path) {
         }
     });
 }
+
+// 侧边栏切换功能
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const main = document.querySelector('.main');
+    
+    if (sidebar && main) {
+        sidebar.classList.toggle('collapsed');
+        main.classList.toggle('expanded');
+        
+        // 保存状态到 localStorage
+        const isCollapsed = sidebar.classList.contains('collapsed');
+        localStorage.setItem('sidebarCollapsed', isCollapsed);
+    }
+}
+
+// 在页面加载时恢复侧边栏状态
+function initSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const main = document.querySelector('.main');
+    const isCollapsed = localStorage.getItem('sidebarCollapsed') === 'true';
+    
+    if (sidebar && main && isCollapsed) {
+        sidebar.classList.add('collapsed');
+        main.classList.add('expanded');
+    }
+}
+
+// 修改现有的 initializeNavigation 函数
+function initializeNavigation() {
+    // ... 现有代码 ...
+    
+    // 初始化侧边栏状态
+    initSidebar();
+    
+    // ... 现有代码 ...
+}

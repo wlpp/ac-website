@@ -115,12 +115,12 @@ class UserManager {
             // 绑定事件
             const addUserBtn = document.querySelector('.btn-primary');
             if (addUserBtn) {
-                addUserBtn.addEventListener('click', () => showModal('添加用户'));
+                addUserBtn.addEventListener('click', () => this.showModal('添加用户'));
             }
 
             const closeBtn = document.querySelector('.close-btn');
             if (closeBtn) {
-                closeBtn.addEventListener('click', hideModal);
+                closeBtn.addEventListener('click', () => this.hideModal());
             }
 
             const form = document.getElementById('userForm');
@@ -137,15 +137,14 @@ class UserManager {
     static editUser(id) {
         const user = this.users.find(u => u.id === id);
         if (user) {
-            showModal('编辑用户');
+            this.showModal('编辑用户');
             const form = document.querySelector('#userForm');
             if (form) {
-                form.dataset.userId = user.id;  // 保存用户ID到表单
+                form.dataset.userId = user.id;
                 form.username.value = user.username;
                 form.email.value = user.email;
                 form.role.value = user.role;
                 form.status.value = user.status;
-                // 清空密码字段
                 form.password.value = '';
             }
         }
@@ -211,13 +210,13 @@ class UserManager {
 
             if (!form.dataset.userId) {
                 // 新增用户
-                await UserManager.addUser(userData);
-                hideModal();
+                await this.addUser(userData);
+                this.hideModal();
             } else {
                 // 更新用户
                 const userId = parseInt(form.dataset.userId);
-                await UserManager.updateUser(userId, userData);
-                hideModal();
+                await this.updateUser(userId, userData);
+                this.hideModal();
                 MessageBox.success('更新用户成功');
             }
         } catch (error) {
@@ -254,6 +253,43 @@ class UserManager {
         } catch (error) {
             console.error('更新用户错误:', error);
             throw error;
+        }
+    }
+
+    // 显示模态框
+    static showModal(title = '添加用户') {
+        const modal = document.querySelector('.modal');
+        const modalTitle = document.querySelector('.modal-header h3');
+        const passwordInput = document.querySelector('#password');
+        
+        if (modal && modalTitle) {
+            modalTitle.textContent = title;
+            modal.classList.add('show');
+            
+            // 重置表单
+            const form = document.querySelector('#userForm');
+            if (form) {
+                form.reset();
+                // 根据标题判断是添加还是编辑
+                if (title === '编辑用户') {
+                    passwordInput.removeAttribute('required');
+                    passwordInput.placeholder = '不修改请留空';
+                } else {
+                    passwordInput.setAttribute('required', 'required');
+                    passwordInput.placeholder = '';
+                }
+            }
+        }
+    }
+
+    // 隐藏模态框
+    static hideModal() {
+        const modal = document.querySelector('.modal');
+        if (modal) {
+            modal.classList.add('closing');
+            setTimeout(() => {
+                modal.classList.remove('show', 'closing');
+            }, 300);
         }
     }
 }
@@ -329,42 +365,6 @@ function renderPagination(totalPages, totalItems) {
     pagination.innerHTML = paginationHTML;
 }
 
-// 显示模态框
-function showModal(title) {
-    const modal = document.querySelector('.modal');
-    const modalTitle = document.querySelector('.modal-header h3');
-    const passwordInput = document.querySelector('#password');
-    
-    if (modal && modalTitle) {
-        modal.classList.add('show');
-        
-        // 重置表单
-        const form = document.querySelector('#userForm');
-        if (form) {
-            form.reset();
-            // 根据标题判断是添加还是编辑
-            if (title === '编辑用户') {
-                passwordInput.removeAttribute('required');
-                passwordInput.placeholder = '不修改请留空';
-            } else {
-                passwordInput.setAttribute('required', 'required');
-                passwordInput.placeholder = '';
-            }
-        }
-    }
-}
-
-// 隐藏模态框
-function hideModal() {
-    const modal = document.querySelector('.modal');
-    if (modal) {
-        modal.classList.add('closing');
-        // 等待动画完成后再隐藏
-        setTimeout(() => {
-            modal.classList.remove('show', 'closing');
-        }, 300); // 与 CSS 动画时长匹配
-    }
-}
-
-// 导出始化函数
-window.initPage = initPage; 
+// 修改导出
+window.initPage = initPage;
+window.UserManager = UserManager;

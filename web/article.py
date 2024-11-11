@@ -713,3 +713,10 @@ def update_article_by_id(article_id):
             status=500,
             mimetype='application/json'
         )
+
+@article_bp.route('/game')
+def game_page():
+    """游戏页面路由"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(current_dir, 'src', 'views', 'game.html')
+    return send_file(file_path)

@@ -31,6 +31,7 @@ class Article(db.Model):
         n_date: 发布日期
         tag: 文章标签 (0:软件, 1:游戏, 2:小说)
         status: 文章状态 (0:草稿, 1:已发布)
+        views: 浏览量
     """
     __tablename__ = 'articles'
     
@@ -43,9 +44,10 @@ class Article(db.Model):
     n_date = db.Column(db.Date, nullable=True)
     tag = db.Column(db.Integer, nullable=False, default=0)
     status = db.Column(db.Integer, nullable=False, default=0)
+    views = db.Column(db.Integer, default=0)
 
-    def to_dict(self):
-        return {
+    def to_dict(self, include_views=False):
+        data = {
             'id': self.id,
             'article_id': self.article_id,
             'title': self.title,
@@ -56,6 +58,9 @@ class Article(db.Model):
             'tag': self.tag,
             'status': self.status
         }
+        if include_views:
+            data['views'] = self.views
+        return data
 
 # 创建文章内容模型
 class ArticleContent(db.Model):
@@ -174,11 +179,15 @@ def get_articles():
         page: 页码（默认1）
         per_page: 每页数量（默认10）
         type: 查询类型（0:返回所有文章，不传或其他值:只返回已发布文章）
+        sort: 排序方式（0:按article_id字符串排序，不传或其他值:按created_at排序）
+        tag: 文章标签（0:软件, 1:游戏, 2:小说，不传则返回所有）
     """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 10
         query_type = request.args.get('type')
+        sort_type = request.args.get('sort')
+        tag = request.args.get('tag')
         
         # 构建基础查询
         query = Article.query
@@ -186,9 +195,18 @@ def get_articles():
         # 默认只返回已发布文章，只有 type=0 时返回所有文章
         if query_type != '0':
             query = query.filter(Article.status == 1)
+            
+        # 根据tag参数筛选文章
+        if tag is not None:
+            query = query.filter(Article.tag == int(tag))
         
-        # 添加排序
-        query = query.order_by(desc(Article.created_at))
+        # 根据sort参数决定排序方式
+        if sort_type == '0':
+            # 直接按article_id字符串排序
+            query = query.order_by(Article.article_id)
+        else:
+            # 默认按创建时间倒序
+            query = query.order_by(desc(Article.created_at))
         
         # 分页
         articles = query.paginate(

@@ -1,0 +1,149 @@
+/* 游戏展示区域基础样式 */
+.game-section {
+    padding: 0;
+    background: none;
+    border-radius: 0;
+    margin: 60px 0;
+}
+
+/* 游戏卡片网格布局 */
+.game-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 一行四个 */
+    gap: 25px;
+    margin: 0 auto;
+}
+
+/* 游戏卡片基础样式 */
+.game-card {
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+}
+
+/* 游戏卡片图片容器 */
+.game-image {
+    width: 100%;
+    aspect-ratio: 16/9;
+    overflow: hidden;
+}
+
+.game-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    opacity: 0;
+}
+
+.game-image img.loaded {
+    opacity: 1;
+}
+
+.game-card:hover .game-image img {
+    transform: scale(1.1);
+}
+
+/* 游戏内容样式 */
+.game-content {
+    padding: 15px;
+}
+
+.game-title {
+    margin: 0 0 10px 0;
+    font-size: 1.2em;
+    color: #333;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-height: 1.3;
+    max-height: 2.6em;
+    font-weight: 500;
+}
+
+.game-desc {
+    color: #666;
+    font-size: 0.9em;
+    line-height: 1.6;
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    max-height: 3.2em;
+    margin-bottom: 10px;
+}
+
+/* 游戏信息（如浏览量、日期等） */
+.game-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #999;
+    font-size: 0.85em;
+}
+
+/* 响应式布局 */
+@media (max-width: 1200px) {
+    .game-grid {
+        grid-template-columns: repeat(3, 1fr); /* 平板上一行三个 */
+    }
+}
+
+@media (max-width: 768px) {
+    .game-grid {
+        grid-template-columns: repeat(2, 1fr); /* 手机上一行两个 */
+        gap: 15px;
+    }
+
+    .game-title {
+        font-size: 1.1em;
+    }
+
+    .game-desc {
+        font-size: 0.85em;
+    }
+}
+
+@media (max-width: 480px) {
+    .game-grid {
+        grid-template-columns: 1fr; /* 小屏手机上一行一个 */
+    }
+}
+
+/* 加载更多按钮样式 */
+.load-more {
+    text-align: center;
+    margin: 40px 0;
+}
+
+.load-more-btn {
+    background-color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 20px;
+    font-size: 14px;
+    color: #666;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+}
+
+.load-more-btn:hover {
+    background-color: #f5f5f5;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+}
+
+.load-more-btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}

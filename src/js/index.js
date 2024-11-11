@@ -165,65 +165,6 @@ async function loadMoreArticles(page = 1) {
 }
 
 /**
- * 图片轮播功能
- * 支持前后切换和淡入淡出效果
- */
-async function initializeImageSlider() {
-    const navBtns = document.querySelectorAll('.nav-btn');
-    const imageContainer = document.querySelector('.image-container img');
-    const emailBtn = document.querySelector('.nav-btn.email i');
-    const defaultImage = '../images/login_bg.jpg';
-    
-    // 页面加载时获取一次随机图片
-    try {
-        emailBtn.className = 'fa-solid fa-spinner fa-spin'; // 显示加载图标
-        const response = await fetch('/api/random-image');
-        const data = await response.json();
-        
-        if (data.success) {
-            imageContainer.src = data.data.image_url;
-            // 图片加载完成后再改回原图标
-            imageContainer.onload = () => {
-                emailBtn.className = 'fa-solid fa-paw';
-            };
-        } else {
-            console.error('初始化图片失败:', data.message);
-            imageContainer.src = defaultImage;
-            emailBtn.className = 'fa-solid fa-paw';
-        }
-    } catch (error) {
-        console.error('初始化图片请求失败:', error);
-        imageContainer.src = defaultImage;
-        emailBtn.className = 'fa-solid fa-paw';
-    }
-    
-    // 为每个导航按钮添加点击事件
-    navBtns.forEach(btn => {
-        btn.addEventListener('click', async () => {
-            try {
-                emailBtn.className = 'fa-solid fa-spinner fa-spin'; // 显示加载图标
-                const response = await fetch('/api/random-image');
-                const data = await response.json();
-                
-                if (data.success) {
-                    imageContainer.src = data.data.image_url;
-                    // 图片加载完成后再改回原图标
-                    imageContainer.onload = () => {
-                        emailBtn.className = 'fa-solid fa-paw';
-                    };
-                } else {
-                    console.error('获取图片失败:', data.message);
-                    emailBtn.className = 'fa-solid fa-paw'; // 失败时也改回原图标
-                }
-            } catch (error) {
-                console.error('请求图片时出错:', error);
-                emailBtn.className = 'fa-solid fa-paw'; // 错误时也改回原图标
-            }
-        });
-    });
-}
-
-/**
  * 更新文章卡片图片
  * 获取随机图片并更新到文章卡片
  */
@@ -279,78 +220,16 @@ async function updateArticleImages() {
     }
 }
 
-/**
- * 打字机效果实现
- * @param {string} text 要显示的文本
- * @param {HTMLElement} element 目标元素
- * @param {number} speed 打字速度（毫秒）
- * @returns {Promise} 完成打字的Promise
- */
-function typeWriter(text, element, speed = 100) {
-    return new Promise(resolve => {
-        let i = 0;
-        element.textContent = ''; // 清空原有内容
-        
-        function type() {
-            if (i < text.length) {
-                element.textContent += text.charAt(i);
-                i++;
-                setTimeout(type, speed);
-            } else {
-                resolve();
-            }
-        }
-        
-        type();
-    });
-}
-
-/**
- * 初始化标题打字效果
- */
-async function initializeTypeWriter() {
-    const title = document.querySelector('.header-info h2');
-    const subtitle = document.querySelector('.header-info p');
-    
-    // 存储原始文本
-    const titleText = '相遇有缘，更是惊喜！';
-    const subtitleText = '资源在下面！往下滑！';
-    
-    // 清空原有内容
-    title.textContent = '';
-    subtitle.textContent = '';
-    
-    // 添加光标效果的类
-    title.classList.add('typing');
-    
-    // 先打印标题
-    await typeWriter(titleText, title, 150);
-    
-    // 移除标题的光标，给副标题添加光标
-    title.classList.remove('typing');
-    subtitle.classList.add('typing');
-    
-    // 打印副标题
-    await typeWriter(subtitleText, subtitle, 100);
-    
-    // 完成后移除光标
-    setTimeout(() => {
-        subtitle.classList.remove('typing');
-    }, 500);
-}
-
 // 主要的 DOMContentLoaded 事件监听器
 document.addEventListener('DOMContentLoaded', function() {
     const articleSection = document.querySelector('.article-section');
     const backToTop = document.querySelector('.back-to-top');
-    // const canvas = document.getElementById('particleCanvas');
     
     // 初始化懒加载
     lazyLoad();
     
-    // 初始化文章加载，但不立即更新图片
+    // 初始化文章加载
     loadMoreArticles().then(() => {
-        // 等待页面完全加载后再更新图片
         window.onload = async () => {
             await updateArticleImages();
         };
@@ -374,11 +253,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // 图片切换功能初始化
-    initializeImageSlider();
-    
-    
-
     // 加载更多按钮功能
     const loadMoreBtn = document.querySelector('.load-more-btn');
     let currentPage = 1;
@@ -389,8 +263,5 @@ document.addEventListener('DOMContentLoaded', function() {
             await loadMoreArticles(currentPage);
         });
     }
-    
-    // 初始化打字机效果
-    initializeTypeWriter();
 });
 

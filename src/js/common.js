@@ -304,121 +304,239 @@ function initializeSearch() {
     };
 }
 
-// 花瓣效果初始化
+/**
+ * 打字机效果实现
+ * @param {string} text 要显示的文本
+ * @param {HTMLElement} element 目标元素
+ * @param {number} speed 打字速度（毫秒）
+ * @returns {Promise} 完成打字的Promise
+ */
+function typeWriter(text, element, speed = 100) {
+    return new Promise(resolve => {
+        let i = 0;
+        element.textContent = ''; // 清空原有内容
+        
+        function type() {
+            if (i < text.length) {
+                element.textContent += text.charAt(i);
+                i++;
+                setTimeout(type, speed);
+            } else {
+                resolve();
+            }
+        }
+        
+        type();
+    });
+}
+
+/**
+ * 初始化标题打字效果
+ * 只在首页执行
+ */
+async function initializeTypeWriter() {
+    const title = document.querySelector('.header-info h2');
+    const subtitle = document.querySelector('.header-info p');
+    
+    // 如果不是首页（没有相关元素），直接返回
+    if (!title || !subtitle) return;
+    
+    // 存储原始文本
+    const titleText = '相遇有缘，更是惊喜！';
+    const subtitleText = '资源在下面！往下滑！';
+    
+    // 清空原有内容
+    title.textContent = '';
+    subtitle.textContent = '';
+    
+    // 添加光标效果的类
+    title.classList.add('typing');
+    
+    // 先打印标题
+    await typeWriter(titleText, title, 150);
+    
+    // 移除标题的光标，给副标题添加光标
+    title.classList.remove('typing');
+    subtitle.classList.add('typing');
+    
+    // 打印副标题
+    await typeWriter(subtitleText, subtitle, 100);
+    
+    // 完成后移除光标
+    setTimeout(() => {
+        subtitle.classList.remove('typing');
+    }, 500);
+    
+    // 返回清理函数
+    return function cleanup() {
+        // 如果需要清理工作，可以在这里添加
+    };
+}
+
+/**
+ * 图片轮播功能
+ * 支持前后切换和淡入淡出效果
+ * @returns {Function} 清理函数
+ */
+function initializeImageSlider() {
+    const navBtns = document.querySelectorAll('.nav-btn');
+    const imageContainer = document.querySelector('.image-container img');
+    const emailBtn = document.querySelector('.nav-btn.email i');
+    
+    // 如果页面上没有相关元素，直接返回
+    if (!navBtns.length || !imageContainer || !emailBtn) {
+        return null;
+    }
+    
+    const defaultImage = '../images/login_bg.jpg';
+    
+    // 更新图片的函数
+    async function updateImage() {
+        try {
+            emailBtn.className = 'fa-solid fa-spinner fa-spin';
+            const response = await fetch('/api/random-image');
+            const data = await response.json();
+            
+            if (data.success) {
+                imageContainer.src = data.data.image_url;
+                imageContainer.onload = () => {
+                    emailBtn.className = 'fa-solid fa-paw';
+                };
+            } else {
+                console.error('初始化图片失败:', data.message);
+                imageContainer.src = defaultImage;
+                emailBtn.className = 'fa-solid fa-paw';
+            }
+        } catch (error) {
+            console.error('初始化图片请求失败:', error);
+            imageContainer.src = defaultImage;
+            emailBtn.className = 'fa-solid fa-paw';
+        }
+    }
+    
+    // 初始更新图片
+    updateImage();
+    
+    // 为每个导航按钮添加点击事件
+    navBtns.forEach(btn => {
+        btn.addEventListener('click', updateImage);
+    });
+    
+    // 返回清理函数
+    return function cleanup() {
+        navBtns.forEach(btn => {
+            btn.removeEventListener('click', updateImage);
+        });
+    };
+}
+
+/**
+ * 花瓣效果初始化
+ * @param {HTMLCanvasElement} canvas 画布元素
+ */
 function initializePetalEffect(canvas) {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
-
-    function resizeCanvas() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
+    const petals = [];
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight;
     
-    resizeCanvas();
-    window.addEventListener('resize', resizeCanvas);
-
+    // 设置画布大小
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
+    
+    // 花瓣类
     class Petal {
         constructor() {
-            this.reset();
-        }
-
-        reset() {
-            this.x = Math.random() * canvas.width;
-            this.y = -20;
-            this.size = Math.random() * 8 + 5;
+            this.x = Math.random() * canvasWidth;
+            this.y = Math.random() * canvasHeight;
+            this.size = Math.random() * 5 + 5;
             this.speedX = Math.random() * 2 - 1;
-            this.speedY = Math.random() * 1 + 0.5;
+            this.speedY = Math.random() * 1 + 1;
             this.rotation = Math.random() * 360;
-            this.rotationSpeed = (Math.random() - 0.5) * 2;
-            this.opacity = Math.random() * 0.6 + 0.2;
-            this.color = this.getRandomColor();
+            this.rotationSpeed = Math.random() * 2 - 1;
         }
-
-        getRandomColor() {
-            const colors = ['#ffd1dc', '#ffb7c5', '#ff9ecd', '#ffc0cb', '#ffffff'];
-            return colors[Math.floor(Math.random() * colors.length)];
-        }
-
+        
         update() {
-            this.x += this.speedX + Math.sin(this.y / 50) * 0.5;
+            this.x += this.speedX;
             this.y += this.speedY;
             this.rotation += this.rotationSpeed;
-
-            if (this.y > canvas.height + 20) {
-                this.reset();
+            
+            if (this.y > canvasHeight) {
+                this.y = -10;
+                this.x = Math.random() * canvasWidth;
             }
         }
-
+        
         draw() {
             ctx.save();
             ctx.translate(this.x, this.y);
-            ctx.rotate((this.rotation * Math.PI) / 180);
-            ctx.globalAlpha = this.opacity;
-
+            ctx.rotate(this.rotation * Math.PI / 180);
+            ctx.fillStyle = 'rgba(255, 192, 203, 0.7)';
             ctx.beginPath();
-            ctx.moveTo(0, 0);
-            ctx.bezierCurveTo(
-                this.size/2, -this.size/2,
-                this.size, 0,
-                this.size/2, this.size/2
-            );
-            ctx.bezierCurveTo(
-                this.size/2, this.size,
-                -this.size/2, this.size,
-                -this.size/2, this.size/2
-            );
-            ctx.bezierCurveTo(
-                -this.size, 0,
-                -this.size/2, -this.size/2,
-                0, 0
-            );
-
-            ctx.fillStyle = this.color;
+            ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
             ctx.fill();
-            
-            const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, this.size);
-            gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-            gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
-            ctx.fillStyle = gradient;
-            ctx.fill();
-
             ctx.restore();
         }
     }
-
-    const petals = Array.from({ length: 50 }, () => {
-        const petal = new Petal();
-        petal.y = Math.random() * canvas.height;
-        return petal;
-    });
-
+    
+    // 创建花瓣
+    for (let i = 0; i < 50; i++) {
+        petals.push(new Petal());
+    }
+    
+    // 动画循环
     function animate() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
         petals.forEach(petal => {
             petal.update();
             petal.draw();
         });
         requestAnimationFrame(animate);
     }
-
+    
+    // 开始动画
     animate();
+    
+    // 窗口大小改变时重置画布大小
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+    
+    // 返回清理函数
+    return function cleanup() {
+        window.removeEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        });
+    };
 }
 
 // 在 DOMContentLoaded 时初始化所导航相关功能
 document.addEventListener('DOMContentLoaded', function() {
     const cleanupNav = initializeNavigation();
     const cleanupSearch = initializeSearch();
+    const cleanupSlider = initializeImageSlider();
+    const cleanupTypeWriter = initializeTypeWriter();
     const canvas = document.getElementById('particleCanvas');
+    let cleanupPetal = null;
+    
     // 页面卸载时清理
     window.addEventListener('unload', () => {
         if (cleanupNav) cleanupNav();
         if (cleanupSearch) cleanupSearch();
+        if (cleanupSlider) cleanupSlider();
+        if (cleanupTypeWriter) cleanupTypeWriter();
+        if (cleanupPetal) cleanupPetal();
     });
+    
     if (canvas) {
-        initializePetalEffect(canvas);
+        cleanupPetal = initializePetalEffect(canvas);
     }
 });
+
 // 花瓣效果初始化
 
 // 在加载页面内容后调用初始化

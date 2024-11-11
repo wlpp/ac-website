@@ -177,35 +177,42 @@ def get_articles():
     
     支持分页查询:
         page: 页码（默认1）
-        per_page: 每页数量（默认10）
+        per_page: 每页数量（默认10，可选值：10,12,16,20,30）
         type: 查询类型（0:返回所有文章，不传或其他值:只返回已发布文章）
         sort: 排序方式（0:按article_id字符串排序，不传或其他值:按created_at排序）
         tag: 文章标签（0:软件, 1:游戏, 2:小说，不传则返回所有）
     """
     try:
         page = request.args.get('page', 1, type=int)
-        per_page = 10
+        per_page = request.args.get('per_page', 10, type=int)
         query_type = request.args.get('type')
         sort_type = request.args.get('sort')
         tag = request.args.get('tag')
         
+        # 限制per_page的可选值
+        allowed_per_page = [10, 12, 16, 20, 30]
+        if per_page not in allowed_per_page:
+            per_page = 10
+            
         # 构建基础查询
         query = Article.query
         
-        # 默认只返回已发布文章，只有 type=0 时返回所有文章
+        # 默认只返回已发布文章
         if query_type != '0':
             query = query.filter(Article.status == 1)
             
         # 根据tag参数筛选文章
+        include_views = False
         if tag is not None:
             query = query.filter(Article.tag == int(tag))
+            # 当tag=1（游戏）时，设置include_views为True
+            if int(tag) == 1:
+                include_views = True
         
-        # 根据sort参数决定排序方式
+        # 排序处理
         if sort_type == '0':
-            # 直接按article_id字符串排序
             query = query.order_by(Article.article_id)
         else:
-            # 默认按创建时间倒序
             query = query.order_by(desc(Article.created_at))
         
         # 分页
@@ -218,7 +225,7 @@ def get_articles():
         if articles.items:
             return jsonify({
                 'success': True,
-                'data': [article.to_dict() for article in articles.items],
+                'data': [article.to_dict(include_views=include_views) for article in articles.items],
                 'total': articles.total,
                 'pages': articles.pages,
                 'current_page': page
@@ -603,7 +610,7 @@ def create_article_content():
         existing_content = ArticleContent.query.filter_by(article_id=data['article_id']).first()
         
         if existing_content:
-            # 如果存在，更新内容
+            # 如果��在，更新内容
             existing_content.content = data['content']
             existing_content.title = article.title  # 同步更新标题
             db.session.commit()

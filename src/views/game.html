@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
     <!-- 引入公共样式 -->
     <link rel="stylesheet" href="../css/common.css">
+    <link rel="stylesheet" href="../css/index.css">
     <!-- 引入页面特定样式 -->
     <link rel="stylesheet" href="../css/game.css">
     <!-- 添加在其他 link 标签之前 -->
@@ -17,6 +18,7 @@
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
     <!-- 为了更好的兼容性，也可以添加以下行 -->
     <link rel="shortcut icon" type="image/x-icon" href="../images/favicon.ico">
+    
 
 
 </head>
@@ -80,8 +82,14 @@
 
     <div class="container">
         <!-- 文章区域 -->
-        <section class="article-section">
-        </section>
+        <div class="game-section">
+            <div class="game-grid">
+                <!-- 游戏卡片将被动态添加到这里 -->
+            </div>
+            <div class="load-more">
+                <button class="load-more-btn">加载更多</button>
+            </div>
+        </div>
     </div>
 
     <!-- 返回顶部按钮 -->
@@ -91,9 +99,6 @@
 
     <!-- 页面底部 -->
     <footer class="footer">
-        <div class="load-more">
-            <button class="load-more-btn">更早的文章</button>
-        </div>
         <div class="footer-info">
             <div class="copyright">
                 Copyright © by AC.蚂蚁 All Rights Reserved.
@@ -113,6 +118,7 @@
     </div>
       <!-- 先引入 config.js，再引入依赖它的 index.js -->
       <script src="../api/config.js"></script>
+      <!-- <script src="../js/index.js"></script> -->
       <script src="../js/game.js"></script>
       <script src="../js/common.js"></script>
       <script src="../js/debug.js"></script>

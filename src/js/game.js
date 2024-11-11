@@ -51,6 +51,21 @@ function formatChineseDate(dateStr) {
 }
 
 /**
+ * 格式化浏览量
+ * @param {number} views 浏览量
+ * @returns {string} 格式化后的浏览量
+ */
+function formatViews(views) {
+    if (!views && views !== 0) return '0';
+    
+    if (views >= 10000) {
+        return (views / 10000).toFixed(1) + 'w';
+    }
+    
+    return views.toString();
+}
+
+/**
  * 渲染游戏卡片
  */
 function renderGameCard(article) {
@@ -58,25 +73,36 @@ function renderGameCard(article) {
     gameCard.className = 'game-card';
     
     const formattedDate = formatChineseDate(article.n_date);
+    const imageUrl = article.image_url || 'https://via.placeholder.com/800x600?text=No+Image';
+    const formattedViews = formatViews(article.views);
     
     gameCard.innerHTML = `
         <a href="/article/${article.article_id}" class="game-link">
             <div class="game-image">
-                <img data-src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur" 
+                <img data-src="${imageUrl}" 
                      alt="${article.title || '无标题'}"
                      class="loading"
-                     src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur">
+                     src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur"
+                     onerror="handleImageError(this)">
             </div>
             <div class="game-content">
                 <h3 class="game-title">${article.title || '无标题'}</h3>
-                <p class="game-desc">${article.content || '暂无内容'}</p>
+                <p class="game-desc">${article.content || ''}</p>
                 <div class="game-info">
-                    <span class="game-views">浏览: ${article.views || 0}</span>
+                    <span class="game-views">浏览: ${formattedViews}</span>
                     <span class="game-date">${formattedDate}</span>
                 </div>
             </div>
         </a>
     `;
+    
+    // 添加图片加载完成事件
+    const img = gameCard.querySelector('img');
+    img.onload = function() {
+        this.classList.remove('loading');
+        this.classList.add('loaded');
+        this.dataset.loaded = 'true';
+    };
     
     gameCard.querySelector('.game-link').addEventListener('click', function(e) {
         e.preventDefault();
@@ -93,13 +119,18 @@ async function loadMoreGames(page = 1) {
     const gameSection = document.querySelector('.game-grid');
     const loadMoreBtn = document.querySelector('.load-more-btn');
     
+    if (!gameSection) {
+        console.error('找不到游戏列表容器(.game-grid)');
+        return;
+    }
+    
     if (loadMoreBtn) {
         loadMoreBtn.textContent = '加载中...';
         loadMoreBtn.disabled = true;
     }
     
     try {
-        const API_URL = `${baseURL}/api/articles?page=${page}&tag=1`;
+        const API_URL = `/api/articles?page=${page}&tag=1&per_page=12`;
         const response = await fetch(API_URL);
         
         if (!response.ok) {
@@ -107,6 +138,11 @@ async function loadMoreGames(page = 1) {
         }
         
         const data = await response.json();
+        
+        if (!data.success) {
+            throw new Error(data.message || '加载失败');
+        }
+        
         let articles = data.data || [];
         
         if (articles.length === 0) {
@@ -123,11 +159,8 @@ async function loadMoreGames(page = 1) {
             gameSection.appendChild(gameCard);
         });
 
-        // 重新初始化懒加载
+        // 初始化懒加载
         lazyLoad();
-        
-        // 更新新加载的游戏卡片图片
-        await updateGameImages();
         
         if (loadMoreBtn) {
             loadMoreBtn.textContent = '加载更多';
@@ -143,74 +176,24 @@ async function loadMoreGames(page = 1) {
     }
 }
 
-/**
- * 更新游戏卡片图片
- */
-async function updateGameImages() {
-    try {
-        const gameImages = document.querySelectorAll('.game-card .game-image img:not([data-updated="true"])');
-        if (gameImages.length === 0) return;
-        
-        const loadingImageUrl = 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
-        gameImages.forEach(img => {
-            img.classList.add('loading');
-            img.src = loadingImageUrl;
-        });
-        
-        const response = await fetch(`/api/random-image?count=${gameImages.length}`);
-        const data = await response.json();
-        
-        if (data.success && data.data.image_urls) {
-            gameImages.forEach((img, index) => {
-                if (index < data.data.image_urls.length) {
-                    const newImg = new Image();
-                    newImg.src = data.data.image_urls[index];
-                    
-                    newImg.onload = function() {
-                        img.src = data.data.image_urls[index];
-                        img.dataset.src = data.data.image_urls[index];
-                        img.classList.remove('loading');
-                        img.classList.add('loaded');
-                        img.dataset.updated = 'true';
-                        img.dataset.loaded = 'true';
-                    };
-                    
-                    newImg.onerror = function() {
-                        img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
-                        img.classList.remove('loading');
-                        img.classList.add('error');
-                        img.dataset.updated = 'true';
-                        img.dataset.loaded = 'true';
-                    };
-                }
-            });
-        }
-    } catch (error) {
-        console.error('更新游戏图片失败:', error);
-        gameImages.forEach(img => {
-            img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
-            img.classList.remove('loading');
-            img.classList.add('error');
-        });
-    }
-}
-
 // 主要的 DOMContentLoaded 事件监听器
 document.addEventListener('DOMContentLoaded', function() {
+    const gameSection = document.querySelector('.game-grid');
+    const loadMoreBtn = document.querySelector('.load-more-btn');
+    
+    if (!gameSection) {
+        console.error('找不到游戏列表容器(.game-grid)');
+        return;
+    }
+    
     // 初始化懒加载
     lazyLoad();
     
     // 初始化游戏加载
-    loadMoreGames().then(() => {
-        window.onload = async () => {
-            await updateGameImages();
-        };
-    });
+    loadMoreGames();
     
     // 加载更多按钮功能
-    const loadMoreBtn = document.querySelector('.load-more-btn');
     let currentPage = 1;
-
     if (loadMoreBtn) {
         loadMoreBtn.addEventListener('click', async () => {
             currentPage++;

@@ -1,4 +1,3 @@
-
 // 获取用户数据函数
 function getUserData() {
     try {
@@ -85,6 +84,25 @@ document.addEventListener('DOMContentLoaded', function() {
     // 添加回复ID变量
     let currentReplyId = null;  // 在这里定义变量
 
+    // 获取 URL 参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const tag = urlParams.get('tag');
+    
+    // 获取元素
+    const disclaimer = document.querySelector('.article-disclaimer');
+    const source = document.querySelector('.articleSource');
+    
+    // 根据 tag 参数控制显示
+    if (disclaimer && source) {
+        if (tag === '1') {
+            disclaimer.style.display = 'block';
+            source.style.display = 'none';
+        } else {
+            disclaimer.style.display = 'none';
+            source.style.display = 'block';
+        }
+    }
+
     // 加载文章内容
     async function loadArticleContent() {
         try {
@@ -99,6 +117,17 @@ document.addEventListener('DOMContentLoaded', function() {
             titleElement.textContent = data.title;
             contentElement.innerHTML = data.content;
             document.title = `${data.title} - AC.蚂蚁`;
+            
+            // 根据 tag 参数控制显示
+            if (disclaimer && source) {
+                if (tag === '1') {
+                    disclaimer.style.display = 'block';
+                    source.style.display = 'none';
+                } else {
+                    disclaimer.style.display = 'none';
+                    source.style.display = 'block';
+                }
+            }
             
         } catch (error) {
             console.error('加载文章失败:', error);

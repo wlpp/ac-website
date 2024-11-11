@@ -76,8 +76,10 @@ function renderGameCard(article) {
     const imageUrl = article.image_url || 'https://via.placeholder.com/800x600?text=No+Image';
     const formattedViews = formatViews(article.views);
     
+    const articleUrl = `/article/${article.article_id}?tag=1`;
+    
     gameCard.innerHTML = `
-        <a href="/article/${article.article_id}" class="game-link">
+        <a href="${articleUrl}" class="game-link">
             <div class="game-image">
                 <img data-src="${imageUrl}" 
                      alt="${article.title || '无标题'}"
@@ -130,7 +132,7 @@ async function loadMoreGames(page = 1) {
     }
     
     try {
-        const API_URL = `/api/articles?page=${page}&tag=1&per_page=12`;
+        const API_URL = `/api/articles?page=${page}&tag=1&per_page=12&sort=1`;
         const response = await fetch(API_URL);
         
         if (!response.ok) {

@@ -179,7 +179,7 @@ def get_articles():
         page: 页码（默认1）
         per_page: 每页数量（默认10，可选值：10,12,16,20,30）
         type: 查询类型（0:返回所有文章，不传或其他值:只返回已发布文章）
-        sort: 排序方式（0:按article_id字符串排序，不传或其他值:按created_at排序）
+        sort: 排序方式（0:按article_id字符串排序，1:按views排序，不传或其他值:按created_at排序）
         tag: 文章标签（0:软件, 1:游戏, 2:小说，不传则返回所有）
     """
     try:
@@ -212,6 +212,8 @@ def get_articles():
         # 排序处理
         if sort_type == '0':
             query = query.order_by(Article.article_id)
+        elif sort_type == '1':
+            query = query.order_by(desc(Article.views))  # 按浏览量降序排序
         else:
             query = query.order_by(desc(Article.created_at))
         
@@ -610,7 +612,7 @@ def create_article_content():
         existing_content = ArticleContent.query.filter_by(article_id=data['article_id']).first()
         
         if existing_content:
-            # 如果��在，更新内容
+            # 如果存在，更新内容
             existing_content.content = data['content']
             existing_content.title = article.title  # 同步更新标题
             db.session.commit()

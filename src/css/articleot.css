@@ -352,3 +352,37 @@
 .comment-replies .comment-replies .comment-card {
     background: #f5f5f5;
 }
+
+/* 免责声明样式 */
+.article-disclaimer {
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background-color: var(--bg-secondary);
+    border-radius: 8px;
+    font-family: var(--font-family);
+    color: var(--text-color);
+    background: #fff;
+    padding: 40px 40px 50px;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+}
+
+.article-disclaimer {
+    margin-bottom: 1rem;
+}
+
+.article-disclaimer p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.article-source {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: right;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
+}

@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,25 +10,26 @@
     <!-- 引入消息样式 -->
     <link rel="stylesheet" href="../plug/Message/message.css">
     <link rel="stylesheet" href="../css/article.css">
-    <link rel="stylesheet" href="../css/airticleot.css">
+    <link rel="stylesheet" href="../css/articleot.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
     <link rel="stylesheet" href="../css/common.css">
 
 </head>
+
 <body>
-    
+
     <canvas id="particleCanvas"></canvas>
     <div class="progress-bar"></div>
     <div class="theader">
         <a href="/" class="logo">AC.蚂蚁</a>
-        
+
         <button type="button" id="menuBtn" class="menu-icon">
             <span></span>
             <span></span>
             <span></span>
         </button>
-        
+
         <nav class="nav-links mobile-nav">
             <a href="/" class="active">软件</a>
             <a href="/game">游戏</a>
@@ -54,10 +56,17 @@
                     <span id="articleDate">加载中...</span>
                 </span>
             </div>
-            <div class="article-body">        
+            <div class="article-body">
+            </div>
+            <div class="article-disclaimer">
+                <p>1.本站部分内容转载自其它媒体，但并不代表本站赞同其观点和对其真实性负责。</p>
+                <p>2.若您需要商业运营或用于其他商业活动，请您购买正版授权并合法使用。</p>
+                <p>3.如果本站有侵犯、不妥之处的资源，请联系我们。将会第一时间解决！</p>
+                <p>4.本站部分内容均由互联网收集整理，仅供大家参考、学习，不存在任何商业目的与商业用途。</p>
+                <p>5.本站提供的所有资源仅供参考学习使用，版权归原著所有，禁止下载本站资源参与任何商业和非法行为，请于24小时之内删除!</p>
             </div>
             <div class="articleSource">转载来源->系统迷</div>
-            
+
             <div class="comment-section">
                 <h3>评论</h3>
                 <div class="comment-form">
@@ -75,8 +84,8 @@
     <div class="back-to-top">
         <i class="fas fa-rocket"></i>
     </div>
-      <!-- 搜索弹框 -->
-      <div class="search-modal">
+    <!-- 搜索弹框 -->
+    <div class="search-modal">
         <button class="close-btn">×</button>
         <div class="search-container">
             <div class="search-title">想要找点什么呢?</div>
@@ -102,4 +111,5 @@
     <script src="../js/article.js"></script>
     <script src="../js/debug.js"></script>
 </body>
+
 </html>

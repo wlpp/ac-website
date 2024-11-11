@@ -141,6 +141,8 @@ const menuConfig = {
 
 // 添加页面加载函数
 async function loadPage(pageName) {
+    if (!pageName) return;
+    
     const mainContent = document.getElementById('mainContent');
     if (!mainContent) return;
 
@@ -150,15 +152,23 @@ async function loadPage(pageName) {
         const html = await response.text();
         mainContent.innerHTML = html;
 
+        // 更新面包屑
+        updateBreadcrumb(pageName);
+
+        // 更新菜单激活状态
+        updateMenuActive(pageName);
+
         // 根据页面类型初始化不同功能
         switch(pageName) {
             case 'article/list':
-                await ArticleManager.fetchArticles();
+                await ArticleManager.init();
                 break;
             case 'user/list':
-                await UserManager.fetchUsers();
+                await UserManager.init();
                 break;
-            // 可以添加其他页面的初始化
+            case 'menu/list':
+                await MenuManager.init();
+                break;
         }
     } catch (error) {
         console.error('加载页面失败:', error);
@@ -209,24 +219,25 @@ async function loadModuleScript(module) {
 }
 
 // 更新面包屑
-function updateBreadcrumb(path) {
+function updateBreadcrumb(pageName) {
     const breadcrumb = document.querySelector('.breadcrumb');
-    if (breadcrumb && menuConfig[path]) {
+    if (breadcrumb && menuConfig[pageName]) {
         breadcrumb.innerHTML = `
             <i class="fas fa-home"></i>
             <span>首页</span>
             <i class="fas fa-chevron-right"></i>
-            <i class="fas ${menuConfig[path].icon}"></i>
-            <span>${menuConfig[path].text}</span>
+            <i class="fas ${menuConfig[pageName].icon}"></i>
+            <span>${menuConfig[pageName].text}</span>
         `;
     }
 }
 
 // 更新菜单激活状态
-function updateMenuActive(path) {
-    document.querySelectorAll('.menu a').forEach(link => {
+function updateMenuActive(pageName) {
+    const menuLinks = document.querySelectorAll('.menu a');
+    menuLinks.forEach(link => {
         link.classList.remove('active');
-        if (link.dataset.page === path) {
+        if (link.dataset.page === pageName) {
             link.classList.add('active');
         }
     });

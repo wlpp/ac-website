@@ -81,23 +81,26 @@ class ArticleManager {
 
     // 更新分页信息
     static updatePagination() {
-        const pagination = document.querySelector('.pagination');
+        const pagination = document.getElementById('pagination');
         if (!pagination) return;
-
-        // 生成分页按钮
-        let paginationHtml = `
-            <button onclick="ArticleManager.changePage(${this.pageConfig.currentPage - 1})" 
-                    ${this.pageConfig.currentPage <= 1 ? 'disabled' : ''}>
-                上一页
-            </button>
-            <span>第 ${this.pageConfig.currentPage} 页 / 共 ${this.pageConfig.pages} 页</span>
-            <button onclick="ArticleManager.changePage(${this.pageConfig.currentPage + 1})"
-                    ${this.pageConfig.currentPage >= this.pageConfig.pages ? 'disabled' : ''}>
-                下一页
-            </button>
-        `;
-
-        pagination.innerHTML = paginationHtml;
+        
+        let paginationHTML = `
+            <div class="pagination-info">共 ${this.pageConfig.total} 条记录，每页 ${this.pageConfig.pageSize} 条</div>
+            <div class="pagination-buttons">
+                <button class="btn-page" 
+                        onclick="ArticleManager.changePage(${this.pageConfig.currentPage - 1})"
+                        ${this.pageConfig.currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="current-page">第 ${this.pageConfig.currentPage} 页</span>
+                <button class="btn-page" 
+                        onclick="ArticleManager.changePage(${this.pageConfig.currentPage + 1})"
+                        ${this.pageConfig.currentPage === this.pageConfig.pages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>`;
+        
+        pagination.innerHTML = paginationHTML;
     }
 
     // 切换页面

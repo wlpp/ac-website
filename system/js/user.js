@@ -99,7 +99,26 @@ class UserManager {
     // 更新分页
     static updatePagination() {
         const totalPages = Math.ceil(this.pageConfig.total / this.pageConfig.pageSize);
-        renderPagination(totalPages, this.pageConfig.total);
+        const pagination = document.getElementById('pagination');
+        if (!pagination) return;
+        
+        let paginationHTML = `
+            <div class="pagination-info">共 ${this.pageConfig.total} 条记录，每页 ${this.pageConfig.pageSize} 条</div>
+            <div class="pagination-buttons">
+                <button class="btn-page" 
+                        onclick="UserManager.changePage(${this.pageConfig.currentPage - 1})"
+                        ${this.pageConfig.currentPage === 1 ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <span class="current-page">第 ${this.pageConfig.currentPage} 页</span>
+                <button class="btn-page" 
+                        onclick="UserManager.changePage(${this.pageConfig.currentPage + 1})"
+                        ${this.pageConfig.currentPage === totalPages ? 'disabled' : ''}>
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>`;
+        
+        pagination.innerHTML = paginationHTML;
     }
 
     // 格式化角色显示
@@ -292,6 +311,14 @@ class UserManager {
             }, 300);
         }
     }
+
+    // 修改切换页码方法为静态方法
+    static async changePage(page) {
+        const totalPages = Math.ceil(this.pageConfig.total / this.pageConfig.pageSize);
+        if (page < 1 || page > totalPages) return;
+        this.pageConfig.currentPage = page;
+        await this.fetchUsers();
+    }
 }
 
 // 修改筛选函数
@@ -316,53 +343,6 @@ async function initPage() {
         console.error('初始化页面失败:', error);
         MessageBox.error('页面初始化失败');
     }
-}
-
-// 修改切换页码函数
-function changePage(page) {
-    UserManager.pageConfig.currentPage = page;
-    UserManager.fetchUsers();
-}
-
-// 渲染分控件
-function renderPagination(totalPages, totalItems) {
-    const pagination = document.getElementById('pagination');
-    if (!pagination) return;
-    
-    let paginationHTML = `
-        <div class="pagination-info">共 ${totalItems} 条记录，每页 ${UserManager.pageConfig.pageSize} 条</div>
-        <div class="pagination-buttons">
-    `;
-    
-    // 上一页按钮
-    paginationHTML += `
-        <button class="btn-page" 
-                onclick="changePage(${UserManager.pageConfig.currentPage - 1})"
-                ${UserManager.pageConfig.currentPage === 1 ? 'disabled' : ''}>
-            <i class="fas fa-chevron-left"></i>
-        </button>
-    `;
-    
-    // 页码按钮
-    for (let i = 1; i <= totalPages; i++) {
-        paginationHTML += `
-            <button class="btn-page ${i === UserManager.pageConfig.currentPage ? 'active' : ''}"
-                    onclick="changePage(${i})">
-                ${i}
-            </button>
-        `;
-    }
-    
-    // 下一页按钮
-    paginationHTML += `
-        <button class="btn-page" 
-                onclick="changePage(${UserManager.pageConfig.currentPage + 1})"
-                ${UserManager.pageConfig.currentPage === totalPages ? 'disabled' : ''}>
-            <i class="fas fa-chevron-right"></i>
-        </button>
-    </div>`;
-    
-    pagination.innerHTML = paginationHTML;
 }
 
 // 修改导出

@@ -546,8 +546,9 @@ body {
 .pagination {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
     gap: 8px;
-    margin-top: 24px;
+    /* margin-top: 24px; */
     padding: 0 24px;
 }
 
@@ -1077,4 +1078,17 @@ body {
 /* 主内容区域适应侧边栏宽度变化 */
 .main.expanded {
     /* margin-left: -186px; */
+}
+
+/* 分页样式 */
+.current-page {
+    padding: 0 15px;
+    color: #4299e1;
+    font-weight: 500;
+}
+
+.pagination-buttons {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }

@@ -173,19 +173,25 @@ def get_articles():
     支持分页查询:
         page: 页码（默认1）
         per_page: 每页数量（默认10）
-    
-    返回:
-        已发布的文章列表、总数、总页数等信息
+        type: 查询类型（0:返回所有文章，不传或其他值:只返回已发布文章）
     """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 10
+        query_type = request.args.get('type')
         
-        # 添加状态过滤条件，只查询已发布的文章
-        query = db.select(Article).where(Article.status == 1).order_by(desc(Article.created_at))
+        # 构建基础查询
+        query = Article.query
         
-        articles = db.paginate(
-            query,
+        # 默认只返回已发布文章，只有 type=0 时返回所有文章
+        if query_type != '0':
+            query = query.filter(Article.status == 1)
+        
+        # 添加排序
+        query = query.order_by(desc(Article.created_at))
+        
+        # 分页
+        articles = query.paginate(
             page=page,
             per_page=per_page,
             error_out=False
@@ -209,6 +215,7 @@ def get_articles():
         })
             
     except Exception as e:
+        print("Error getting articles:", str(e))
         return jsonify({
             'success': False,
             'error': '服务器错误',
@@ -241,7 +248,7 @@ def create_article():
             
             return Response(
                 json.dumps({
-                    'message': '章已更新',
+                    'message': '文章已更新',
                     'data': existing_article.to_dict()
                 }, ensure_ascii=False),
                 status=200,

@@ -15,7 +15,7 @@ class ArticleManager {
     // 获取文章列表
     static async fetchArticles() {
         try {
-            const response = await fetch(`/api/articles?page=${this.pageConfig.currentPage}`);
+            const response = await fetch(`/api/articles?page=${this.pageConfig.currentPage}&type=0`);
             if (!response.ok) {
                 throw new Error('获取文章列表失败');
             }

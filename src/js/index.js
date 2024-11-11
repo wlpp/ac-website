@@ -105,7 +105,7 @@ async function loadMoreArticles(page = 1) {
     }
     
     try {
-        const API_URL = `${baseURL}/api/articles?page=${page}`;
+        const API_URL = `${baseURL}/api/articles?page=${page}&`;
         const response = await fetch(API_URL, {
             method: 'GET',
             headers: {

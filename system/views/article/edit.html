@@ -84,19 +84,15 @@
     <!-- <script src="https://cdn.jsdelivr.net/npm/@wangeditor/editor@latest/dist/index.min.js"></script> -->
     <script src="https://unpkg.com/@wangeditor/editor@latest/dist/index.js"></script>
     <script>
-        const E = window.wangEditor
+        // 编辑器初始化和配置
+        const E = window.wangEditor;
+        const LANG = location.href.indexOf('lang=en') > 0 ? 'en' : 'zh-CN';
+        E.i18nChangeLanguage(LANG);
 
-        // 切换语言
-        const LANG = location.href.indexOf('lang=en') > 0 ? 'en' : 'zh-CN'
-        E.i18nChangeLanguage(LANG)
-
-        // 默认内容
-        var html = ``
-        var content, selectionTextLength, textLength
-        var textarea = document.getElementById('editor-content-textarea')
+        // 创建编辑器实例
         window.editor = E.createEditor({
             selector: '#editor-text-area',
-            html,
+            html: '',
             mode: 'simple',
             config: {
                 placeholder: 'Type here...',
@@ -108,53 +104,61 @@
                 },
                 onChange() {
                     const content = editor.getHtml();
-                    // 只在内容不为空时保存
                     if (content.trim()) {
                         localStorage.setItem('editorContent', content);
                     }
                 }
             }
-        })
+        });
 
-        // 初始化编辑器后，设置已保存的内容
-        const savedContent = localStorage.getItem('editorContent')
-        if (savedContent) {
-            // 使用 setHtml 方法替代 dangerouslyInsertHtml
-            editor.setHtml(savedContent)
-        }
-
+        // 创建工具栏
         window.toolbar = E.createToolbar({
             editor,
             mode: 'simple',
             selector: '#editor-toolbar',
             config: {}
-        })
-        window.onload = function () {
-            const urlParams = new URLSearchParams(window.location.search);
-            const title = urlParams.get('title');
-            const tag = urlParams.get('tag');
-            console.log(title, tag);
-            // // 设置编辑器标题
-            // if (title) {
-            //     document.querySelector('#article-title').value = title;
-            // }
-        }   
-    </script>
+        });
 
-    <!-- 在 body 标签内，编辑器后面添加 -->
-    <div class="floating-save">
-        <!-- <button class="save-btn draft" onclick="handleSaveDraft()">
-            <i class="fas fa-save"></i>
-            保存草稿
-        </button> -->
-        <button class="save-btn" onclick="handlePublish()">
-            <i class="fas fa-paper-plane"></i>
-            发布文章
-        </button>
-    </div>
+        // 初始化编辑器内容
+        async function initEditorContent() {
+            
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const article_id = urlParams.get('article_id');
 
-    <!-- 在已有的 script 后添加 -->
-    <script>
+                if (!article_id) {
+                    console.warn('未找到文章ID');
+                    return;
+                }
+
+                const response = await fetch(`/api/article-content/${article_id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                });
+
+                const result = await response.json();
+                if (result && result.content) {
+                    editor.setHtml(result.content);
+                
+                } else {
+                  
+                    const savedContent = localStorage.getItem('editorContent');
+                    if (savedContent) {
+                        editor.setHtml(savedContent);
+                    }
+                }
+            } catch (error) {
+                console.error('获取文章内容失败:', error);
+                MessageBox.error('获取文章内容失败');
+
+                const savedContent = localStorage.getItem('editorContent');
+                if (savedContent) {
+                    editor.setHtml(savedContent);
+                }
+            }
+        }
+
         // 发布文章
         async function handlePublish() {
             try {
@@ -162,26 +166,18 @@
                 const urlParams = new URLSearchParams(window.location.search);
                 const article_id = urlParams.get('article_id');
 
-                // 验证必填字段
                 if (!article_id || !content) {
                     MessageBox.error('文章ID和内容不能为空！');
                     return;
                 }
 
-                // 准备请求数据
-                const articleData = {
-                    article_id,
-                    content
-                };
-
-                // 发送创建文章详情请求
                 const response = await fetch('/api/article-content', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('token')}`
                     },
-                    body: JSON.stringify(articleData)
+                    body: JSON.stringify({ article_id, content })
                 });
 
                 const result = await response.json();
@@ -190,13 +186,8 @@
                     throw new Error(result.message || '创建文章详情失败');
                 }
 
-                // 创建成功
                 MessageBox.success('文章详情保存成功！');
-                
-                // 清除本地存储的草稿
                 localStorage.removeItem('editorContent');
-                
-                // 跳转到文章列表页
                 window.location.href = '/system/views/article/list.html';
 
             } catch (error) {
@@ -205,54 +196,23 @@
             }
         }
 
-        // 保存草稿
-        async function handleSaveDraft() {
-            try {
-                const content = editor.getHtml();
-                const urlParams = new URLSearchParams(window.location.search);
-                const title = urlParams.get('title');
-                const tag = parseInt(urlParams.get('tag')); // 转换为数字
+        // 页面加载完成后的初始化
+        window.onload = function () {
+            initEditorContent();
+        };
 
-                // 验证必填字段
-                if (!title || !content) {
-                    MessageBox.error('标题和内容不能为空！');
-                    return;
-                }
 
-                // 准备请求数据
-                const articleData = {
-                    title,
-                    content,
-                    tag,
-                    status: 0 // 0 表示草稿
-                };
-
-                // 发送创建文章请求
-                const response = await fetch('/api/articles', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
-                    },
-                    body: JSON.stringify(articleData)
-                });
-
-                if (!response.ok) {
-                    throw new Error('保存草稿失败');
-                }
-
-                const result = await response.json();
-                
-                // 保存成功
-                MessageBox.success('草稿保存成功！');
-
-            } catch (error) {
-                console.error('保存草稿错误:', error);
-                MessageBox.error('保存失败：' + error.message);
-            }
-        }
     </script>
-    <!-- 引入 message.js -->
+
+    <!-- 在 body 标签内，编辑器后面添加 -->
+    <div class="floating-save">
+        <button class="save-btn" onclick="handlePublish()">
+            <i class="fas fa-paper-plane"></i>
+            发布文章
+        </button>
+    </div>
+
+    <!-- 引入消息提示组件 -->
     <script src="/system/js/message.js"></script>
 </body>
 

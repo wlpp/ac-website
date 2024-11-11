@@ -175,14 +175,17 @@ def get_articles():
         per_page: 每页数量（默认10）
     
     返回:
-        文章列表、总数、总页数等信息
+        已发布的文章列表、总数、总页数等信息
     """
     try:
         page = request.args.get('page', 1, type=int)
         per_page = 10
         
+        # 添加状态过滤条件，只查询已发布的文章
+        query = db.select(Article).where(Article.status == 1).order_by(desc(Article.created_at))
+        
         articles = db.paginate(
-            db.select(Article).order_by(desc(Article.created_at)),
+            query,
             page=page,
             per_page=per_page,
             error_out=False
@@ -208,7 +211,7 @@ def get_articles():
     except Exception as e:
         return jsonify({
             'success': False,
-            'error': '服务器部错误',
+            'error': '服务器错误',
             'message': str(e)
         }), 500
 

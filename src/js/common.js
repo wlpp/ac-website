@@ -15,7 +15,10 @@ function initializeNavigation() {
      * 处理用户登录状态显示和下拉菜单
      */
     function updateUserInterface() {
-        if (!userContainer) return;
+        if (!userContainer) {
+            message.error('用户界面元素未找到');
+            return;
+        }
         
         try {
             // 获取加密的用户数据
@@ -78,6 +81,7 @@ function initializeNavigation() {
             }
         } catch (error) {
             console.error('更新用户界面失败:', error);
+            message.error('更新用户界面失败');
         }
     }
 
@@ -188,108 +192,150 @@ function initializeSearch() {
     const closeBtn = document.querySelector('.search-modal .close-btn');
     const searchInput = document.querySelector('.search-input');
     const searchButton = document.querySelector('.search-button');
-    
+    // 定义 baseURL
+    const baseURL = ''; // 如果是相对路径，可以留空
+
     if (!searchBtn || !searchModal || !closeBtn || !searchInput) {
-        console.warn('搜索相关元素未找到');
+        message.error('搜索组件初始化失败');
         return;
     }
 
-    function openSearchModal(e) {
-        e.preventDefault();
+    // 打开搜索模态框
+    function openSearchModal() {
         searchModal.classList.add('active');
         searchInput.focus();
+        // 在打开模态��时绑定回车事件
+        searchInput.addEventListener('keydown', handleEnterKey);
     }
 
+    // 关闭搜索模态框
     function closeSearchModal() {
         searchModal.classList.remove('active');
         searchInput.value = '';
+        // 关闭模态框时移除回车事件
+        searchInput.removeEventListener('keydown', handleEnterKey);
     }
 
+    // 处理 ESC 键
     function handleEscKey(e) {
         if (e.key === 'Escape' && searchModal.classList.contains('active')) {
             closeSearchModal();
         }
     }
 
-    // 执行搜索的函数
+    // 处理回车键
+    function handleEnterKey(e) {
+        console.log('检测到按键:', e.key); // 调试日志
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            console.log('准备执行搜索...'); // 调试日志
+            performSearch();
+        }
+    }
+
+    // 执行搜索
     async function performSearch() {
         const keyword = searchInput.value.trim();
         if (!keyword) {
-            alert('请输入搜索关键词');
+            message.warning('请输入搜索关键词');
             return;
         }
 
+        console.log('开始搜索:', keyword);
+
         const articleSection = document.querySelector('.article-section');
-        if (!articleSection) return;
+        if (!articleSection) {
+            message.error('未找到文章区域元素');
+            return;
+        }
 
         try {
-            const response = await fetch(`${baseURL}/api/articles/search?keyword=${encodeURIComponent(keyword)}`, {
+            console.log('发送搜索请求:', `/api/articles/search?keyword=${keyword}`);
+            const response = await fetch(`/api/articles/search?keyword=${encodeURIComponent(keyword)}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json'
                 }
             });
 
+            console.log('搜索响应状态:', response.status);
+
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
 
             const data = await response.json();
+            console.log('搜索结果:', data);
             
-            // 清空现有内容
-            const sectionTitle = articleSection.querySelector('.section-title');
-            articleSection.innerHTML = '';
-            if (sectionTitle) {
-                articleSection.appendChild(sectionTitle);
-            }
+            // 创建搜索结果容器
+            const searchResultsHtml = `
+                <div class="search-results">
+                    <h2 class="search-title">搜索结果: "${keyword}"</h2>
+                    ${data.data && data.data.length > 0 ? `
+                        <div class="article-grid">
+                            ${data.data.map(article => `
+                                <div class="article-card">
+                                    <div class="article-image">
+                                        <img src="${article.image_url || '../images/default.jpg'}" alt="${article.title}">
+                                    </div>
+                                    <div class="article-info">
+                                        <h3 class="article-title">
+                                            <a href="/article/${article.article_id}">${article.title}</a>
+                                        </h3>
+                                        <div class="article-meta">
+                                            <span class="article-date">${article.n_date || article.created_at}</span>
+                                            <span class="article-tag">${getTagName(article.tag)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : `
+                        <div class="no-results">
+                            <p>未找到与"${keyword}"相关的文章</p>
+                        </div>
+                    `}
+                </div>
+            `;
 
-            if (data.data && data.data.length > 0) {
-                // 渲染搜索结果
-                data.data.forEach(article => {
-                    const articleCard = renderArticleCard(article);
-                    articleSection.appendChild(articleCard);
-                });
-                
-                // 重新初始化懒加载
-                lazyLoad();
-            } else {
-                // 显示无结果提示
-                articleSection.innerHTML += `
-                    <div class="no-results">
-                        <p>未找到与"${keyword}"相关的文章</p>
-                    </div>
-                `;
-            }
+            // 更新内容
+            articleSection.innerHTML = searchResultsHtml;
 
             // 搜索成功后关闭弹窗
             closeSearchModal();
 
+            // 如果有懒加载功能，重新初始化
+            if (typeof lazyLoad === 'function') {
+                lazyLoad();
+            }
+
         } catch (error) {
             console.error('搜索失败:', error);
-            alert('搜索失败，请稍后重试');
+            message.error('搜索失败，请稍后重试');
         }
     }
 
-    // 监听回车键
-    function handleEnterKey(e) {
-        if (e.key === 'Enter') {
-            performSearch();
-        }
+    // 辅助函数：获取标签名称
+    function getTagName(tag) {
+        const tagNames = {
+            0: '软件',
+            1: '游戏',
+            2: '小说'
+        };
+        return tagNames[tag] || '其他';
     }
 
-    // 监听搜索按钮点击
-    function handleSearchClick(e) {
-        e.preventDefault();
-        performSearch();
-    }
-
-    // 添加事件监听器
+    // 绑定事件监听器
     searchBtn.addEventListener('click', openSearchModal);
     closeBtn.addEventListener('click', closeSearchModal);
     document.addEventListener('keydown', handleEscKey);
-    searchInput.addEventListener('keypress', handleEnterKey);
+    
+    // 搜索按钮点击事件
     if (searchButton) {
-        searchButton.addEventListener('click', handleSearchClick);
+        searchButton.addEventListener('click', () => {
+            console.log('搜索按钮被点击'); // 调试日志
+            performSearch();
+        });
     }
 
     // 返回清理函数
@@ -297,9 +343,9 @@ function initializeSearch() {
         searchBtn.removeEventListener('click', openSearchModal);
         closeBtn.removeEventListener('click', closeSearchModal);
         document.removeEventListener('keydown', handleEscKey);
-        searchInput.removeEventListener('keypress', handleEnterKey);
+        searchInput.removeEventListener('keydown', handleEnterKey);
         if (searchButton) {
-            searchButton.removeEventListener('click', handleSearchClick);
+            searchButton.removeEventListener('click', () => performSearch());
         }
     };
 }
@@ -539,7 +585,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 花瓣效果初始化
 
-// 在加载页面内容后调用初始化
+// 在加载页面内容调用初始化
 async function loadPageContent(pagePath) {
     try {
         const response = await fetch(`/system/views/${pagePath}.html`);
@@ -558,3 +604,5 @@ async function loadPageContent(pagePath) {
         console.error('加载页面失败:', error);
     }
 }
+
+

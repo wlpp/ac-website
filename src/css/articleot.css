@@ -386,3 +386,6 @@
     border-top: 1px solid var(--border-color);
     margin-top: 1rem;
 }
+.tbcm-content{
+    margin-top: 60px;
+}

@@ -1,3 +1,6 @@
+// 定义 baseURL
+const baseURL = ''; // 如果是相对路径，可以留空
+
 // 获取用户数据函数
 function getUserData() {
     try {
@@ -118,12 +121,45 @@ document.addEventListener('DOMContentLoaded', function() {
             contentElement.innerHTML = data.content;
             document.title = `${data.title} - AC.蚂蚁`;
             
-            // 根据 tag 参数控制显示
-            if (disclaimer && source) {
-                if (tag === '1') {
+            // 根据 tag 参数控制显示和加载游戏下载信息
+            if (tag === '1') {
+                try {
+                    const downloadResponse = await fetch(`${baseURL}/api/game-download/${articleId}`);
+                    const downloadData = await downloadResponse.json();
+                    
+                    if (downloadResponse.ok && downloadData.success) {
+                        // 创建下载信息 HTML
+                        const downloadHtml = `
+                            <div class="tbcm-content">
+                                <p>游戏名称：${data.title}</p>
+                                <hr>
+                                ${downloadData.data.code ? `<p>网盘提取码：${downloadData.data.code}</p><hr>` : ''}
+                                ${downloadData.data.decryption ? `<p>解压密码：${downloadData.data.decryption}</p>` : ''}
+                            </div>
+                            <div class="tbcm-down" style="margin-top: 10px;">
+                                <a href="${downloadData.data.url}" class="download-btn" target="_blank">点击下载游戏</a>
+                            </div>
+                        `;
+                        
+                        // 在文章内容后添加下载信息
+                        contentElement.insertAdjacentHTML('beforeend', downloadHtml);
+                    } else {
+                        console.warn('游戏下载信息获取失败:', downloadData.message);
+                        message.warning(downloadData.message || '游戏下载信息获取失败');
+                    }
+                } catch (error) {
+                    console.error('加载游戏下载信息失败:', error);
+                    message.error('加载游戏下载信息失败，请稍后重试');
+                }
+                
+                // 显示免责声明
+                if (disclaimer && source) {
                     disclaimer.style.display = 'block';
                     source.style.display = 'none';
-                } else {
+                }
+            } else {
+                // 显示来源信息
+                if (disclaimer && source) {
                     disclaimer.style.display = 'none';
                     source.style.display = 'block';
                 }
@@ -350,7 +386,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const data = await response.json();
             
             if (response.ok && data.success) {
-                debug.log('评论数据:', data); // 调试日志
+                debug.log('评论数据:', data);
                 renderComments(data.data);
             } else {
                 console.error('加载评论失败:', data.message);
@@ -438,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 检查用户登录状态并处理评论输入
     function handleCommentAccess() {
-        const userData = getUserData(); // 使用 user.js 中的函数获取用户数据
+        const userData = getUserData(); // 使 user.js 中的函数获取用户数据
 
         if (!userData) {
             // 未登录状态下点击输入框显示登录提示

@@ -21,9 +21,6 @@ class UserManager {
                 throw new Error('未找到登录凭证');
             }
 
-            console.log('window.baseURL:', window.baseURL);
-
-            console.log('开始获取用户列表，token:', token);
             const params = new URLSearchParams({
                 page: this.pageConfig.currentPage,
                 per_page: this.pageConfig.pageSize,
@@ -32,10 +29,7 @@ class UserManager {
                 username: this.searchKeyword
             });
 
-            // 使用 window.baseURL
             const url = `${window.baseURL}/api/users?${params}`;
-            console.log('URL:', url);
-
             const response = await fetch(url, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -45,7 +39,6 @@ class UserManager {
 
             if (!response.ok) {
                 if (response.status === 401) {
-                    // token 失效，重定向到登录页
                     window.location.href = '/login';
                     return;
                 }
@@ -53,23 +46,13 @@ class UserManager {
             }
 
             const data = await response.json();
-            console.log('获取用户列表成功:', data);
             this.users = data.users;
             this.pageConfig.total = data.total;
+            this.renderUserList();
             return data;
         } catch (error) {
             console.error('获取用户列表错误:', error);
             throw error;
-        }
-    }
-
-    // 刷新页面数据
-    static async refreshPage() {
-        try {
-            await this.fetchUsers();
-            this.renderUserList();
-        } catch (error) {
-            console.error('刷新页面失败:', error);
         }
     }
 
@@ -86,7 +69,7 @@ class UserManager {
                     <td>${user.id}</td>
                     <td>${user.username}</td>
                     <td>${user.email}</td>
-                    <td>${UserManager.formatRole(user.role)}</td>
+                    <td>${this.formatRole(user.role)}</td>
                     <td>
                         <span class="status-badge ${user.status ? 'inactive' : 'active'}">
                             ${user.status ? '禁用' : '启用'}
@@ -95,10 +78,10 @@ class UserManager {
                     <td>${user.created_at}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn-edit" title="编辑" onclick="UserManager.editUser(${user.id})">
+                            <button class="btn-edit" onclick="UserManager.editUser(${user.id})">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button class="btn-delete" title="删除" onclick="UserManager.deleteUser(${user.id})">
+                            <button class="btn-delete" onclick="UserManager.deleteUser(${user.id})">
                                 <i class="fas fa-trash-alt"></i>
                             </button>
                         </div>
@@ -106,10 +89,48 @@ class UserManager {
                 </tr>
             `;
         });
-        userList.innerHTML = html;
         
+        userList.innerHTML = html || '<tr><td colspan="8" class="empty-message">暂无用户数据</td></tr>';
+        
+        // 更新分页
+        this.updatePagination();
+    }
+
+    // 更新分页
+    static updatePagination() {
         const totalPages = Math.ceil(this.pageConfig.total / this.pageConfig.pageSize);
         renderPagination(totalPages, this.pageConfig.total);
+    }
+
+    // 格式化角色显示
+    static formatRole(role) {
+        return role === 0 ? '管理员' : '普通用户';
+    }
+
+    // 初始化方法
+    static async init() {
+        try {
+            await this.fetchUsers();
+            
+            // 绑定事件
+            const addUserBtn = document.querySelector('.btn-primary');
+            if (addUserBtn) {
+                addUserBtn.addEventListener('click', () => showModal('添加用户'));
+            }
+
+            const closeBtn = document.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', hideModal);
+            }
+
+            const form = document.getElementById('userForm');
+            if (form) {
+                form.addEventListener('submit', (e) => this.handleSubmit(e));
+            }
+        } catch (error) {
+            console.error('初始化用户管理页面失败:', error);
+            MessageBox.error('初始化页面失败');
+        }
     }
 
     // 编辑用户
@@ -204,18 +225,6 @@ class UserManager {
         }
     }
 
-    // 格式化角色
-    static formatRole(role) {
-        switch (role) {
-            case 0:
-                return '管理员';
-            case 1:
-                return '普通用户';
-            default:
-                return '未知角色';
-        }
-    }
-
     // 更新用户
     static async updateUser(userId, userData) {
         try {
@@ -266,55 +275,17 @@ function searchUsers(keyword) {
 // 修改页面初始化函数
 async function initPage() {
     try {
-        // 检查 token
-        const token = localStorage.getItem('token');
-        if (!token) {
-            console.error('未找到登录凭证');
-            // 可以重定向到登录页面
-            window.location.href = '/login';
-            return;
-        }
-
-        console.log('开始初始化页面');
-        await UserManager.refreshPage();
-        console.log('页面初始完成');
-        
-        // 绑定添加用户按钮
-        const addUserBtn = document.querySelector('.btn-primary');
-        if (addUserBtn) {
-            addUserBtn.addEventListener('click', () => showModal('添加用户'));
-        }
-
-        // 绑定关闭按钮
-        document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', hideModal);
-        });
-
-        // 绑定表提交
-        const userForm = document.querySelector('#userForm');
-        if (userForm) {
-            userForm.addEventListener('submit', function(e) {
-                e.preventDefault();
-                UserManager.handleSubmit.call(UserManager, e);
-            });
-        }
-
-        // 绑定模态框外部点击关闭
-        // const modal = document.querySelector('.modal');
-        // if (modal) {
-        //     modal.addEventListener('click', (e) => {
-        //         if (e.target === modal) hideModal();
-        //     });
-        // }
+        await UserManager.init();
     } catch (error) {
         console.error('初始化页面失败:', error);
+        MessageBox.error('页面初始化失败');
     }
 }
 
 // 修改切换页码函数
 function changePage(page) {
     UserManager.pageConfig.currentPage = page;
-    UserManager.refreshPage();
+    UserManager.fetchUsers();
 }
 
 // 渲染分控件

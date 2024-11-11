@@ -405,7 +405,7 @@ function initializePetalEffect(canvas) {
     animate();
 }
 
-// 在 DOMContentLoaded 时初始化所有导航相关功能
+// 在 DOMContentLoaded 时初始化所导航相关功能
 document.addEventListener('DOMContentLoaded', function() {
     const cleanupNav = initializeNavigation();
     const cleanupSearch = initializeSearch();
@@ -420,3 +420,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 // 花瓣效果初始化
+
+// 在加载页面内容后调用初始化
+async function loadPageContent(pagePath) {
+    try {
+        const response = await fetch(`/system/views/${pagePath}.html`);
+        const html = await response.text();
+        document.getElementById('mainContent').innerHTML = html;
+        
+        // 根据页面类型调用相应的初始化函数
+        if (pagePath.includes('article')) {
+            await ArticleManager.init();
+        } else if (pagePath.includes('user')) {
+            await UserManager.init();
+        } else if (pagePath.includes('menu')) {
+            await MenuManager.init();
+        }
+    } catch (error) {
+        console.error('加载页面失败:', error);
+    }
+}

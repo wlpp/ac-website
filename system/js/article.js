@@ -230,25 +230,29 @@ class ArticleManager {
         // 在新标签页打开编辑页面
         window.open(`/system/views/article/edit.html?${params.toString()}`, '_blank');
     }
-}
 
-// 页面初始化
-async function initPage() {
-    try {
-        // 获取并渲染文章列表
-        await ArticleManager.fetchArticles();
-
+    // 添加静态初始化方法
+    static init() {
+        this.fetchArticles();
+        
         // 绑定表单提交事件
         const form = document.getElementById('articleForm');
         if (form) {
-            form.addEventListener('submit', (e) => ArticleManager.handleSubmit.call(ArticleManager, e));
+            form.addEventListener('submit', (e) => this.handleSubmit.call(this, e));
         }
+    }
+}
+
+// 修改初始化函数
+async function initPage() {
+    try {
+        await ArticleManager.init();
     } catch (error) {
         console.error('初始化页面失败:', error);
         MessageBox.error('页面初始化失败');
     }
 }
 
-// 导出初始化函数
+// 导出初始化函数和类
 window.initPage = initPage;
 window.ArticleManager = ArticleManager;

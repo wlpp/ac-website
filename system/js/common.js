@@ -139,43 +139,59 @@ const menuConfig = {
     }
 };
 
-// 加载页面内容
-async function loadPage(path) {
+// 添加页面加载函数
+async function loadPage(pageName) {
+    const mainContent = document.getElementById('mainContent');
+    if (!mainContent) return;
+
     try {
-        // 添加 AJAX 标识头
-        const response = await fetch(`/system/views/${path}.html`, {
-            headers: {
-                'X-Requested-With': 'XMLHttpRequest'
-            }
-        });
-        
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        
+        // 加载页面内容
+        const response = await fetch(`/system/views/${pageName}.html`);
         const html = await response.text();
-        document.getElementById('mainContent').innerHTML = html;
-        
-        // 更新面包屑
-        updateBreadcrumb(path);
-        
-        // 更新菜单激活状态
-        updateMenuActive(path);
-        
-        // 加载对应的JS文件
-        const module = path.split('/')[0];
-        await loadModuleScript(module);
-        
-        // 初始化页面
-        if (typeof window.initPage === 'function') {
-            window.initPage();
+        mainContent.innerHTML = html;
+
+        // 根据页面类型初始化不同功能
+        switch(pageName) {
+            case 'article/list':
+                await ArticleManager.fetchArticles();
+                break;
+            case 'user/list':
+                await UserManager.fetchUsers();
+                break;
+            // 可以添加其他页面的初始化
         }
     } catch (error) {
-        console.error('Error loading page:', error);
-        // 如果加载失败，可以重定向到首页
-        window.location.href = '/system/index.html';
+        console.error('加载页面失败:', error);
+        MessageBox.error('加载页面失败');
     }
 }
+
+// 修改导航点击事件处理
+document.addEventListener('DOMContentLoaded', function() {
+    const menuLinks = document.querySelectorAll('.menu a');
+    menuLinks.forEach(link => {
+        link.addEventListener('click', async (e) => {
+            e.preventDefault();
+            
+            // 移除其他链接的激活状态
+            menuLinks.forEach(l => l.classList.remove('active'));
+            // 添加当前链接的激活状态
+            e.target.classList.add('active');
+            
+            // 获取页面名称并加载
+            const pageName = e.target.dataset.page;
+            if (pageName) {
+                await loadPage(pageName);
+            }
+        });
+    });
+
+    // 初始加载默认页面
+    const defaultPage = document.querySelector('.menu a.active');
+    if (defaultPage) {
+        loadPage(defaultPage.dataset.page);
+    }
+});
 
 // 加载模块JS文件
 async function loadModuleScript(module) {

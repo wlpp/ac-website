@@ -2,41 +2,33 @@ console.log('menu.js loaded');
 
 class MenuManager {
     static menus = [];
-    static currentEditId = null;
+    static pageConfig = {
+        pageSize: 10,
+        currentPage: 1,
+        total: 0,
+        pages: 0
+    };
 
     // 获取菜单列表
     static async fetchMenus() {
         try {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                throw new Error('未找到登录凭证');
+            const response = await fetch(`/api/menus?page=${this.pageConfig.currentPage}`);
+            if (!response.ok) {
+                throw new Error('获取菜单列表失败');
             }
 
-            // 这里应该是从后端获取数据，暂时用模拟数据
-            this.menus = [
-                {
-                    id: 1,
-                    name: '首页',
-                    url: '/dashboard',
-                    icon: 'fas fa-home',
-                    parentId: 0,
-                    sort: 0,
-                    status: 1
-                },
-                {
-                    id: 2,
-                    name: '用户管理',
-                    url: '/user',
-                    icon: 'fas fa-users',
-                    parentId: 0,
-                    sort: 1,
-                    status: 1
-                }
-            ];
-            return this.menus;
+            const result = await response.json();
+            if (result.success) {
+                this.menus = result.data;
+                this.pageConfig.total = result.total;
+                this.pageConfig.pages = result.pages;
+                this.renderMenuList();
+            } else {
+                throw new Error(result.message || '获取菜单列表失败');
+            }
         } catch (error) {
             console.error('获取菜单列表错误:', error);
-            throw error;
+            MessageBox.error(error.message);
         }
     }
 
@@ -45,21 +37,20 @@ class MenuManager {
         const tbody = document.getElementById('menuList');
         if (!tbody) return;
 
-        tbody.innerHTML = this.menus.map(menu => `
+        tbody.innerHTML = this.menus.length ? this.menus.map(menu => `
             <tr>
+                <td><input type="checkbox" value="${menu.id}"></td>
                 <td>${menu.id}</td>
-                <td>
-                    <i class="${menu.icon}"></i>
-                    ${menu.name}
-                </td>
-                <td>${menu.url}</td>
-                <td><i class="${menu.icon}"></i></td>
-                <td>${menu.sort}</td>
+                <td>${menu.name}</td>
+                <td>${menu.path}</td>
+                <td>${menu.parent_id || '-'}</td>
+                <td>${menu.sort_order}</td>
                 <td>
                     <span class="status-badge ${menu.status ? 'active' : 'inactive'}">
                         ${menu.status ? '启用' : '禁用'}
                     </span>
                 </td>
+                <td>${menu.created_at}</td>
                 <td>
                     <button class="btn-icon" onclick="MenuManager.editMenu(${menu.id})">
                         <i class="fas fa-edit"></i>
@@ -69,22 +60,49 @@ class MenuManager {
                     </button>
                 </td>
             </tr>
-        `).join('');
+        `).join('') : '<tr><td colspan="9" class="empty-message">暂无菜单数据</td></tr>';
+
+        // 更新分页信息
+        this.updatePagination();
+    }
+
+    // 更新分页信息
+    static updatePagination() {
+        const pagination = document.querySelector('.pagination');
+        if (!pagination) return;
+
+        let paginationHtml = `
+            <button onclick="MenuManager.changePage(${this.pageConfig.currentPage - 1})" 
+                    ${this.pageConfig.currentPage <= 1 ? 'disabled' : ''}>
+                上一页
+            </button>
+            <span>第 ${this.pageConfig.currentPage} 页 / 共 ${this.pageConfig.pages} 页</span>
+            <button onclick="MenuManager.changePage(${this.pageConfig.currentPage + 1})"
+                    ${this.pageConfig.currentPage >= this.pageConfig.pages ? 'disabled' : ''}>
+                下一页
+            </button>
+        `;
+
+        pagination.innerHTML = paginationHtml;
+    }
+
+    // 切换页码
+    static async changePage(page) {
+        if (page < 1 || page > this.pageConfig.pages) return;
+        this.pageConfig.currentPage = page;
+        await this.fetchMenus();
     }
 
     // 显示模态框
     static showModal(title = '添加菜单') {
         const modal = document.querySelector('.modal');
-        const modalTitle = modal.querySelector('.modal-header h3');
-        
+        const modalTitle = modal?.querySelector('.modal-header h3');
         if (modal && modalTitle) {
+            modalTitle.textContent = title;
             modal.classList.add('show');
             // 重置表单
-            const form = document.querySelector('#menuForm');
-            if (form) {
-                form.reset();
-                this.updateParentMenuOptions();
-            }
+            const form = document.getElementById('menuForm');
+            if (form) form.reset();
         }
     }
 
@@ -99,121 +117,81 @@ class MenuManager {
         }
     }
 
-    // 编辑菜单
-    static editMenu(id) {
-        this.currentEditId = id;
-        const menu = this.menus.find(m => m.id === id);
-        if (!menu) return;
-
-        this.showModal('编辑菜单');
-        const form = document.getElementById('menuForm');
-        form.name.value = menu.name;
-        form.url.value = menu.url;
-        form.icon.value = menu.icon;
-        form.parentId.value = menu.parentId;
-        form.sort.value = menu.sort;
-        form.status.value = menu.status;
-
-        this.updateParentMenuOptions(id);
-    }
-
-    // 更新父级菜单选项
-    static updateParentMenuOptions(excludeId = null) {
-        const select = document.querySelector('select[name="parentId"]');
-        if (!select) return;
+    // 处理表单提交
+    static async handleSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
         
-        select.innerHTML = '<option value="0">无</option>';
-        const topMenus = this.menus.filter(m => m.parentId === 0 && m.id !== excludeId);
-        topMenus.forEach(menu => {
-            select.innerHTML += `<option value="${menu.id}">${menu.name}</option>`;
-        });
-    }
-
-    // 保存菜单
-    static async handleSubmit(e) {
-        e.preventDefault();
         try {
-            const form = e.target;
-            const menuData = {
+            const formData = {
                 name: form.name.value,
-                url: form.url.value,
-                icon: form.icon.value,
-                parentId: parseInt(form.parentId.value),
-                sort: parseInt(form.sort.value),
+                path: form.path.value,
+                parent_id: form.parent_id.value || null,
+                sort_order: parseInt(form.sort_order.value) || 0,
                 status: parseInt(form.status.value)
             };
 
-            if (this.currentEditId) {
-                // 编辑现有菜单
-                await this.updateMenu(this.currentEditId, menuData);
-            } else {
-                // 添加新菜单
-                await this.addMenu(menuData);
-            }
+            const response = await fetch('/api/menus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify(formData)
+            });
 
-            this.hideModal();
-            this.renderMenuList();
-            MessageBox.success(this.currentEditId ? '更新成功' : '添加成功');
+            const result = await response.json();
+
+            if (response.ok) {
+                MessageBox.success(result.message || '菜单创建成功');
+                await this.fetchMenus();
+                this.hideModal();
+            } else {
+                throw new Error(result.message || '创建菜单失败');
+            }
         } catch (error) {
+            console.error('创建菜单错误:', error);
             MessageBox.error(error.message);
         }
     }
 
-    // 删除菜单
-    static async deleteMenu(id) {
-        if (!confirm('确定要删除这个菜单吗？')) return;
-
+    // 初始化方法
+    static async init() {
         try {
-            // 检查是否有子菜单
-            const hasChildren = this.menus.some(m => m.parentId === id);
-            if (hasChildren) {
-                throw new Error('请先删除该菜单的子菜单');
+            await this.fetchMenus();
+            
+            // 绑定事件
+            const addBtn = document.querySelector('.btn-primary');
+            if (addBtn) {
+                addBtn.addEventListener('click', () => this.showModal());
             }
 
-            // 这里应该调用后端 API
-            this.menus = this.menus.filter(m => m.id !== id);
-            this.renderMenuList();
-            MessageBox.success('删除成功');
+            const closeBtn = document.querySelector('.close-btn');
+            if (closeBtn) {
+                closeBtn.addEventListener('click', () => this.hideModal());
+            }
+
+            const form = document.getElementById('menuForm');
+            if (form) {
+                form.addEventListener('submit', (e) => this.handleSubmit(e));
+            }
         } catch (error) {
-            MessageBox.error(error.message);
+            console.error('初始化菜单管理页面失败:', error);
+            MessageBox.error('初始化页面失败');
         }
     }
 }
 
-// 页面初始化函数
+// 初始化函数
 async function initPage() {
     try {
-        await MenuManager.fetchMenus();
-        MenuManager.renderMenuList();
-        
-        // 绑定添加菜单按钮
-        const addMenuBtn = document.querySelector('.btn-primary');
-        if (addMenuBtn) {
-            addMenuBtn.addEventListener('click', () => MenuManager.showModal());
-        }
-
-        // 绑定表单提交
-        const menuForm = document.querySelector('#menuForm');
-        if (menuForm) {
-            menuForm.addEventListener('submit', (e) => MenuManager.handleSubmit.call(MenuManager, e));
-        }
-
-        // 绑定关闭按钮
-        document.querySelectorAll('.close-btn').forEach(btn => {
-            btn.addEventListener('click', () => MenuManager.hideModal());
-        });
-
-        // 绑定模态框外部点击关闭
-        const modal = document.querySelector('.modal');
-        if (modal) {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) MenuManager.hideModal();
-            });
-        }
+        await MenuManager.init();
     } catch (error) {
         console.error('初始化页面失败:', error);
+        MessageBox.error('页面初始化失败');
     }
 }
 
-// 导出初始化函数
-window.initPage = initPage; 
+// 导出初始化函数和类
+window.initPage = initPage;
+window.MenuManager = MenuManager; 

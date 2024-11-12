@@ -94,12 +94,8 @@ function initializeNavigation() {
     function checkScroll() {
         if (window.scrollY > 0) {
             header.classList.add('scrolled');
-            header.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
-            header.style.padding = '5px 40px';
         } else {
             header.classList.remove('scrolled');
-            header.style.boxShadow = 'none';
-            header.style.padding = '5px 40px';
         }
     }
 

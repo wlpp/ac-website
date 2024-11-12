@@ -24,11 +24,11 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    /* background: rgba(255, 255, 255, 0.95); */
+    /* backdrop-filter: blur(10px); */
+    /* -webkit-backdrop-filter: blur(10px); */
     z-index: 1001;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    /* box-shadow: 0 2px 10px rgba(0,0,0,0.1); */
     transition: all 0.3s ease;
 }
 
@@ -36,7 +36,7 @@ body {
 .logo {
     font-family: 'Ma Shan Zheng', cursive;
     font-size: 1.8em;
-    color: #FEA23B!important;
+    color: #EA9E29!important;
     text-decoration: none;
     transition: all 0.3s ease;
     text-shadow: 2px 2px 4px rgba(254, 162, 59, 0.2);
@@ -45,7 +45,7 @@ body {
 }
 
 .logo:hover {
-    color: #FF8C00!important;
+    color: #BBBAF0!important;
     text-shadow: 3px 3px 6px rgba(254, 162, 59, 0.3);
     transform: scale(1.05);
 }
@@ -58,7 +58,7 @@ body {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: #FEA23B!important;
+    background: #BBBAF0!important;
     opacity: 0;
     transition: all 0.3s ease;
 }
@@ -82,12 +82,12 @@ body {
 
 /* 如果需要在暗色背景下使用 */
 .theader.dark .logo {
-    color: #FEA23B !important;
+    color: #BBBAF0 !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .theader.dark .logo:hover {
-    color: #FF8C00!important;
+    color: #BBBAF0!important;
 }
 
 /* 导航链接样式 */
@@ -106,15 +106,21 @@ body {
 }
 
 .nav-links a:hover {
-    color: #FEA23B;
+    color: #BBBAF0;
 }
 
 .nav-links a.active {
-    color: #FEA23B;
+    color: #BBBAF0;
 }
 /* 顶部导航栏响应式 */
 
-
+/* 可选：滚动时增加不透明度 */
+.scrolled {
+    backdrop-filter: saturate(200%) blur(30px);
+    background-color: hsla(0, 0%, 100%, .8) !important;
+    box-shadow: 0 2px 5px  rgba(2, 6, 23, .075);
+    padding: 3px 20px;
+}
 
 .nav-links {
     display: flex;
@@ -139,7 +145,7 @@ body {
     left: 0;
     width: 0;
     height: 2px;
-    background-color: #FEA23B;
+    background-color: #BBBAF0;
     transition: width 0.3s ease;
 }
 
@@ -203,7 +209,7 @@ body {
     left: 0;
     width: 0;
     height: 3px;
-    background-color: #FEA23B;
+    background-color: #BBBAF0;
     z-index: 10000;
     transition: width 0.2s ease;
     pointer-events: none;
@@ -279,7 +285,7 @@ body {
 }
 
 .dropdown-item:hover {
-    color: #FEA23B;
+    color: #BBBAF0;
     background: rgba(254, 162, 59, 0.1);
 }
 
@@ -406,7 +412,7 @@ body {
 }
 
 .search-modal .close-btn:hover {
-    color: #FEA23B;
+    color: #BBBAF0;
     transform: rotate(90deg);
     background: rgba(0, 0, 0, 0.05);
 }
@@ -526,14 +532,14 @@ body {
 
 .back-to-top i {
     font-size: 20px;
-    color: #FEA23B;
+    color: #BBBAF0;
     transform: rotate(-45deg);
     transition: all 0.3s ease;
 }
 
 .back-to-top:hover {
     transform: translateY(-5px);
-    background: #FEA23B;
+    background: #BBBAF0;
 }
 
 .back-to-top:hover i {
@@ -580,6 +586,7 @@ body {
     z-index: 0;
     /* 时添加背景色用于测试 */
     background-color: rgba(0, 0, 0, 0.02);
+    z-index: 10;
 }
 
 /* 用户容器样式 */
@@ -634,7 +641,7 @@ body {
 
 .dropdown-item:hover {
     background-color: rgba(254, 162, 59, 0.1);
-    color: #FEA23B;
+    color: #BBBAF0;
 }
 
 /* 用户容器悬���时显示下拉菜单 */
@@ -819,3 +826,326 @@ body {
     padding: 40px;
     color: #666;
 }
+/* 导航按钮基础样式 */
+.nav-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #FDE8FE;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+/* 按钮悬停效果 */
+.nav-btn:hover {
+    /* background: rgba(255, 255, 255, 1); */
+    transform: scale(1.1);
+}
+
+/* 图标样式 */
+.nav-btn i {
+    font-size: 1.2em;
+    color: #BBBAF0;
+    transition: all 0.3s ease;
+}
+
+/* 邮件按钮特殊样式 */
+.nav-btn.email {
+    background: #FDE8FE;
+}
+
+.nav-btn.email i {
+    color: FF8C00;
+}
+
+.nav-btn.email:hover {
+    /* background: #BBBAF0; */
+    transform: scale(1.1) rotate(5deg);
+}
+
+/* 上一页/下一页按钮悬停效果 */
+.nav-btn.prev:hover i {
+    transform: translateX(-2px);
+}
+
+.header-info {
+    background-color: rgba(255, 255, 255, 0.5);
+    width: 35%;
+    margin: auto;
+    font-size: 15px;
+    color: #505050;
+    padding: 15px;
+    margin-top: 22px;
+    letter-spacing: 0;
+    line-height: 30px;
+    border-radius: 15px;
+    box-sizing: initial;
+    white-space: nowrap;
+    backdrop-filter: blur(10px);
+    transition: all 0.8s ease !important;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    overflow: hidden;
+}
+
+.typing {
+    border-right: 2px solid #505050;
+    white-space: nowrap;
+    overflow: hidden;
+    display: inline-block;
+    animation: typing 4s steps(40, end), blink-caret 0.75s step-end infinite;
+}
+
+@keyframes typing {
+    from { width: 0; }
+    to { width: 100%; }
+}
+
+@keyframes blink-caret {
+    from, to { border-color: transparent; }
+    50% { border-color: #505050; }
+}
+
+/* 子元素样式保持不变 */
+.header-info h2,
+.header-info p {
+    margin: 0;
+    padding: 0;
+    white-space: nowrap;
+    overflow: hidden;
+}
+.header-info h2{
+    
+}
+.header-info p{
+   
+}
+/* 移除 text-content 的背景和模糊效果，因为现在在 header-info 中设置 */
+.text-content {
+    text-align: center;
+    margin-bottom: 20px;
+    background: none;
+    backdrop-filter: none;
+}
+/* 应用动画到 text-content */
+.text-content {
+    animation: fadeInDown 0.8s ease-out forwards;
+    opacity: 0;  /* 初始状态设为透明 */
+}
+
+/* 为子元素添加延迟动画 */
+.text-content > * {
+    animation: fadeInDown 0.8s ease-out forwards;
+    opacity: 0;
+}
+
+.text-content h2 {
+    color: #BBBAF0;
+    animation-delay: 0.2s;
+}
+
+.text-content p {
+    color: rgba(255, 0, 0, 0);
+    animation-delay: 0.4s;
+}
+
+.text-content .button-group {
+    animation-delay: 0.6s;
+}
+
+/* 打字机光标效果 */
+.typing::after {
+    content: '|';
+    animation: blink 0.7s infinite;
+    font-weight: 100;
+    color: #fff;
+}
+
+@keyframes blink {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
+}
+
+/* 确保文字容器有足够空间 */
+.header-info {
+    min-height: 80px; /* 根据实际需要调整 */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 10px;
+}
+/* 头像容器式 */
+.avatar {
+    width: 120px;
+    height: 120px;
+    margin: 0 auto 15px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 3px solid rgba(255, 255, 255, 0.8);
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.8s ease;
+}
+
+.avatar img:hover {
+    transform: rotate(360deg);
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .avatar {
+        width: 120px;
+        height: 120px;
+    }
+}
+
+/* 图标区域样式 */
+.nav-icons {
+    display: flex;
+    gap: 15px;
+    margin-left: 20px;
+}
+
+.icon-btn {
+    color: #333;
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: #F9D938;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .nav-icons {
+        gap: 10px;
+        margin-left: 15px;
+    }
+    
+    .icon-btn {
+        font-size: 16px;
+    }
+}
+
+/* 更新 nav-links 样式 */
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+.nav-links a:nth-of-type(1) {
+    color: rgb(0, 128, 0);
+}
+.nav-links a:nth-of-type(2) {
+    color: rgb(0, 0, 255);
+}
+.nav-links a:nth-of-type(3) {
+    color: rgb(255, 0, 0);
+}
+.nav-links a:nth-of-type(4) {
+    color: rgb(0, 255, 0);
+}   
+/* 图标按钮样式 */
+.icon-btn {
+    color: #333;
+    font-size: 18px;
+    padding: 5px;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.icon-btn:hover {
+    color: #F9D938;
+}
+
+/* 让图标靠右 */
+.icon-btn.search,
+.icon-btn.user {
+    margin-left: auto;
+}
+
+.icon-btn.search {
+    margin-left: auto;
+}
+
+.icon-btn.user {
+    margin-left: auto;
+}
+
+/* 响应式调整 */
+@media (max-width: 768px) {
+    .icon-btn {
+        font-size: 16px;
+    }
+    
+    .icon-btn.user {
+        margin-left: 10px;
+    }
+}
+
+/* 添加下拉菜单样式 */
+.user-container {
+    position: relative;
+}
+
+
+/* 显示下拉菜单 */
+.user-container:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .dropdown-menu {
+        position: static;
+        transform: none;
+        box-shadow: none;
+        margin-top: 5px;
+        width: 100%;
+        opacity: 1;
+        visibility: visible;
+    }
+
+    .dropdown-item {
+        padding: 12px 0;
+    }
+}
+
+
+
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  
+  #mo-nav::-webkit-scrollbar {
+    width: 0;
+    opacity: 0;
+  }
+  
+  ::-webkit-scrollbar-track,
+  body.dark::-webkit-scrollbar-thumb {
+    background-color: #eee;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: #FEA23B;
+    border-radius: 25px;
+  }

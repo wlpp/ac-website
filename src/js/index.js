@@ -73,7 +73,7 @@ function renderArticleCard(article) {
         : 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
     
     articleCard.innerHTML = `
-        <a href="/article/${article.article_id}" class="article-link">
+        <a href="/article/${article.article_id}?tag=${article.tag}" class="article-link">
             <div class="article-image">
                 <img data-src="${imageUrl}" 
                      alt="${article.title || '无标题'}"

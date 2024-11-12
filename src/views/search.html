@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AC.蚂蚁 - 资源免费分享</title>
+    <!-- 引入艺术字体 -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap">
+    <!-- 引入公共样式 -->
+    <link rel="stylesheet" href="../css/common.css">
+    <!-- 引入页面特定样式 -->
+    <link rel="stylesheet" href="../css/index.css">
+    <!-- 添加在其他 link 标签之前 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <!-- 引入消息样式 -->
+    <link rel="stylesheet" href="../plug/Message/message.css">
+    <!-- 添加在其他 link 标签之前 -->
+    <link rel="icon" type="image/x-icon" href="../images/favicon.ico">
+    <!-- 为了更好的兼容性，也可以添加以下行 -->
+    <link rel="shortcut icon" type="image/x-icon" href="../images/favicon.ico">
+
+
+</head>
+<style>
+    .full-screen-section{
+        height: 50vh;
+    }   
+</style>
+<body>
+    <canvas id="particleCanvas"></canvas>
+    <div class="progress-bar"></div>
+
+    <div class="theader">
+        <a href="/" class="logo">AC.蚂蚁</a>
+        
+        <button type="button" id="menuBtn" class="menu-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </button>
+        
+        <nav class="nav-links mobile-nav">
+            <a href="/" class="active">软件</a>
+            <a href="/game">游戏</a>
+            <a href="#">小说</a>
+            <a href="#">留言</a>
+            <a href="#" class="icon-btn search">🔍</a>
+            <div class="user-container">
+                <a href="#" class="icon-btn user">
+                    <i class="fa-solid fa-user-astronaut"></i>
+                </a>
+                <div class="dropdown-menu">
+                    <a href="/login" class="dropdown-item">登录</a>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <div class="full-screen-section">
+        <div class="image-container">
+            <img src="" alt="Banner">
+            <div class="text-overlay">
+                <div class="text-content">
+                    <div class="avatar">
+                        <img src="../images/avatar.webp" alt="Avatar">
+                    </div>
+                    <div class="header-info">
+                        <h2>关于“ 校园 ”的搜索结果</h2>
+                        <p s>资源在下面！往下滑！</p>
+                    </div>
+                </div>
+                <div class="button-group" style="display: none;">
+                    <button class="nav-btn prev">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button class="nav-btn email">
+                        <i class="fa-solid fa-paw"></i>
+                    </button>
+                    <button class="nav-btn next">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 文章区域 -->
+        <section class="article-section">
+        </section>
+    </div>
+
+    <!-- 返回顶部按钮 -->
+    <div class="back-to-top">
+        <i class="fas fa-rocket"></i>
+    </div>
+
+    <!-- 页面底部 -->
+    <footer class="footer">
+        <div class="load-more">
+            <button class="load-more-btn">更早的文章</button>
+        </div>
+        <div class="footer-info">
+            <div class="copyright">
+                Copyright © by AC.蚂蚁 All Rights Reserved.
+            </div>
+
+        </div>
+    </footer>
+
+    <!-- 搜索弹框 -->
+    <div class="search-modal">
+        <button class="close-btn">×</button>
+        <div class="search-container">
+            <div class="search-title">想要找点什么呢?</div>
+            <input type="text" class="search-input" placeholder="输入关键词按回车键搜索...">
+        </div>
+        <img src="../images/iloli.gif" alt="装饰图片" class="decoration-image">
+    </div>
+      <!-- 先引入 config.js，再引入依赖它的 index.js -->
+      <script src="../api/config.js"></script>
+      <script src="../js/common.js"></script>
+      <script src="../js/index.js"></script>
+      <script src="../plug/Message/Message.js"></script>
+      <script src="../js/debug.js"></script>
+</body>
+</html> 

@@ -228,7 +228,7 @@ def get_articles():
         # 构建基础查询
         query = Article.query
         
-        # 默认只返回已发布文章
+        # 默认回已发布文章
         if query_type != '0':
             query = query.filter(Article.status == 1)
             
@@ -877,3 +877,13 @@ def create_game_download():
             'success': False,
             'message': '创建下载信息失败'
         }), 500
+
+# 添加搜索路由
+@article_bp.route('/search')
+def search_page():
+    """搜索页面路由"""
+    # 获取项目根目录
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    # 构建 search.html 文件路径
+    file_path = os.path.join(current_dir, 'src', 'views', 'search.html') 
+    return send_file(file_path)

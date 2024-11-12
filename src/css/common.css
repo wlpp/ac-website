@@ -45,7 +45,7 @@ body {
 }
 
 .logo:hover {
-    color: #BBBAF0!important;
+    color: #EA9E29!important;
     text-shadow: 3px 3px 6px rgba(254, 162, 59, 0.3);
     transform: scale(1.05);
 }
@@ -82,12 +82,12 @@ body {
 
 /* 如果需要在暗色背景下使用 */
 .theader.dark .logo {
-    color: #BBBAF0 !important;
+    color: #EA9E29 !important;
     text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .theader.dark .logo:hover {
-    color: #BBBAF0!important;
+    color: #EA9E29!important;
 }
 
 /* 导航链接样式 */

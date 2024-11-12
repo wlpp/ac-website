@@ -192,19 +192,46 @@ function initializeSearch() {
     const closeBtn = document.querySelector('.search-modal .close-btn');
     const searchInput = document.querySelector('.search-input');
     const searchButton = document.querySelector('.search-button');
-    // 定义 baseURL
-    const baseURL = ''; // 如果是相对路径，可以留空
 
     if (!searchBtn || !searchModal || !closeBtn || !searchInput) {
         message.error('搜索组件初始化失败');
         return;
     }
 
+    // 处理回车键
+    function handleEnterKey(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            const keyword = searchInput.value.trim();
+            if (!keyword) {
+                message.warning('请输入搜索关键词');
+                return;
+            }
+            // 关闭搜索模态框
+            closeSearchModal();
+            // 跳转到搜索页面
+            window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
+        }
+    }
+
+    // 执行搜索
+    async function performSearch() {
+        const keyword = searchInput.value.trim();
+        if (!keyword) {
+            message.warning('请输入搜索关键词');
+            return;
+        }
+        // 关闭搜索模态框
+        closeSearchModal();
+        // 跳转到搜索页面
+        window.location.href = `/search?keyword=${encodeURIComponent(keyword)}`;
+    }
+
     // 打开搜索模态框
     function openSearchModal() {
         searchModal.classList.add('active');
         searchInput.focus();
-        // 在打开模态��时绑定回车事件
+        // 在打开模态框时绑定回车事件
         searchInput.addEventListener('keydown', handleEnterKey);
     }
 
@@ -223,119 +250,15 @@ function initializeSearch() {
         }
     }
 
-    // 处理回车键
-    function handleEnterKey(e) {
-        console.log('检测到按键:', e.key); // 调试日志
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            console.log('准备执行搜索...'); // 调试日志
-            performSearch();
-        }
-    }
-
-    // 执行搜索
-    async function performSearch() {
-        const keyword = searchInput.value.trim();
-        if (!keyword) {
-            message.warning('请输入搜索关键词');
-            return;
-        }
-
-        console.log('开始搜索:', keyword);
-
-        const articleSection = document.querySelector('.article-section');
-        if (!articleSection) {
-            message.error('未找到文章区域元素');
-            return;
-        }
-
-        try {
-            console.log('发送搜索请求:', `/api/articles/search?keyword=${keyword}`);
-            const response = await fetch(`/api/articles/search?keyword=${encodeURIComponent(keyword)}`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('搜索响应状态:', response.status);
-
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-            console.log('搜索结果:', data);
-            
-            // 创建搜索结果容器
-            const searchResultsHtml = `
-                <div class="search-results">
-                    <h2 class="search-title">搜索结果: "${keyword}"</h2>
-                    ${data.data && data.data.length > 0 ? `
-                        <div class="article-grid">
-                            ${data.data.map(article => `
-                                <div class="article-card">
-                                    <div class="article-image">
-                                        <img src="${article.image_url || '../images/default.jpg'}" alt="${article.title}">
-                                    </div>
-                                    <div class="article-info">
-                                        <h3 class="article-title">
-                                            <a href="/article/${article.article_id}">${article.title}</a>
-                                        </h3>
-                                        <div class="article-meta">
-                                            <span class="article-date">${article.n_date || article.created_at}</span>
-                                            <span class="article-tag">${getTagName(article.tag)}</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : `
-                        <div class="no-results">
-                            <p>未找到与"${keyword}"相关的文章</p>
-                        </div>
-                    `}
-                </div>
-            `;
-
-            // 更新内容
-            articleSection.innerHTML = searchResultsHtml;
-
-            // 搜索成功后关闭弹窗
-            closeSearchModal();
-
-            // 如果有懒加载功能，重新初始化
-            if (typeof lazyLoad === 'function') {
-                lazyLoad();
-            }
-
-        } catch (error) {
-            console.error('搜索失败:', error);
-            message.error('搜索失败，请稍后重试');
-        }
-    }
-
-    // 辅助函数：获取标签名称
-    function getTagName(tag) {
-        const tagNames = {
-            0: '软件',
-            1: '游戏',
-            2: '小说'
-        };
-        return tagNames[tag] || '其他';
-    }
-
     // 绑定事件监听器
     searchBtn.addEventListener('click', openSearchModal);
     closeBtn.addEventListener('click', closeSearchModal);
     document.addEventListener('keydown', handleEscKey);
+    searchInput.addEventListener('keydown', handleEnterKey);
     
     // 搜索按钮点击事件
     if (searchButton) {
-        searchButton.addEventListener('click', () => {
-            console.log('搜索按钮被点击'); // 调试日志
-            performSearch();
-        });
+        searchButton.addEventListener('click', performSearch);
     }
 
     // 返回清理函数
@@ -345,7 +268,7 @@ function initializeSearch() {
         document.removeEventListener('keydown', handleEscKey);
         searchInput.removeEventListener('keydown', handleEnterKey);
         if (searchButton) {
-            searchButton.removeEventListener('click', () => performSearch());
+            searchButton.removeEventListener('click', performSearch);
         }
     };
 }

@@ -466,43 +466,69 @@ def get_article_content(article_id):
 
 @article_bp.route('/api/articles/search')
 def search_articles():
-    """搜索文章"""
+    """搜索文章
+    
+    支持以下搜索参数:
+    - keyword: 搜索关键词（标题和内容）
+    - tag: 文章标签（0:软件, 1:游戏, 2:小说）
+    - page: 页码（默认1）
+    - per_page: 每页数量（默认10）
+    - sort: 排序方式（created_at: 创建时间, views: 浏览量）
+    """
     try:
+        # 获取搜索参数
         keyword = request.args.get('keyword', '')
-        if not keyword:
-            return jsonify({
-                'success': False,
-                'message': '请输入搜索关键词'
-            }), 400
-            
-        # 使用 SQLAlchemy 的 or_ 进行标题和内容的模糊搜索
-        query = Article.query.filter(
-            db.or_(
-                Article.title.ilike(f'%{keyword}%'),
-                Article.content.ilike(f'%{keyword}%')
-            )
-        ).order_by(desc(Article.created_at))
+        tag = request.args.get('tag', type=int)
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        sort = request.args.get('sort', 'created_at')
         
-        articles = db.paginate(
-            query,
-            page=1,
-            per_page=10,
+        # 构建基础查询
+        query = Article.query.filter(Article.status == 1)  # 只搜索已发布文章
+        
+        # 关键词搜索
+        if keyword:
+            query = query.filter(
+                db.or_(
+                    Article.title.ilike(f'%{keyword}%'),
+                    Article.content.ilike(f'%{keyword}%')
+                )
+            )
+        
+        # 标签筛选
+        if tag is not None:
+            query = query.filter(Article.tag == tag)
+        
+        # 排序处理
+        if sort == 'views':
+            query = query.order_by(desc(Article.views))
+        else:
+            query = query.order_by(desc(Article.created_at))
+        
+        # 执行分页查询
+        pagination = query.paginate(
+            page=page,
+            per_page=per_page,
             error_out=False
         )
         
+        # 构建响应数据
         return jsonify({
             'success': True,
-            'data': [article.to_dict() for article in articles.items],
-            'total': articles.total,
-            'pages': articles.pages,
-            'current_page': 1
+            'data': [article.to_dict(include_views=(tag == 1)) for article in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page,
+            'has_next': pagination.has_next,
+            'has_prev': pagination.has_prev
         })
             
     except Exception as e:
-        print("Error searching articles:", str(e))  # 调日志
+        print("Error searching articles:", str(e))
         return jsonify({
             'success': False,
-            'message': '搜索失败，请稍后重试'
+            'message': '搜索失败，请稍后重试',
+            'error': str(e)
         }), 500
 
 @article_bp.route('/api/comments', methods=['POST'])

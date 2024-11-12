@@ -66,10 +66,16 @@ function renderArticleCard(article) {
     // 格式化日期
     const formattedDate = formatChineseDate(article.n_date);
     
+    // 判断是否为搜索页面
+    const isSearchPage = window.location.pathname === '/search';
+    const imageUrl = isSearchPage && article.image_url 
+        ? article.image_url 
+        : 'https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur';
+    
     articleCard.innerHTML = `
         <a href="/article/${article.article_id}" class="article-link">
             <div class="article-image">
-                <img data-src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur" 
+                <img data-src="${imageUrl}" 
                      alt="${article.title || '无标题'}"
                      class="loading"
                      src="https://s.nmxc.ltd/sakurairo_vision/@2.6/load_svg/outload.svg#lazyload-blur">
@@ -90,14 +96,22 @@ function renderArticleCard(article) {
     return articleCard;
 }
 
+// 获取 URL 参数的辅助函数
+function getUrlParam(param) {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get(param);
+}
+
 /**
  * 加载更多文章
  * 支持分页加载和错误处理
- * @param {number} page 页码
+ * @param {number} page 页码    
  */
 async function loadMoreArticles(page = 1) {
     const articleSection = document.querySelector('.article-section');
     const loadMoreBtn = document.querySelector('.load-more-btn');
+    const isSearchPage = window.location.pathname === '/search';
+    const keyword = getUrlParam('keyword');
     
     if (loadMoreBtn) {
         loadMoreBtn.textContent = '加载中...';
@@ -105,7 +119,11 @@ async function loadMoreArticles(page = 1) {
     }
     
     try {
-        const API_URL = `${baseURL}/api/articles?page=${page}&tag=0`;
+        // 根据页面类型选择不同的 API 端点
+        const API_URL = isSearchPage 
+            ? `${baseURL}/api/articles/search?keyword=${encodeURIComponent(keyword)}&page=${page}`
+            : `${baseURL}/api/articles?page=${page}&tag=0`;
+
         const response = await fetch(API_URL, {
             method: 'GET',
             headers: {
@@ -120,7 +138,16 @@ async function loadMoreArticles(page = 1) {
         const data = await response.json();
         let articles = data.data || [];
         
+        // 处理搜索结果为空的情况
         if (articles.length === 0) {
+            if (page === 1) {
+                articleSection.innerHTML = `
+                    <div class="no-results">
+                        ${isSearchPage 
+                            ? `<p>未找到与 "${keyword}" 相关的文章</p>` 
+                            : '<p>暂无文章</p>'}
+                    </div>`;
+            }
             if (loadMoreBtn) {
                 loadMoreBtn.textContent = '没有更多文章';
                 loadMoreBtn.disabled = true;
@@ -134,6 +161,13 @@ async function loadMoreArticles(page = 1) {
             articleSection.innerHTML = '';
             if (sectionTitle) {
                 articleSection.appendChild(sectionTitle);
+            }
+            // 如果是搜索页面，添加搜索结果提示
+            if (isSearchPage) {
+                const searchInfo = document.createElement('div');
+                searchInfo.className = 'search-info';
+                searchInfo.innerHTML = `<p>搜索 "${keyword}" 的结果：</p>`;
+                articleSection.appendChild(searchInfo);
             }
         }
         
@@ -161,6 +195,13 @@ async function loadMoreArticles(page = 1) {
             loadMoreBtn.textContent = '加载失败，点击重试';
             loadMoreBtn.disabled = false;
         }
+        // 显示错误信息
+        if (page === 1) {
+            articleSection.innerHTML = `
+                <div class="error-message">
+                    <p>加载失败，请稍后重试</p>
+                </div>`;
+        }
     }
 }
 
@@ -169,6 +210,11 @@ async function loadMoreArticles(page = 1) {
  * 获取随机图片并更新到文章卡片
  */
 async function updateArticleImages() {
+    // 如果是搜索页面，直接返回
+    if (window.location.pathname === '/search') {
+        return;
+    }
+
     try {
         const articleImages = document.querySelectorAll('.article-card .article-image img:not([data-updated="true"])');
         if (articleImages.length === 0) return;
@@ -210,8 +256,9 @@ async function updateArticleImages() {
             });
         }
     } catch (error) {
-        console.error('更新文章片失败:', error);
+        console.error('更新文章图片失败:', error);
         // 错误时显示占位图
+        const articleImages = document.querySelectorAll('.article-card .article-image img:not([data-updated="true"])');
         articleImages.forEach(img => {
             img.src = 'https://via.placeholder.com/800x600?text=Load+Failed';
             img.classList.remove('loading');

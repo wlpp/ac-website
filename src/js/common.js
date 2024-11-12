@@ -346,6 +346,7 @@ async function initializeTypeWriter() {
 function initializeImageSlider() {
     const navBtns = document.querySelectorAll('.nav-btn');
     const imageContainer = document.querySelector('.image-container img');
+    const bodyBackground = document.querySelector('.body-background');
     const emailBtn = document.querySelector('.nav-btn.email i');
     
     // 如果页面上没有相关元素，直接返回
@@ -366,6 +367,7 @@ function initializeImageSlider() {
                 imageContainer.src = data.data.image_url;
                 imageContainer.onload = () => {
                     emailBtn.className = 'fa-solid fa-paw';
+                    bodyBackground.style.display = 'block';
                 };
             } else {
                 console.error('初始化图片失败:', data.message);

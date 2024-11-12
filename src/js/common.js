@@ -348,9 +348,10 @@ function initializeImageSlider() {
     const imageContainer = document.querySelector('.image-container img');
     const bodyBackground = document.querySelector('.body-background');
     const emailBtn = document.querySelector('.nav-btn.email i');
+    const textOverlay = document.querySelector('.text-overlay');
     
     // 如果页面上没有相关元素，直接返回
-    if (!navBtns.length || !imageContainer || !emailBtn) {
+    if (!navBtns.length || !imageContainer || !emailBtn || !textOverlay) {
         return null;
     }
     
@@ -368,6 +369,8 @@ function initializeImageSlider() {
                 imageContainer.onload = () => {
                     emailBtn.className = 'fa-solid fa-paw';
                     bodyBackground.style.display = 'block';
+                    textOverlay.style.display = 'block';
+                    initializeTypeWriter();
                 };
             } else {
                 console.error('初始化图片失败:', data.message);
@@ -486,7 +489,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const cleanupNav = initializeNavigation();
     const cleanupSearch = initializeSearch();
     const cleanupSlider = initializeImageSlider();
-    const cleanupTypeWriter = initializeTypeWriter();
+    // const cleanupTypeWriter = initializeTypeWriter();
     const canvas = document.getElementById('particleCanvas');
     let cleanupPetal = null;
     

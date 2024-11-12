@@ -947,7 +947,7 @@ body {
 }
 
 .typing {
-    border-right: 2px solid #505050;
+    border-right: 1px solid #A9BBEC;
     white-space: nowrap;
     overflow: hidden;
     display: inline-block;
@@ -960,7 +960,7 @@ body {
 
 @keyframes blink-caret {
     from, to { border-color: transparent; }
-    50% { border-color: #505050; }
+    50% { border-color: #A9BBEC; }
 }
 
 /* 子元素样式保持不变 */
@@ -1730,6 +1730,7 @@ body {
     width: 100%;
     padding: 20px;
     background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.8), transparent);
+    display: none;
 }
 
 .text-content {

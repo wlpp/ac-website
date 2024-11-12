@@ -626,7 +626,7 @@ body {
     align-items: center;
 }
 
-/* 用户名样式 */
+/* 用户名样��� */
 .username {
     cursor: pointer;
     padding: 5px 10px;
@@ -674,7 +674,7 @@ body {
     color: #BBBAF0;
 }
 
-/* 用户容器悬���时显示下拉菜单 */
+/* 用户容器悬时显示下拉菜单 */
 .user-container:hover .dropdown-menu {
     opacity: 1;
     visibility: visible;
@@ -1043,17 +1043,15 @@ body {
     border-radius: 50%;
     overflow: hidden;
     border: 3px solid rgba(255, 255, 255, 0.8);
+    transition: transform 0.8s ease;
 }
 
 .avatar img {
     width: 100%;
     height: 100%;
     object-fit: cover;
-    transition: transform 0.8s ease;
 }
-.avatar:hover img {
-    transform: rotate(360deg);
-}
+
 
 
 /* 响应式调整 */
@@ -1434,11 +1432,14 @@ body {
 }
 
 .image-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     transition: transform 0.3s ease;
 }
 
 .image-card:hover img {
-    transform: scale(1.1);
+    transform: scale(1.1) rotate(3deg);
 }
 
 /* 汉堡菜单图标样式 */

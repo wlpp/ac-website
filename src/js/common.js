@@ -582,6 +582,46 @@ function initializePetalEffect(canvas) {
     };
 }
 
+/**
+ * 初始化头像旋转效果
+ */
+function initializeAvatarRotation() {
+    const avatars = document.querySelectorAll('.avatar');
+    
+    avatars.forEach(avatar => {
+        const img = avatar.querySelector('img');
+        if (!img) return;
+        
+        // 添加鼠标进入事件
+        avatar.addEventListener('mouseenter', () => {
+            img.style.transition = 'transform 0.6s ease';
+            img.style.transform = 'rotate(360deg)';
+        });
+        
+        // 添加鼠标离开事件
+        avatar.addEventListener('mouseleave', () => {
+            img.style.transition = 'transform 0.6s ease';
+            img.style.transform = 'rotate(0deg)';
+        });
+    });
+    
+    // 返回清理函数
+    return function cleanup() {
+        avatars.forEach(avatar => {
+            const img = avatar.querySelector('img');
+            if (!img) return;
+            
+            // 移除事件监听器
+            avatar.removeEventListener('mouseenter', () => {});
+            avatar.removeEventListener('mouseleave', () => {});
+            
+            // 重置样式
+            img.style.transition = '';
+            img.style.transform = '';
+        });
+    };
+}
+
 // 在 DOMContentLoaded 时初始化所导航相关功能
 document.addEventListener('DOMContentLoaded', function() {
     const cleanupNav = initializeNavigation();
@@ -603,6 +643,13 @@ document.addEventListener('DOMContentLoaded', function() {
     if (canvas) {
         cleanupBubble = initializePetalEffect(canvas);
     }
+    
+    const cleanupAvatar = initializeAvatarRotation();
+    
+    // 页面卸载时清理
+    window.addEventListener('unload', () => {
+        if (cleanupAvatar) cleanupAvatar();
+    });
 });
 
 // 花瓣效果初始化

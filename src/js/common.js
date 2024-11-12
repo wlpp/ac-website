@@ -401,86 +401,184 @@ function initializeImageSlider() {
 }
 
 /**
- * 花瓣效果初始化
- * @param {HTMLCanvasElement} canvas 画布元素
+ * 初始化气泡粒子效果
+ * @param {HTMLCanvasElement} canvas - Canvas元素
+ * @returns {Function} cleanup - 清理函数
+ */
+
+
+/**
+ * 初始化雪花粒子效果
+ * @param {HTMLCanvasElement} canvas - Canvas元素
+ */
+
+
+/**
+ * 初始化花瓣效果
+ * @param {HTMLCanvasElement} canvas - Canvas元素
  */
 function initializePetalEffect(canvas) {
-    if (!canvas) return;
+    if (!canvas) return null;
     
     const ctx = canvas.getContext('2d');
-    const petals = [];
-    const canvasWidth = window.innerWidth;
-    const canvasHeight = window.innerHeight;
+    let animationFrameId;
+    let petals = [];
     
-    // 设置画布大小
-    canvas.width = canvasWidth;
-    canvas.height = canvasHeight;
+    // 花瓣配置参数
+    const PETAL_CONFIG = {
+        minSize: 10,         // 最小花瓣尺寸
+        maxSize: 12,         // 最大花瓣尺寸
+        minSpeed: 0.5,         // 最小下落速度
+        maxSpeed: 2,         // 最大下落速度
+        baseOpacity: 0.6,    // 基础透明度
+        count: 80          // 增加花瓣数量
+    };
     
-    // 花瓣类
     class Petal {
         constructor() {
-            this.x = Math.random() * canvasWidth;
-            this.y = Math.random() * canvasHeight;
-            this.size = Math.random() * 5 + 5;
-            this.speedX = Math.random() * 2 - 1;
-            this.speedY = Math.random() * 1 + 1;
-            this.rotation = Math.random() * 360;
-            this.rotationSpeed = Math.random() * 2 - 1;
+            this.reset();
+        }
+        
+        reset() {
+            // 基础属性
+            this.size = Math.random() * (PETAL_CONFIG.maxSize - PETAL_CONFIG.minSize) + PETAL_CONFIG.minSize;
+            
+            // 修改重置位置逻辑，使花瓣从屏幕上方随机位置重新开始
+            this.x = Math.random() * (canvas.width + 100) - 50; // 在屏幕宽度范围之外一点
+            this.y = -this.size - Math.random() * canvas.height * 0.25; // 随机分布在屏幕上方一定范围内
+            
+            // 运动相关
+            this.speedY = Math.random() * (PETAL_CONFIG.maxSpeed - PETAL_CONFIG.minSpeed) + PETAL_CONFIG.minSpeed;
+            this.speedX = (Math.random() - 0.5) * 0.8;
+            this.rotation = Math.random() * Math.PI * 2;
+            this.rotationSpeed = (Math.random() - 0.5) * 0.02;
+            this.oscillationSpeed = Math.random() * 0.02 + 0.01;
+            this.oscillationDistance = (Math.random() * 40 + 40);
+            this.swingTime = Math.random() * Math.PI * 2; // 随机初始摆动相位
+            
+            // 视觉效果
+            this.opacity = Math.random() * 0.3 + PETAL_CONFIG.baseOpacity;
+            this.hue = Math.random() * 30 + 330; // 粉色系范围
         }
         
         update() {
-            this.x += this.speedX;
+            // 下落运动
             this.y += this.speedY;
+            
+            // 摆动效果
+            this.swingTime += this.oscillationSpeed;
+            this.x += Math.sin(this.swingTime) * this.oscillationDistance / 50;
+            
+            // 旋转
             this.rotation += this.rotationSpeed;
             
-            if (this.y > canvasHeight) {
-                this.y = -10;
-                this.x = Math.random() * canvasWidth;
+            // 超出屏幕后重置到屏幕上方
+            if (this.y > canvas.height + this.size || 
+                this.x < -this.size * 2 || 
+                this.x > canvas.width + this.size * 2) {
+                this.reset();
             }
         }
         
         draw() {
             ctx.save();
             ctx.translate(this.x, this.y);
-            ctx.rotate(this.rotation * Math.PI / 180);
-            ctx.fillStyle = 'rgba(255, 192, 203, 0.7)';
+            ctx.rotate(this.rotation);
+            
+            // 绘制花瓣
             ctx.beginPath();
-            ctx.ellipse(0, 0, this.size, this.size / 2, 0, 0, Math.PI * 2);
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(
+                this.size / 2, -this.size / 2,
+                this.size * 2, -this.size / 2,
+                this.size * 2, 0
+            );
+            ctx.bezierCurveTo(
+                this.size * 2, this.size / 2,
+                this.size / 2, this.size / 2,
+                0, 0
+            );
+            
+            // 花瓣渐变
+            const gradient = ctx.createLinearGradient(0, -this.size/2, 0, this.size/2);
+            gradient.addColorStop(0, `hsla(${this.hue}, 100%, 90%, ${this.opacity})`);
+            gradient.addColorStop(0.5, `hsla(${this.hue}, 100%, 85%, ${this.opacity * 0.9})`);
+            gradient.addColorStop(1, `hsla(${this.hue}, 100%, 80%, ${this.opacity * 0.8})`);
+            
+            ctx.fillStyle = gradient;
             ctx.fill();
+            
+            // 添加花瓣纹理
+            ctx.strokeStyle = `hsla(${this.hue}, 100%, 85%, ${this.opacity * 0.3})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+            
             ctx.restore();
         }
     }
     
-    // 创建花瓣
-    for (let i = 0; i < 50; i++) {
-        petals.push(new Petal());
+    // 调整canvas尺寸
+    function resizeCanvas() {
+        const dpr = window.devicePixelRatio || 1;
+        const rect = canvas.getBoundingClientRect();
+        
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
+        
+        ctx.scale(dpr, dpr);
+        canvas.style.width = `${rect.width}px`;
+        canvas.style.height = `${rect.height}px`;
+        
+        initPetals();
+    }
+    
+    // 初始化花瓣
+    function initPetals() {
+        // 增加花瓣密度
+        const petalCount = Math.min(
+            Math.floor((canvas.width * canvas.height) / 25000) * PETAL_CONFIG.count / 100,
+            PETAL_CONFIG.count
+        );
+        
+        // 初始化时在不同高度创建花瓣
+        petals = Array.from({ length: petalCount }, () => {
+            const petal = new Petal();
+            // 初始化时随机分布在整个屏幕高度范围内
+            petal.y = Math.random() * canvas.height;
+            return petal;
+        });
     }
     
     // 动画循环
     function animate() {
-        ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        
         petals.forEach(petal => {
             petal.update();
             petal.draw();
         });
-        requestAnimationFrame(animate);
+        
+        animationFrameId = requestAnimationFrame(animate);
     }
     
-    // 开始动画
+    // 初始化
+    resizeCanvas();
     animate();
     
-    // 窗口大小改变时重置画布大小
-    window.addEventListener('resize', () => {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    });
+    // 添加防抖的resize事件监听
+    let resizeTimeout;
+    const handleResize = () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(resizeCanvas, 250);
+    };
     
-    // 返回清理函数
+    window.addEventListener('resize', handleResize);
+    
+    // 清理函数
     return function cleanup() {
-        window.removeEventListener('resize', () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        });
+        window.removeEventListener('resize', handleResize);
+        cancelAnimationFrame(animationFrameId);
+        petals = [];
     };
 }
 
@@ -489,9 +587,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const cleanupNav = initializeNavigation();
     const cleanupSearch = initializeSearch();
     const cleanupSlider = initializeImageSlider();
-    // const cleanupTypeWriter = initializeTypeWriter();
+    const cleanupTypeWriter = initializePetalEffect();
     const canvas = document.getElementById('particleCanvas');
-    let cleanupPetal = null;
+    let cleanupBubble = null;
     
     // 页面卸载时清理
     window.addEventListener('unload', () => {
@@ -499,11 +597,11 @@ document.addEventListener('DOMContentLoaded', function() {
         if (cleanupSearch) cleanupSearch();
         if (cleanupSlider) cleanupSlider();
         if (cleanupTypeWriter) cleanupTypeWriter();
-        if (cleanupPetal) cleanupPetal();
+        if (cleanupBubble) cleanupBubble();
     });
     
     if (canvas) {
-        cleanupPetal = initializePetalEffect(canvas);
+        cleanupBubble = initializePetalEffect(canvas);
     }
 });
 

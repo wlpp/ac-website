@@ -831,8 +831,8 @@ body {
     z-index: -1;
     width: 95%;
     height: 100%;
-    bottom: -21px;
-    left: calc(50% - 48%);
+    bottom: -22px;
+    left: calc(50% - 47.9%);
     border-radius: 15px;
     border: 2px solid #1d1d1d;
     /* background-color: #fbf8f2; */
@@ -923,8 +923,8 @@ body {
 }
 
 .header-info {
-    background-color: rgba(255, 255, 255, 0.5);
-    width: 35%;
+    /* background-color: rgba(255, 255, 255, 0.5); */
+    width: 30%;
     margin: auto;
     font-size: 15px;
     color: #505050;
@@ -991,7 +991,7 @@ body {
 }
 
 .text-content h2 {
-    background: linear-gradient(90.72deg, #acbff1 2.49%, #cbfdb1 50.67%, #efa7ec 100.79%);
+    background: linear-gradient(90.72deg, #acbff1 2.49%, #cbfdb1 50.67%, #acbff1 100.79%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: rgba(0, 0, 0, 0);
     color: #fff;
@@ -999,7 +999,7 @@ body {
 }   
 
 .text-content p {
-    background: linear-gradient(90.72deg, #acbff1 2.49%, #cbfdb1 50.67%, #efa7ec 100.79%);
+    background: linear-gradient(90.72deg, #acbff1 2.49%, #cbfdb1 50.67%, #acbff1 100.79%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: rgba(0, 0, 0, 0);
     color: #fff;
@@ -1051,10 +1051,10 @@ body {
     object-fit: cover;
     transition: transform 0.8s ease;
 }
-
-.avatar img:hover {
+.avatar:hover img {
     transform: rotate(360deg);
 }
+
 
 /* 响应式调整 */
 @media (max-width: 768px) {

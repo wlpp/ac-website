@@ -2,7 +2,7 @@
 var hostname = window.location.hostname;
 var port = window.location.port;
 
-var isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1' 
+var isDevelopment = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '192.168.2.15'
                    
                
 

@@ -90,7 +90,6 @@
     function autoPlay(speed) {
         if (isPlaying) {
             stopAutoPlay();
-            // 如果点击的是当前速度，则停止播放
             if (speed === currentSpeed) {
                 return;
             }
@@ -100,17 +99,15 @@
         isPlaying = true;
         playInterval = setInterval(nextImage, currentSpeed);
         
-        // 更新按钮状态
         updateSpeedButtons();
-        autoPlayBtn.textContent = '停止播放';
+        autoPlayBtn.innerHTML = '<i class="fas fa-pause"></i>';
     }
 
     // 停止自动播放图片
     function stopAutoPlay() {
         isPlaying = false;
         clearInterval(playInterval);
-        autoPlayBtn.textContent = '自动播放';
-        // 清除所有速度按钮的激活状态
+        autoPlayBtn.innerHTML = '<i class="fas fa-play"></i>';
         document.querySelectorAll('.speed-btn').forEach(btn => {
             btn.classList.remove('active');
         });

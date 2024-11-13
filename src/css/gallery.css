@@ -52,6 +52,7 @@ body {
     align-items: center;
     transition: bottom 0.3s ease;
     z-index: 1001;
+    white-space: nowrap;
 }
 
 .controls-trigger {
@@ -63,9 +64,11 @@ body {
     z-index: 1001;
 }
 
-.controls-trigger:hover + .controls,
-.controls:hover {
-    bottom: 20px;
+@media screen and (min-width: 769px) {
+    .controls-trigger:hover + .controls,
+    .controls:hover {
+        bottom: 20px;
+    }
 }
 
 .control-btn {
@@ -350,4 +353,99 @@ body {
 .image-list {
     scrollbar-width: thin;
     scrollbar-color: #888 #f1f1f1;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    .controls {
+        bottom: 20px;
+        width: 90%;
+        padding: 8px 12px;
+        gap: 10px;
+    }
+
+    .controls-trigger {
+        display: none;
+    }
+
+    .control-btn {
+        font-size: 0.9rem;
+        padding: 4px 8px;
+    }
+
+    #image-counter {
+        font-size: 0.9rem;
+    }
+
+    /* 速度选择器位置调整 */
+    .speed-selector {
+        left: 0;
+        transform: translateX(0);
+    }
+
+    .image-list {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .image-item img {
+        height: 200px;
+    }
+
+    .image-item h3 {
+        font-size: 16px;
+        padding: 12px;
+    }
+
+    /* 调整弹框样式 */
+    .modal-content {
+        width: 95%;
+        margin: 20px auto;
+        padding: 15px;
+    }
+
+    .close-modal {
+        top: 24px;
+        right: 4%;
+    }
+}
+
+/* 更小屏幕的适配 */
+@media screen and (max-width: 480px) {
+    .controls {
+        width: 95%;
+        padding: 6px 10px;
+        gap: 8px;
+    }
+
+    .control-btn {
+        font-size: 0.8rem;
+        padding: 3px 6px;
+    }
+
+    #image-counter {
+        font-size: 0.8rem;
+    }
+
+    /* 隐藏按钮文字，只显示图标 */
+    #auto-play {
+        width: 32px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .image-list {
+        gap: 12px;
+        padding: 12px;
+    }
+
+    .image-item img {
+        height: 180px;
+    }
+
+    .image-item h3 {
+        font-size: 14px;
+        padding: 10px;
+    }
 }

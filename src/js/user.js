@@ -557,3 +557,16 @@ document.addEventListener('DOMContentLoaded', function() {
     debug.log('页面加载完成，开始检查用户状态'); // 添加调试日志
     checkUserStatus();
 });
+
+// 登录成功后保存用户数据
+function saveUserData(userData) {
+    try {
+        // 加密用户数据
+        const encryptedData = btoa(encodeURIComponent(JSON.stringify(userData)));
+        // 设置 cookie，有效期 1 天
+        document.cookie = `userData=${encryptedData};path=/;max-age=86400`;
+        console.log('User data saved successfully');
+    } catch (error) {
+        console.error('Error saving user data:', error);
+    }
+}

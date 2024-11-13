@@ -654,6 +654,3 @@ def update_user(current_user, user_id):
         )
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         return response, 500
-
-if __name__ == '__main__':
-    app.run(debug=True)

@@ -505,3 +505,29 @@ body {
         padding: 8px 15px;
     }
 }
+
+/* 添加加载提示框样式 */
+.loading-toast {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 15px 25px;
+    border-radius: 8px;
+    font-size: 16px;
+    z-index: 2000;
+    display: none;
+    align-items: center;
+    gap: 10px;
+}
+
+.loading-toast .spinner {
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #fff;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}

@@ -1,3 +1,4 @@
+
 from flask import Blueprint, jsonify, request, make_response, send_file
 from flask_cors import CORS
 import os
@@ -5,7 +6,7 @@ import requests
 from bs4 import BeautifulSoup
 import logging
 from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from requests.packages.urllib3.util.retry import Retry # type: ignore
 import re
 from functools import lru_cache
 from datetime import datetime, timedelta

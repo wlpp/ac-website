@@ -208,7 +208,7 @@
 
         try {
             await Promise.all(initialPromises);
-            console.log('前10张图片加载完成');
+            console.log('前5张图片加载完成');
             
             // 后台加载剩余图片
             if (remainingUrls.length > 0) {
@@ -268,7 +268,7 @@
                 `;
                 itemElement.addEventListener('click', async () => {
                     const aid = itemElement.dataset.aid;
-                    loading.style.display = 'block';
+                    showLoadingToast(); // 显示加载提示
                     
                     try {
                         const galleryResponse = await fetchGalleryImages(aid);
@@ -276,26 +276,30 @@
                         if (galleryResponse && galleryResponse.success) {
                             const images = galleryResponse.data.images;
                             
-                            // 先加载前10张图片
-                            await preloadImages(images);
-                            
-                            // 更新全局图片数组
-                            demoImages.length = 0;
-                            demoImages.push(...images);
-                            
-                            // 重置当前索引
-                            currentIndex = 0;
-                            
-                            // 关闭弹框
-                            hideModal();
-                            
-                            // 初始化图片显示
-                            initImages();
+                            try {
+                                // 先加载前5张图片
+                                await preloadImages(images);
+                                
+                                // 更新全局图片数组
+                                demoImages.length = 0;
+                                demoImages.push(...images);
+                                
+                                // 重置当前索引
+                                currentIndex = 0;
+                                
+                                // 关闭弹框
+                                hideAllModals();
+                                
+                                // 初始化图片显示
+                                initImages();
+                            } catch (error) {
+                                console.error('加载图片失败:', error);
+                            }
                         }
                     } catch (error) {
                         console.error('加载图片失败:', error);
                     } finally {
-                        loading.style.display = 'none';
+                        hideLoadingToast(); // 隐藏加载提示
                     }
                 });
                 imageList.appendChild(itemElement);
@@ -492,7 +496,7 @@
                 `;
                 itemElement.addEventListener('click', async () => {
                     const aid = itemElement.dataset.aid;
-                    loading.style.display = 'block';
+                    showLoadingToast(); // 显示加载提示
                     
                     try {
                         const galleryResponse = await fetchGalleryImages(aid);
@@ -500,26 +504,30 @@
                         if (galleryResponse && galleryResponse.success) {
                             const images = galleryResponse.data.images;
                             
-                            // 先加载前10张图片
-                            await preloadImages(images);
-                            
-                            // 更新全局图片数组
-                            demoImages.length = 0;
-                            demoImages.push(...images);
-                            
-                            // 重置当前索引
-                            currentIndex = 0;
-                            
-                            // 关闭弹框
-                            hideAllModals();
-                            
-                            // 初始化图片显示
-                            initImages();
+                            try {
+                                // 先加载前5张图片
+                                await preloadImages(images);
+                                
+                                // 更新全局图片数组
+                                demoImages.length = 0;
+                                demoImages.push(...images);
+                                
+                                // 重置当前索引
+                                currentIndex = 0;
+                                
+                                // 关闭弹框
+                                hideAllModals();
+                                
+                                // 初始化图片显示
+                                initImages();
+                            } catch (error) {
+                                console.error('加载图片失败:', error);
+                            }
                         }
                     } catch (error) {
                         console.error('加载图片失败:', error);
                     } finally {
-                        loading.style.display = 'none';
+                        hideLoadingToast(); // 隐藏加载提示
                     }
                 });
                 searchResultList.appendChild(itemElement);
@@ -607,3 +615,21 @@
     // 添加到 window 对象以便在 HTML 中调用
     window.changeSearchPage = changeSearchPage;
     window.handleSearchPageInput = handleSearchPageInput;
+
+    // 在文件开头的 DOM 元素声明部分添加
+    const loadingToast = document.createElement('div');
+    loadingToast.className = 'loading-toast';
+    loadingToast.innerHTML = `
+        <div class="spinner"></div>
+        <span>图片加载中...</span>
+    `;
+    document.body.appendChild(loadingToast);
+
+    // 添加显示/隐藏加载提示的函数
+    function showLoadingToast() {
+        loadingToast.style.display = 'flex';
+    }
+
+    function hideLoadingToast() {
+        loadingToast.style.display = 'none';
+    }

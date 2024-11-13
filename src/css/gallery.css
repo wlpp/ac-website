@@ -111,8 +111,8 @@ body {
 
 .close-modal {
     position: fixed;
-    top: 58px;
-    right: 12%;
+    top: 21px;
+    right: 11%;
     width: 36px;
     height: 36px;
     background: rgba(0, 0, 0, 0.6);
@@ -447,5 +447,61 @@ body {
     .image-item h3 {
         font-size: 14px;
         padding: 10px;
+    }
+}
+
+/* 添加搜索相关样式 */
+.search-header {
+    padding: 0 20px 20px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.search-input-wrapper {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+}
+
+#search-input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+#search-input:focus {
+    border-color: #666;
+}
+
+#search-btn {
+    padding: 10px 20px;
+    background: #333;
+    color: white;
+    border: none;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+#search-btn:hover {
+    background: #555;
+}
+
+/* 移动端适配 */
+@media screen and (max-width: 768px) {
+    .search-header {
+        padding: 0 15px 15px 15px;
+    }
+    
+    #search-input {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    #search-btn {
+        padding: 8px 15px;
     }
 }

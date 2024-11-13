@@ -20,6 +20,7 @@
     let isPlaying = false;
     let playInterval;
     
+    // 统一声明所有需要的DOM元素
     const gallery = document.getElementById('gallery');
     const currentImage = document.getElementById('current-image');
     const loading = document.querySelector('.loading');
@@ -27,6 +28,13 @@
     const prevBtn = document.getElementById('prev-btn');
     const nextBtn = document.getElementById('next-btn');
     const autoPlayBtn = document.getElementById('auto-play');
+    const imageModal = document.getElementById('image-modal');
+    const searchModal = document.getElementById('search-modal');
+    const searchInput = document.getElementById('search-input');
+    const searchBtn = document.getElementById('search-btn');
+    const searchResultList = document.getElementById('search-result-list');
+    const showSearchBtn = document.getElementById('show-search');
+    const closeSearchBtn = document.getElementById('close-search');
 
     // 添加图片缓存对象
     const imageCache = new Map();
@@ -231,7 +239,7 @@
         // 显示弹框
         modal.style.display = 'block';
         
-        // 显示加载动画
+        // 显加载动画
         imageList.innerHTML = `
             <div class="loading-container">
                 <div class="loading-spinner"></div>
@@ -358,25 +366,45 @@
         }
     }
 
-    // 显示模态框
+    // 显示图片列表弹框
     function showModal() {
-        renderArticleList(); // 加载图文表
+        // 先关闭搜索弹框
+        searchModal.style.display = 'none';
+        searchInput.value = '';  // 清空搜索输入
+        
+        // 显示图片列表弹框
+        imageModal.style.display = 'block';
+        renderArticleList(); // 加载图文列表
     }
 
-    // 隐藏模态框
-    function hideModal() {
-        const modal = document.getElementById('image-modal');
-        modal.style.display = 'none';
+    // 显示搜索弹框
+    function showSearchModal() {
+        // 先关闭图片列表弹框
+        imageModal.style.display = 'none';
+        
+        // 显示搜索弹框
+        searchModal.style.display = 'block';
+        searchInput.focus();  // 聚焦到搜索输入框
+    }
+
+    // 隐藏所有弹框
+    function hideAllModals() {
+        imageModal.style.display = 'none';
+        searchModal.style.display = 'none';
+        searchInput.value = '';  // 清空搜索输入
     }
 
     // 事件监听
     document.getElementById('show-list').addEventListener('click', showModal);
-    document.querySelector('.close-modal').addEventListener('click', hideModal);
+    document.getElementById('show-search').addEventListener('click', showSearchModal);
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', hideAllModals);
+    });
 
-    // ESC 键关闭模态框
+    // ESC 键关闭所有弹框
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            hideModal();
+            hideAllModals();
         }
     });
 
@@ -403,3 +431,179 @@
                 break;
         }
     });
+
+    // 获取搜索结果数据
+    async function fetchSearchResults(keyword, page = 1) {
+        try {
+            const response = await fetch(`${window.baseURL}/api/gallery-search?q=${encodeURIComponent(keyword)}&page=${page}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                return data;
+            }
+            throw new Error(data.message || '搜索失败');
+        } catch (error) {
+            console.error('搜索失败:', error);
+            return null;
+        }
+    }
+
+    // 渲染搜索结果
+    async function renderSearchResults() {
+        const searchResultList = document.getElementById('search-result-list');
+        const keyword = searchInput.value.trim();
+        
+        if (!keyword) {
+            searchResultList.innerHTML = '<div class="no-results">请输入搜索关键词</div>';
+            return;
+        }
+        
+        // 显示加载动画
+        searchResultList.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+            </div>
+        `;
+        
+        try {
+            const response = await fetchSearchResults(keyword, pageConfig.currentPage);
+            if (!response || !response.success) {
+                searchResultList.innerHTML = `
+                    <div class="loading-container">
+                        <div class="error">搜索失败</div>
+                    </div>
+                `;
+                return;
+            }
+
+            if (response.data.length === 0) {
+                searchResultList.innerHTML = '<div class="no-results">未找到相关结果</div>';
+                return;
+            }
+
+            searchResultList.innerHTML = '';
+            response.data.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'image-item';
+                itemElement.dataset.aid = item.aid;
+                itemElement.innerHTML = `
+                    <img src="${item.image_url}" alt="${item.title}">
+                    <h3>${item.title}</h3>
+                `;
+                itemElement.addEventListener('click', async () => {
+                    const aid = itemElement.dataset.aid;
+                    loading.style.display = 'block';
+                    
+                    try {
+                        const galleryResponse = await fetchGalleryImages(aid);
+                        
+                        if (galleryResponse && galleryResponse.success) {
+                            const images = galleryResponse.data.images;
+                            
+                            // 先加载前10张图片
+                            await preloadImages(images);
+                            
+                            // 更新全局图片数组
+                            demoImages.length = 0;
+                            demoImages.push(...images);
+                            
+                            // 重置当前索引
+                            currentIndex = 0;
+                            
+                            // 关闭弹框
+                            hideAllModals();
+                            
+                            // 初始化图片显示
+                            initImages();
+                        }
+                    } catch (error) {
+                        console.error('加载图片失败:', error);
+                    } finally {
+                        loading.style.display = 'none';
+                    }
+                });
+                searchResultList.appendChild(itemElement);
+            });
+            
+            // 更新搜索结果的分页
+            updateSearchPagination(response.total);
+            
+        } catch (error) {
+            console.error('渲染搜索结果失败:', error);
+            searchResultList.innerHTML = `
+                <div class="loading-container">
+                    <div class="error">渲染失败</div>
+                </div>
+            `;
+        }
+    }
+
+    // 更新搜索分页
+    function updateSearchPagination(total) {
+        const pagination = document.getElementById('search-pagination');
+        if (!pagination) return;
+        
+        let paginationHTML = '<div class="pagination-container">';
+        
+        // 上一页按钮
+        paginationHTML += `
+            <button class="pagination-btn" onclick="changeSearchPage(${pageConfig.currentPage - 1})">
+                上一页
+            </button>
+        `;
+        
+        // 可编辑的页码输入框
+        paginationHTML += `
+            <input type="number" 
+                   class="page-input" 
+                   value="${pageConfig.currentPage}" 
+                   min="1" 
+                   onchange="handleSearchPageInput(this.value)"
+                   onclick="this.select()"
+            >
+        `;
+        
+        // 下一页按钮
+        paginationHTML += `
+            <button class="pagination-btn" onclick="changeSearchPage(${pageConfig.currentPage + 1})">
+                下一页
+            </button>
+        `;
+        
+        paginationHTML += '</div>';
+        pagination.innerHTML = paginationHTML;
+    }
+
+    // 处理搜索页码输入
+    function handleSearchPageInput(value) {
+        const page = parseInt(value);
+        if (!isNaN(page) && page >= 1) {
+            changeSearchPage(page);
+        }
+    }
+
+    // 切换搜索页面
+    async function changeSearchPage(newPage) {
+        if (newPage >= 1) {
+            pageConfig.currentPage = newPage;
+            await renderSearchResults();
+        }
+    }
+
+    // 搜索功能
+    async function performSearch() {
+        pageConfig.currentPage = 1;  // 重置页码
+        await renderSearchResults();
+    }
+
+    // 事件监听
+    searchBtn.addEventListener('click', performSearch);
+    searchInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            performSearch();
+        }
+    });
+
+    // 添加到 window 对象以便在 HTML 中调用
+    window.changeSearchPage = changeSearchPage;
+    window.handleSearchPageInput = handleSearchPageInput;

@@ -11,6 +11,7 @@ from functools import lru_cache
 from datetime import datetime, timedelta
 import threading
 from .user import token_required  # 导入token验证装饰器
+from .config import Config
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -20,8 +21,8 @@ logger = logging.getLogger(__name__)
 crawling_bp = Blueprint('crawling', __name__)
 CORS(crawling_bp)
 
-# 固定代理配置
-PROXY = 'http://127.0.0.1:7890'
+# 使用配置
+PROXY = Config.PROXY
 
 # 缓存字典，用于存储图片列表数据
 gallery_cache = {}
@@ -57,6 +58,15 @@ def get_session():
     if thread_id not in session_pool:
         session_pool[thread_id] = create_session()
     return session_pool[thread_id]
+
+def get_proxies():
+    """获取代理配置"""
+    if PROXY:
+        return {
+            'http': PROXY,
+            'https': PROXY
+        }
+    return None  # 如果没有配置代理，返回None
 
 @crawling_bp.route('/gallery')
 def gallery_page():
@@ -99,11 +109,6 @@ def gallery_list(current_user):
             'Cache-Control': 'max-age=0',
         }
 
-        proxies = {
-            'http': PROXY,
-            'https': PROXY
-        }
-
         # 创建会话
         session = get_session()
 
@@ -112,7 +117,7 @@ def gallery_list(current_user):
         response = session.get(
             url, 
             headers=headers, 
-            proxies=proxies,
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
@@ -232,11 +237,6 @@ def gallery_imgs(current_user):
             'Cache-Control': 'max-age=0',
         }
 
-        proxies = {
-            'http': PROXY,
-            'https': PROXY
-        }
-
         # 创建会话
         session = get_session()
 
@@ -245,7 +245,7 @@ def gallery_imgs(current_user):
         response = session.get(
             url, 
             headers=headers, 
-            proxies=proxies,
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
@@ -274,7 +274,7 @@ def gallery_imgs(current_user):
                 cleaned_url = cleaned_url.replace('\\', '')
                 img_urls2.append(cleaned_url)
 
-        # 拼接完整的URL
+        # 拼接完��的URL
         full_img_urls = [f"https://{img_url}" for img_url in img_urls2]
 
         # 缓存结果
@@ -357,11 +357,6 @@ def gallery_search(current_user):
             'Cache-Control': 'max-age=0',
         }
 
-        proxies = {
-            'http': PROXY,
-            'https': PROXY
-        }
-
         # 创建会话
         session = get_session()
 
@@ -371,7 +366,7 @@ def gallery_search(current_user):
         response = session.get(
             url, 
             headers=headers, 
-            proxies=proxies,
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
@@ -379,7 +374,7 @@ def gallery_search(current_user):
 
         # 检查响应状态
         if response.status_code != 200:
-            logger.error(f"��求失败，状态码：{response.status_code}")
+            logger.error(f"请求失败，状态码：{response.status_code}")
             return jsonify({
                 'success': False,
                 'message': '获取数据失败',
@@ -516,10 +511,7 @@ def novel_chapters():
                 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
                 'Connection': 'keep-alive',
             },
-            proxies={
-                'http': PROXY,
-                'https': PROXY
-            },
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
@@ -623,7 +615,7 @@ def novel_content():
             if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
                 return jsonify(data)
 
-        # ��建会话
+        # 创建会话
         session = get_session()
         
         # 首先获取第一页内容来确定总页数
@@ -684,10 +676,7 @@ def fetch_page_content(session, url):
                 'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
                 'Connection': 'keep-alive',
             },
-            proxies={
-                'http': PROXY,
-                'https': PROXY
-            },
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
@@ -771,11 +760,6 @@ def novel_search():
             'Content-Type': 'application/x-www-form-urlencoded',
         }
 
-        proxies = {
-            'http': PROXY,
-            'https': PROXY
-        }
-
         # 创建会话
         session = get_session()
 
@@ -791,7 +775,7 @@ def novel_search():
             url, 
             headers=headers,
             data=data,
-            proxies=proxies,
+            proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )

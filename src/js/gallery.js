@@ -195,7 +195,7 @@
             if (response.status === 403) {
                 message.error('权限不足，需要管理员权限');
                 setTimeout(() => {
-                    window.location.href = '/';
+                    // window.location.href = '/';
                 }, 0);
                 return false;
             }
@@ -216,7 +216,7 @@
             console.error('权限验证失败:', error);
             message.error('验证失败，请重新登录');
             setTimeout(() => {
-                window.location.href = '/';
+                // window.location.href = '/';
             }, 0);
             return false;
         }

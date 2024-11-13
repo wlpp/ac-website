@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优雅阅读器</title>
+    <link rel="stylesheet" href="../css/novel.css">
+</head>
+<body>
+    <div class="reader-container">
+        <!-- 顶部控制栏 -->
+        <div class="control-bar">
+            <div class="left-controls">
+                <button id="toggleMenu"><i class="fas fa-bars"></i></button>
+                <span class="book-title">书名：第一章</span>
+            </div>
+            <div class="right-controls">
+                <button id="searchBtn"><i class="fas fa-search"></i></button>
+                <button id="decreaseFont"><i class="fas fa-minus"></i></button>
+                <button id="increaseFont"><i class="fas fa-plus"></i></button>
+                <button id="toggleTheme"><i class="fas fa-moon"></i></button>
+            </div>
+        </div>
+
+        <!-- 侧边目录 -->
+        <div class="sidebar" id="sidebar">
+            <div class="chapter-list">
+                <h3>目录</h3>
+                <ul>
+                    <!-- 更多章节 -->
+                </ul>
+            </div>
+        </div>
+
+        <!-- 阅读区域 -->
+        <div class="content-area" id="contentArea">
+            <div class="chapter-content">
+            </div>
+
+            <!-- 翻页按钮 -->
+            <div class="page-controls">
+                <button id="prevPage" class="page-btn"><i class="fas fa-chevron-left"></i> 上一章</button>
+                <button id="nextPage" class="page-btn">下一章 <i class="fas fa-chevron-right"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Font Awesome 图标 -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script src="../js/novel.js"></script>
+
+    <!-- 搜索弹框 -->
+    <div class="search-modal" id="searchModal">
+        <div class="search-content">
+            <div class="search-header">
+                <h3>搜索小说</h3>
+                <button class="close-btn" id="closeSearch"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="输入关键词搜索...">
+                <button id="doSearch"><i class="fas fa-search"></i></button>
+            </div>
+            <div class="search-results" id="searchResults">
+                <!-- 搜索结果将在这里动态显示 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 在 body 标签结束前添加 loading 弹框 -->
+    <div class="loading-modal" id="loadingModal">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>加载中...</span>
+        </div>
+    </div>
+</body>
+</html>

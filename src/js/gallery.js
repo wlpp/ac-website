@@ -152,11 +152,95 @@
     // 初始化
     initImages();
 
-    // 获取图文列表数据
-    async function fetchGalleryList(page = 1) {
+    // 添加 cookie 处理函数
+    function getCookie(name) {
+        const nameEQ = name + "=";
+        const ca = document.cookie.split(';');
+        for(let i = 0; i < ca.length; i++) {
+            let c = ca[i];
+            while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+            if (c.indexOf(nameEQ) === 0) {
+                const encryptedData = c.substring(nameEQ.length, c.length);
+                try {
+                    // 解密并解析 cookie 数据
+                    const decryptedData = decodeURIComponent(atob(encryptedData));
+                    return JSON.parse(decryptedData);
+                } catch (e) {
+                    console.error('解析 cookie 失败:', e);
+                    return null;
+                }
+            }
+        }
+        return null;
+    }
+
+    // 权限检查函数
+    async function checkPermission() {
+        const userData = getCookie('userData');
+        const gallery = document.getElementById('gallery');
+        console.log(userData);  
+        if (!userData || !userData.token) {
+            // window.location.href = '/';
+            return false;
+        }
+
         try {
-            const response = await fetch(`${window.baseURL}/api/gallery-list?page=${page}`);
+            // 直接使用 gallery-list 接口检查权限
+            const response = await fetch(`${window.baseURL}/api/gallery-list?page=1`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.token}`
+                }
+            });
+            console.log(response.status);
+            if (response.status === 403) {
+                message.error('权限不足，需要管理员权限');
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 0);
+                return false;
+            }
+
+            if (!response.ok) {
+                throw new Error('验证失败');
+            }
+
+            // 如果请求成功,可以直接使用返回的数据初始化图片列表
             const data = await response.json();
+            if (data.success) {
+                gallery.style.display = 'block';
+                // initImagesWithData(data.data);
+            }
+
+            return true;
+        } catch (error) {
+            console.error('权限验证失败:', error);
+            message.error('验证失败，请重新登录');
+            setTimeout(() => {
+                window.location.href = '/';
+            }, 0);
+            return false;
+        }
+    }
+
+    // 修改 API 请求函数
+    async function fetchGalleryList(page = 1) {
+        const userData = getCookie('userData');
+        if (!userData || !userData.token) {
+            throw new Error('未登录');
+        }
+
+        try {
+            const response = await fetch(`${window.baseURL}/api/gallery-list?page=${page}`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.token}`
+                }
+            });
+            const data = await response.json();
+            
+            if (response.status === 403) {
+                message.error('权限不足');
+                throw new Error('权限不足');
+            }
             
             if (data.success) {
                 return data;
@@ -168,21 +252,68 @@
         }
     }
 
-    // 获取画廊图片列表
     async function fetchGalleryImages(aid) {
+        const userData = getCookie('userData');
+        if (!userData || !userData.token) {
+            throw new Error('未登录');
+        }
+
         try {
-            const response = await fetch(`${window.baseURL}/api/gallery-imgs?aid=${aid}`);
+            const response = await fetch(`${window.baseURL}/api/gallery-imgs?aid=${aid}`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.token}`
+                }
+            });
             const data = await response.json();
             
-            if (data.success) {
-                return data;
+            if (response.status === 403) {
+                message.error('权限不足');
+                throw new Error('权限不足');
             }
-            throw new Error(data.message || '获取数据失败');
+            
+            return data;
         } catch (error) {
             console.error('获取画廊图片失败:', error);
             return null;
         }
     }
+
+    async function fetchSearchResults(keyword, page = 1) {
+        const userData = getCookie('userData');
+        if (!userData || !userData.token) {
+            throw new Error('未登录');
+        }
+
+        try {
+            const response = await fetch(`${window.baseURL}/api/gallery-search?q=${encodeURIComponent(keyword)}&page=${page}`, {
+                headers: {
+                    'Authorization': `Bearer ${userData.token}`
+                }
+            });
+            const data = await response.json();
+            
+            if (response.status === 403) {
+                message.error('权限不足');
+                throw new Error('权限不足');
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('搜索失败:', error);
+            return null;
+        }
+    }
+
+    // 页面加载时进行权限检查
+    document.addEventListener('DOMContentLoaded', async () => {
+        const hasPermission = await checkPermission();
+        if (!hasPermission) {
+            return;
+        }
+        
+        // 初始化其他功能
+        initImages();
+    });
 
     // 预加载图片
     async function preloadImages(urls, initialLoadCount = 5) {
@@ -435,22 +566,6 @@
                 break;
         }
     });
-
-    // 获取搜索结果数据
-    async function fetchSearchResults(keyword, page = 1) {
-        try {
-            const response = await fetch(`${window.baseURL}/api/gallery-search?q=${encodeURIComponent(keyword)}&page=${page}`);
-            const data = await response.json();
-            
-            if (data.success) {
-                return data;
-            }
-            throw new Error(data.message || '搜索失败');
-        } catch (error) {
-            console.error('搜索失败:', error);
-            return null;
-        }
-    }
 
     // 渲染搜索结果
     async function renderSearchResults() {

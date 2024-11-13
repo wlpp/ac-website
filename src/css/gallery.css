@@ -19,6 +19,7 @@ body {
     height: 100%;
     position: relative;
     cursor: pointer;
+    display: none;
 }
 
 #current-image {

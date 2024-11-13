@@ -1,4 +1,3 @@
-
 from flask import Blueprint, jsonify, request, make_response, send_file
 from flask_cors import CORS
 import os
@@ -11,6 +10,7 @@ import re
 from functools import lru_cache
 from datetime import datetime, timedelta
 import threading
+from .user import token_required  # 导入token验证装饰器
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -66,8 +66,16 @@ def gallery_page():
     return send_file(file_path)
 
 @crawling_bp.route('/api/gallery-list')
-def gallery_list():
+@token_required
+def gallery_list(current_user):
     """获取图片列表"""
+    # 检查用户权限
+    if current_user.role != 0:
+        return jsonify({
+            'success': False,
+            'message': '权限不足'
+        }), 403
+    
     try:
         page = request.args.get('page', 1, type=int)
         if page < 1:
@@ -173,7 +181,7 @@ def gallery_list():
         logger.error(f"网络请求错误: {str(e)}")
         return jsonify({
             'success': False,
-            'message': '网络请求失败',
+            'message': '网��请求失败',
             'error': str(e)
         }), 500
     except Exception as e:
@@ -188,8 +196,16 @@ def gallery_list():
             session.close()
 
 @crawling_bp.route('/api/gallery-imgs')
-def gallery_imgs():
+@token_required
+def gallery_imgs(current_user):
     """获取画廊图片列表"""
+    # 检查用户权限
+    if current_user.role != 0:
+        return jsonify({
+            'success': False,
+            'message': '权限不足'
+        }), 403
+        
     try:
         aid = request.args.get('aid')
         if not aid:
@@ -299,8 +315,16 @@ def gallery_imgs():
             session.close()
 
 @crawling_bp.route('/api/gallery-search')
-def gallery_search():
+@token_required
+def gallery_search(current_user):
     """搜索图片列表"""
+    # 检查用户权限
+    if current_user.role != 0:
+        return jsonify({
+            'success': False,
+            'message': '权限不足'
+        }), 403
+        
     try:
         # 获取搜索参数
         q = request.args.get('q', '')

@@ -4,6 +4,7 @@ from .article import article_bp, db, init_db
 from .user import auth_bp, init_auth_db
 from .resources import resources_bp
 from .system import system_bp
+from .crawling import crawling_bp
 from flask_cors import CORS
 from flask_mail import Mail
 import json
@@ -53,6 +54,7 @@ def create_app():
     app.register_blueprint(auth_bp)
     app.register_blueprint(resources_bp)
     app.register_blueprint(system_bp)
+    app.register_blueprint(crawling_bp)
     
     # 创建数据库表并添加测试数据
     with app.app_context():

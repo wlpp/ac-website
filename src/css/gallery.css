@@ -1,0 +1,245 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#gallery {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    cursor: pointer;
+}
+
+#current-image {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.3s ease;
+}
+
+.loading {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 1.2rem;
+    display: none;
+}
+
+.controls {
+    position: fixed;
+    bottom: -60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 10px 20px;
+    border-radius: 20px;
+    color: white;
+    display: flex;
+    gap: 20px;
+    align-items: center;
+    transition: bottom 0.3s ease;
+    z-index: 100;
+}
+
+.controls-trigger {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 100px;
+    z-index: 99;
+}
+
+.controls-trigger:hover + .controls,
+.controls:hover {
+    bottom: 20px;
+}
+
+.control-btn {
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 5px 10px;
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 5px;
+}
+
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    z-index: 1000;
+}
+
+.modal-content {
+    position: relative;
+    width: 80%;
+    max-width: 1000px;
+    height: 80vh;
+    margin: 50px auto;
+    background: #fff;
+    border-radius: 8px;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 24px;
+    color: #333;
+    cursor: pointer;
+    background: none;
+    border: none;
+}
+
+.image-list {
+    flex: 1;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    padding: 20px;
+}
+
+.image-item {
+    background: #f5f5f5;
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+.image-item:hover {
+    transform: scale(1.05);
+}
+
+.image-item img {
+    width: 100%;
+    height: 150px;
+    object-fit: cover;
+}
+
+.image-item h3 {
+    padding: 10px;
+    margin: 0;
+    font-size: 14px;
+    color: #333;
+    text-align: center;
+}
+
+.pagination-container {
+    margin-top: auto;
+    padding: 10px;
+    background: white;
+    border-top: 1px solid #eee;
+    text-align: center;
+}
+
+.pagination-btn {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: white;
+    color: #333;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 32px;
+    font-size: 14px;
+}
+
+.pagination-btn:hover:not([disabled]) {
+    background-color: #f0f0f0;
+    border-color: #999;
+}
+
+.pagination-btn[disabled] {
+    background-color: #f5f5f5;
+    color: #999;
+    cursor: not-allowed;
+    border-color: #ddd;
+}
+
+.pagination-btn.active {
+    background-color: #1890ff;
+    color: white;
+    border-color: #1890ff;
+}
+
+.pagination-ellipsis {
+    color: #999;
+    letter-spacing: 2px;
+}
+
+.loading-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: auto;
+    height: auto;
+}
+
+.loading-spinner {
+    width: 50px;
+    height: 50px;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 添加页码输入框样式 */
+.page-input {
+    width: 50px;
+    height: 32px;
+    text-align: center;
+    margin: 0 10px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    padding: 4px;
+}
+
+.page-input:focus {
+    outline: none;
+    border-color: #1890ff;
+}
+
+/* 移除输入框的上下箭头 */
+.page-input::-webkit-inner-spin-button,
+.page-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}

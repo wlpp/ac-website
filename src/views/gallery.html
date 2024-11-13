@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>画廊 - 全屏浏览</title>
+    <link rel="stylesheet" href="../css/gallery.css">
+</head>
+<body>
+    <div id="gallery">
+        <img id="current-image" alt="gallery image">
+        <div class="loading"></div>
+        <div class="controls-trigger"></div>
+        <div class="controls">
+            <button class="control-btn" id="prev-btn">上一张</button>
+            <span id="image-counter">0/0</span>
+            <button class="control-btn" id="next-btn">下一张</button>
+            <button class="control-btn" id="auto-play">自动播放</button>
+            <button class="control-btn" id="show-list">图列表</button>
+        </div>
+    </div>
+
+    <div id="image-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">&times;</button>
+            <div class="image-list" id="image-list"></div>
+            <div id="pagination"></div>
+        </div>
+    </div>
+
+    <script src="../js/gallery.js"></script>
+    <script src="../api/config.js"></script>
+</body>
+</html>

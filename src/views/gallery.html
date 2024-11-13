@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>画廊 - 全屏浏览</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="../css/gallery.css">
 </head>
 <body>
@@ -15,14 +16,23 @@
             <button class="control-btn" id="prev-btn">上一张</button>
             <span id="image-counter">0/0</span>
             <button class="control-btn" id="next-btn">下一张</button>
-            <button class="control-btn" id="auto-play">自动播放</button>
-            <button class="control-btn" id="show-list">图列表</button>
+            <div class="autoplay-controls">
+                <button class="control-btn" id="auto-play">自动播放</button>
+                <div class="speed-selector">
+                    <button class="speed-btn" data-speed="1000">1秒</button>
+                    <button class="speed-btn" data-speed="2000">2秒</button>
+                    <button class="speed-btn" data-speed="3000">3秒</button>
+                </div>
+            </div>
+            <button class="control-btn" id="show-list">3D列表</button>
         </div>
     </div>
 
     <div id="image-modal" class="modal">
         <div class="modal-content">
-            <button class="close-modal">&times;</button>
+            <button class="close-modal">
+                <i class="fas fa-times"></i>
+            </button>
             <div class="image-list" id="image-list"></div>
             <div id="pagination"></div>
         </div>

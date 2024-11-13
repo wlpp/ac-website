@@ -107,13 +107,28 @@ body {
 
 .close-modal {
     position: absolute;
-    top: 10px;
-    right: 10px;
-    font-size: 24px;
-    color: #333;
-    cursor: pointer;
-    background: none;
+    top: 15px;
+    right: 15px;
+    width: 36px;
+    height: 36px;
+    background: rgba(0, 0, 0, 0.6);
     border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.close-modal i {
+    color: white;
+    font-size: 18px;
+}
+
+.close-modal:hover {
+    background: rgba(0, 0, 0, 0.8);
+    transform: rotate(90deg);
 }
 
 .image-list {
@@ -242,4 +257,62 @@ body {
 .page-input::-webkit-outer-spin-button {
     -webkit-appearance: none;
     margin: 0;
+}
+
+/* 添加自动播放控制样式 */
+.autoplay-controls {
+    position: relative;
+    display: inline-block;
+}
+
+.speed-selector {
+    display: none;
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    white-space: nowrap;
+}
+
+.speed-selector::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 8px solid rgba(0, 0, 0, 0.8);
+}
+
+.autoplay-controls:hover .speed-selector {
+    display: block;
+}
+
+.speed-btn {
+    display: block;
+    width: 100%;
+    padding: 4px 8px;
+    margin: 4px 0;
+    background: none;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9rem;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.speed-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.speed-btn.active {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 4px;
 }

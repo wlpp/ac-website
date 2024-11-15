@@ -371,18 +371,19 @@ function initializeImageSlider() {
     document.body.appendChild(loadingOverlay);
     
     // 更新图片的函数
-    async function updateImage() {
+    async function updateImage(showLoading = true) {
         // 创建一个超时Promise
         const timeout = new Promise((_, reject) => {
-            setTimeout(() => reject(new Error('请求超时')), 4000); // 4秒超时
+            setTimeout(() => reject(new Error('请求超时')), 4000);
         });
 
         try {
-            // 显示加载状态
-            loadingOverlay.classList.remove('fade-out');
+            // 只在 showLoading 为 true 时显示加载状态
+            if (showLoading) {
+                loadingOverlay.classList.remove('fade-out');
+            }
             emailBtn.className = 'fa-solid fa-spinner fa-spin';
             
-            // 使用 Promise.race 竞争请求和超时
             const response = await Promise.race([
                 fetch('/api/random-image'),
                 timeout
@@ -391,19 +392,14 @@ function initializeImageSlider() {
             const data = await response.json();
             
             if (data.success) {
-                // 创建新的Image对象来预加载，同样添加超时控制
                 const imgLoadPromise = new Promise((resolve, reject) => {
                     const img = new Image();
-                    
                     img.onload = () => resolve(img);
                     img.onerror = () => reject(new Error('图片加载失败'));
                     img.src = data.data.image_url;
-                    
-                    // 为图片加载也添加超时控制
                     setTimeout(() => reject(new Error('图片加载超时')), 4000);
                 });
                 
-                // 等待图片加载或超时
                 const loadedImg = await Promise.race([imgLoadPromise, timeout]);
                 
                 imageContainer.src = data.data.image_url;
@@ -412,24 +408,24 @@ function initializeImageSlider() {
                 textOverlay.style.display = 'block';
                 initializeTypeWriter();
                 
-                // 图片加载完成后淡出加载遮罩
-                loadingOverlay.classList.add('fade-out');
+                // 只在 showLoading 为 true 时处理加载遮罩
+                if (showLoading) {
+                    loadingOverlay.classList.add('fade-out');
+                }
                 
             } else {
                 throw new Error(data.message || '初始化图片失败');
             }
         } catch (error) {
             console.error('图片加载失败:', error.message);
-            
-            // 显示错误提示
             message.error(error.message === '请求超时' ? '网络请求超时，请检查网络连接' : '图片加载失败');
-            
-            // 使用默认图片
             imageContainer.src = defaultImage;
             emailBtn.className = 'fa-solid fa-paw';
             
-            // 确保关闭加载遮罩
-            loadingOverlay.classList.add('fade-out');
+            // 只在 showLoading 为 true 时处理加载遮罩
+            if (showLoading) {
+                loadingOverlay.classList.add('fade-out');
+            }
         }
     }
     
@@ -438,13 +434,17 @@ function initializeImageSlider() {
     
     // 为每个导航按钮添加点击事件
     navBtns.forEach(btn => {
-        btn.addEventListener('click', updateImage);
+        btn.addEventListener('click', () => {
+            updateImage(false);  // 传入 false 表示不显示 
+        });
     });
     
     // 返回清理函数
     return function cleanup() {
         navBtns.forEach(btn => {
-            btn.removeEventListener('click', updateImage);
+            btn.removeEventListener('click', () => {
+                updateImage(false);
+            });
         });
         // 移除加载遮罩
         if (loadingOverlay && loadingOverlay.parentNode) {
@@ -596,7 +596,7 @@ function initializePetalEffect(canvas) {
         // 初始化时在不同高度创建花瓣
         petals = Array.from({ length: petalCount }, () => {
             const petal = new Petal();
-            // 初始化时随机分布在整个屏幕高度范围内
+            // 初始化时随机��布在整个屏幕高度���围内
             petal.y = Math.random() * canvas.height;
             return petal;
         });

@@ -257,7 +257,7 @@ function initializeSearch() {
         searchButton.addEventListener('click', performSearch);
     }
 
-    // 返回清理函数
+    // 返回清理数
     return function cleanup() {
         searchBtn.removeEventListener('click', openSearchModal);
         closeBtn.removeEventListener('click', closeSearchModal);
@@ -357,30 +357,79 @@ function initializeImageSlider() {
     
     const defaultImage = '../images/login_bg.jpg';
     
+    // 创建加载遮罩
+    const loadingOverlay = document.createElement('div');
+    loadingOverlay.className = 'global-loading';
+    loadingOverlay.innerHTML = `
+        <div class="loading-content">
+            <div class="loading-image">
+                <img src="../images/iloli.gif" alt="Loading..." />
+            </div>
+            <div class="loading-text">页面加载中...</div>
+        </div>
+    `;
+    document.body.appendChild(loadingOverlay);
+    
     // 更新图片的函数
     async function updateImage() {
+        // 创建一个超时Promise
+        const timeout = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('请求超时')), 4000); // 4秒超时
+        });
+
         try {
+            // 显示加载状态
+            loadingOverlay.classList.remove('fade-out');
             emailBtn.className = 'fa-solid fa-spinner fa-spin';
-            const response = await fetch('/api/random-image');
+            
+            // 使用 Promise.race 竞争请求和超时
+            const response = await Promise.race([
+                fetch('/api/random-image'),
+                timeout
+            ]);
+            
             const data = await response.json();
             
             if (data.success) {
+                // 创建新的Image对象来预加载，同样添加超时控制
+                const imgLoadPromise = new Promise((resolve, reject) => {
+                    const img = new Image();
+                    
+                    img.onload = () => resolve(img);
+                    img.onerror = () => reject(new Error('图片加载失败'));
+                    img.src = data.data.image_url;
+                    
+                    // 为图片加载也添加超时控制
+                    setTimeout(() => reject(new Error('图片加载超时')), 4000);
+                });
+                
+                // 等待图片加载或超时
+                const loadedImg = await Promise.race([imgLoadPromise, timeout]);
+                
                 imageContainer.src = data.data.image_url;
-                imageContainer.onload = () => {
-                    emailBtn.className = 'fa-solid fa-paw';
-                    bodyBackground.style.display = 'block';
-                    textOverlay.style.display = 'block';
-                    initializeTypeWriter();
-                };
-            } else {
-                console.error('初始化图片失败:', data.message);
-                imageContainer.src = defaultImage;
                 emailBtn.className = 'fa-solid fa-paw';
+                bodyBackground.style.display = 'block';
+                textOverlay.style.display = 'block';
+                initializeTypeWriter();
+                
+                // 图片加载完成后淡出加载遮罩
+                loadingOverlay.classList.add('fade-out');
+                
+            } else {
+                throw new Error(data.message || '初始化图片失败');
             }
         } catch (error) {
-            console.error('初始化图片请求失败:', error);
+            console.error('图片加载失败:', error.message);
+            
+            // 显示错误提示
+            message.error(error.message === '请求超时' ? '网络请求超时，请检查网络连接' : '图片加载失败');
+            
+            // 使用默认图片
             imageContainer.src = defaultImage;
             emailBtn.className = 'fa-solid fa-paw';
+            
+            // 确保关闭加载遮罩
+            loadingOverlay.classList.add('fade-out');
         }
     }
     
@@ -397,6 +446,10 @@ function initializeImageSlider() {
         navBtns.forEach(btn => {
             btn.removeEventListener('click', updateImage);
         });
+        // 移除加载遮罩
+        if (loadingOverlay && loadingOverlay.parentNode) {
+            loadingOverlay.parentNode.removeChild(loadingOverlay);
+        }
     };
 }
 

@@ -39,6 +39,9 @@
     // 添加图片缓存对象
     const imageCache = new Map();
 
+    // 添加取消预加载的控制器
+    let preloadController = null;
+
     // 更新图片计数器
     function updateCounter() {
         imageCounter.textContent = `${currentIndex + 1}/${demoImages.length}`;
@@ -315,13 +318,26 @@
         initImages();
     });
 
-    // 预加载图片
+    // 修改预加载函数
     async function preloadImages(urls, initialLoadCount = 5) {
+        // 如果存在之前的预加载，取消它
+        if (preloadController) {
+            preloadController.abort();
+        }
+        
+        // 创建新的 AbortController
+        preloadController = new AbortController();
+        const signal = preloadController.signal;
+
         const initialUrls = urls.slice(0, initialLoadCount);
         const remainingUrls = urls.slice(initialLoadCount);
         
         // 修改为串行加载，每张图片间隔1秒
         for (const url of initialUrls) {
+            if (signal.aborted) {
+                break;
+            }
+
             if (imageCache.has(url)) {
                 continue;
             }
@@ -336,41 +352,50 @@
                     img.onerror = () => reject(url);
                     img.src = url;
                 });
+                // 检查是否已取消
+                if (signal.aborted) break;
                 // 每张图片加载后等待1秒
                 await new Promise(resolve => setTimeout(resolve, 1000));
             } catch (error) {
-                console.error('图片预加载失败:', url);
+                if (!signal.aborted) {
+                    console.error('图片预加载失败:', url);
+                }
             }
         }
         
-        console.log('前5张图片加载完成');
-        
-        // 后台加载剩余图片
-        if (remainingUrls.length > 0) {
-            setTimeout(async () => {
-                for (const url of remainingUrls) {
-                    if (imageCache.has(url)) {
-                        continue;
+        if (!signal.aborted) {
+            console.log('前5张图片加载完成');
+            
+            // 后台加载剩余图片
+            if (remainingUrls.length > 0) {
+                setTimeout(async () => {
+                    for (const url of remainingUrls) {
+                        if (signal.aborted) break;
+                        if (imageCache.has(url)) continue;
+                        
+                        try {
+                            await new Promise((resolve, reject) => {
+                                const img = new Image();
+                                img.onload = () => {
+                                    imageCache.set(url, img);
+                                    resolve();
+                                };
+                                img.onerror = reject;
+                                img.src = url;
+                            });
+                            if (signal.aborted) break;
+                            await new Promise(resolve => setTimeout(resolve, 1000));
+                        } catch (error) {
+                            if (!signal.aborted) {
+                                console.error('图片预加载失败:', url);
+                            }
+                        }
                     }
-                    
-                    try {
-                        await new Promise((resolve, reject) => {
-                            const img = new Image();
-                            img.onload = () => {
-                                imageCache.set(url, img);
-                                resolve();
-                            };
-                            img.onerror = reject;
-                            img.src = url;
-                        });
-                        // 每张图片加载后等待1秒
-                        await new Promise(resolve => setTimeout(resolve, 1000));
-                    } catch (error) {
-                        console.error('图片预加载失败:', url);
+                    if (!signal.aborted) {
+                        console.log('后台加载剩余图片完成');
                     }
-                }
-                console.log('后台加载剩余图片完成');
-            }, 0);
+                }, 0);
+            }
         }
     }
 

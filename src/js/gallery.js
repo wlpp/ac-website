@@ -318,6 +318,12 @@
         initImages();
     });
 
+    // 添加域名判断函数
+    function getPreloadDelay() {
+        const hostname = window.location.hostname;
+        return hostname === 'acwlpp.top' ? 500 : 1000; // acwlpp.top 使用 0.5秒，其他使用 1秒
+    }
+
     // 修改预加载函数
     async function preloadImages(urls, initialLoadCount = 5) {
         // 如果存在之前的预加载，取消它
@@ -332,7 +338,10 @@
         const initialUrls = urls.slice(0, initialLoadCount);
         const remainingUrls = urls.slice(initialLoadCount);
         
-        // 修改为串行加载，每张图片间隔1秒
+        // 获取延迟时间
+        const delay = getPreloadDelay();
+        
+        // 修改初始加载部分
         for (const url of initialUrls) {
             if (signal.aborted) {
                 break;
@@ -354,8 +363,8 @@
                 });
                 // 检查是否已取消
                 if (signal.aborted) break;
-                // 每张图片加载后等待1秒
-                await new Promise(resolve => setTimeout(resolve, 1000));
+                // 使用动态延迟时间
+                await new Promise(resolve => setTimeout(resolve, delay));
             } catch (error) {
                 if (!signal.aborted) {
                     console.error('图片预加载失败:', url);
@@ -384,7 +393,7 @@
                                 img.src = url;
                             });
                             if (signal.aborted) break;
-                            await new Promise(resolve => setTimeout(resolve, 1000));
+                            await new Promise(resolve => setTimeout(resolve, delay));
                         } catch (error) {
                             if (!signal.aborted) {
                                 console.error('图片预加载失败:', url);

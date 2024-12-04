@@ -413,7 +413,7 @@
     }
 
     // 渲染图文列表
-    async function renderArticleList() {
+    async function renderArticleList(page = 1) {
         const imageList = document.getElementById('image-list');
         const modal = document.getElementById('image-modal');
         
@@ -428,7 +428,7 @@
         `;
         
         try {
-            const response = await fetchGalleryList(pageConfig.currentPage);
+            const response = await fetchGalleryList(page);
             if (!response || !response.success) {
                 imageList.innerHTML = `
                     <div class="loading-container">
@@ -562,53 +562,79 @@
     async function changePage(newPage) {
         if (newPage >= 1) {  // 只检查是否大于等于1
             pageConfig.currentPage = newPage;
-            await renderArticleList();
+            await renderArticleList(newPage);
         }
     }
 
-    // 显示图片列表弹框
-    function showModal() {
-        // 先关闭搜索弹框
-        searchModal.style.display = 'none';
-        searchInput.value = '';  // 清空搜索输入
-        
-        // 显示图片列表弹框
-        imageModal.style.display = 'block';
-        renderArticleList(); // 加载图文列表
-    }
-
-    // 显示搜索弹框
-    function showSearchModal() {
-        // 先关闭图片列表弹框
-        imageModal.style.display = 'none';
-        
-        // 显示搜索弹框
-        searchModal.style.display = 'block';
-        searchInput.focus();  // 聚焦到搜索输入框
-    }
-
-    // 隐藏所有弹框
+    // 先定义 hideAllModals 函数
     function hideAllModals() {
         imageModal.style.display = 'none';
         searchModal.style.display = 'none';
-        document.getElementById('favorites-modal').style.display = 'none'; // 添加收藏模态框
+        document.getElementById('favorites-modal').style.display = 'none';
         searchInput.value = '';  // 清空搜索输入
     }
 
-    // 事件监听
+    // 然后定义显示各个模态框的函数
+    function showModal() {
+        // 隐藏其他可能显示的弹框
+        hideModal('search-modal');
+        hideModal('favorites-modal');
+        
+        // 显示图片列表弹框
+        imageModal.style.display = 'block';
+        
+        // 只在第一次打开或强制刷新时重新渲染
+        if (!modalState.imageModal.isInitialized) {
+            renderArticleList(modalState.imageModal.currentPage);
+            modalState.imageModal.isInitialized = true;
+        }
+    }
+
+    function showSearchModal() {
+        // 隐藏其他可能显示的弹框
+        hideModal('image-modal');
+        hideModal('favorites-modal');
+        
+        // 显示搜索弹框
+        searchModal.style.display = 'block';
+        searchInput.focus();
+        
+        // 只在第一次打开或强制刷新时重新渲染
+        if (!modalState.searchModal.isInitialized && modalState.searchModal.keyword) {
+            renderSearchResults(modalState.searchModal.currentPage);
+            modalState.searchModal.isInitialized = true;
+        }
+    }
+
+    function showFavoritesModal() {
+        // 隐藏其他可能显示的弹框
+        hideModal('image-modal');
+        hideModal('search-modal');
+        
+        // 显示收藏弹框
+        const favoritesModal = document.getElementById('favorites-modal');
+        favoritesModal.style.display = 'block';
+        
+        // 只在第一次打开或强制刷新时重新渲染
+        if (!modalState.favoritesModal.isInitialized) {
+            renderFavoritesList(modalState.favoritesModal.currentPage);
+            modalState.favoritesModal.isInitialized = true;
+        }
+    }
+
+    // 最后添加事件监听
     document.getElementById('show-list').addEventListener('click', showModal);
     document.getElementById('show-search').addEventListener('click', showSearchModal);
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止事件冒泡
-            hideAllModals();
-        });
-    });
+    document.getElementById('show-favorites').addEventListener('click', showFavoritesModal);
 
-    // ESC 键关闭所有弹框
+    // ESC 键只关闭当前显示的弹框
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
-            hideAllModals();
+            // 找到当前显示的弹框并关闭
+            const visibleModal = document.querySelector('.modal[style*="display: block"]');
+            if (visibleModal) {
+                visibleModal.style.display = 'none';
+            }
         }
     });
 
@@ -637,7 +663,7 @@
     });
 
     // 渲染搜索结果
-    async function renderSearchResults() {
+    async function renderSearchResults(page = 1) {
         const searchResultList = document.getElementById('search-result-list');
         const keyword = searchInput.value.trim();
         
@@ -654,7 +680,7 @@
         `;
         
         try {
-            const response = await fetchSearchResults(keyword, pageConfig.currentPage);
+            const response = await fetchSearchResults(keyword, page);
             if (!response || !response.success) {
                 searchResultList.innerHTML = `
                     <div class="loading-container">
@@ -778,14 +804,20 @@
     async function changeSearchPage(newPage) {
         if (newPage >= 1) {
             pageConfig.currentPage = newPage;
-            await renderSearchResults();
+            await renderSearchResults(newPage);
         }
     }
 
     // 搜索功能
     async function performSearch() {
-        pageConfig.currentPage = 1;  // 重置页码
-        await renderSearchResults();
+        const keyword = searchInput.value.trim();
+        if (keyword !== modalState.searchModal.keyword) {
+            modalState.searchModal.keyword = keyword;
+            modalState.searchModal.currentPage = 1;
+            modalState.searchModal.isInitialized = false;
+        }
+        await renderSearchResults(modalState.searchModal.currentPage);
+        modalState.searchModal.isInitialized = true;
     }
 
     // 事件监听
@@ -828,25 +860,26 @@
 
         const itemId = item.aid;
         const username = userData.username;
-        const favoriteKey = `gallery-favorites-${username}`; // 为每个用户创建���立的收藏列表
+        const favoriteKey = `gallery-favorites-${username}`;
 
-        // 从 localStorage 获取当前收藏列表
         let favorites = new Set(JSON.parse(localStorage.getItem(favoriteKey) || '[]'));
 
         if (favorites.has(itemId)) {
             favorites.delete(itemId);
             message.success('已取消收藏');
+            favoritesSet.delete(itemId);
         } else {
             favorites.add(itemId);
             message.success('已添加到收藏');
+            favoritesSet.add(itemId);
         }
 
-        // 直接保存到 localStorage
         localStorage.setItem(favoriteKey, JSON.stringify(Array.from(favorites)));
-        
-        // 更新内存中的收藏集合
-        favoritesSet.clear();
-        favorites.forEach(id => favoritesSet.add(id));
+
+        // 更新所有相关按钮的状态
+        document.querySelectorAll(`.favorite-btn[data-aid="${itemId}"]`).forEach(btn => {
+            btn.classList.toggle('active', favorites.has(itemId));
+        });
     }
 
     // 简化加载收藏函数
@@ -868,7 +901,7 @@
     }
 
     // 修改渲染收藏列表函数
-    async function renderFavoritesList() {
+    async function renderFavoritesList(page = 1) {
         const userData = getCookie('userData');
         if (!userData || !userData.username) {
             message.warning('请先登录');
@@ -895,75 +928,58 @@
         `;
 
         try {
-            const promises = Array.from(favoritesSet).map(aid => 
-                fetchGalleryImages(aid).then(response => {
-                    if (response && response.success) {
-                        return {
-                            aid: aid,
-                            ...response.data
-                        };
-                    }
-                    return null;
-                })
-            );
+            const response = await fetchGalleryList(page);
+            if (!response || !response.success) {
+                favoritesList.innerHTML = `
+                    <div class="loading-container">
+                        <div class="error">加载失败</div>
+                    </div>
+                `;
+                return;
+            }
 
-            const responses = await Promise.all(promises);
-            
-            // 清空加载动画
             favoritesList.innerHTML = '';
-
-            // 添加收藏项
-            responses.forEach(response => {
-                if (response) {
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'image-item';
-                    itemElement.dataset.aid = response.aid;
-                    itemElement.innerHTML = `
-                        <img src="${response.images[0]}" alt="${response.title || ''}">
-                        <div class="item-footer">
-                            <h3>${response.title || ''}</h3>
-                            <button class="favorite-btn active" data-aid="${response.aid}">
-                                <i class="fas fa-heart"></i>
-                            </button>
-                        </div>
-                    `;
+            response.data.forEach(item => {
+                const itemElement = document.createElement('div');
+                itemElement.className = 'image-item';
+                itemElement.dataset.aid = item.aid;
+                itemElement.innerHTML = `
+                    <img src="${item.image_url}" alt="${item.title}">
+                    <div class="item-footer">
+                        <h3>${item.title}</h3>
+                        <button class="favorite-btn active" data-aid="${item.aid}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // 修改收藏按钮点击事件
+                const favoriteBtn = itemElement.querySelector('.favorite-btn');
+                favoriteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const aid = favoriteBtn.dataset.aid;
                     
-                    // 添加点击事件
-                    itemElement.addEventListener('click', async () => {
-                        const aid = itemElement.dataset.aid;
-                        showLoadingToast();
-                        
-                        try {
-                            const galleryResponse = await fetchGalleryImages(aid);
-                            if (galleryResponse && galleryResponse.success) {
-                                await preloadImages(galleryResponse.data.images);
-                                demoImages.length = 0;
-                                demoImages.push(...galleryResponse.data.images);
-                                currentIndex = 0;
-                                hideAllModals();
-                                initImages();
-                            }
-                        } catch (error) {
-                            console.error('加载图片失败:', error);
-                        } finally {
-                            hideLoadingToast();
-                        }
-                    });
-
-                    // 添加收藏按钮点击事件
-                    const favoriteBtn = itemElement.querySelector('.favorite-btn');
-                    favoriteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const aid = favoriteBtn.dataset.aid;
-                        toggleFavorite({ aid });
+                    // 更新收藏状态
+                    toggleFavorite({ aid });
+                    
+                    // 更新按钮状态
+                    favoriteBtn.classList.remove('active');
+                    
+                    // 添加淡出动画类
+                    itemElement.classList.add('fade-out');
+                    
+                    // 等待动画完成后移除元素
+                    setTimeout(() => {
                         itemElement.remove();
-                        if (favoritesSet.size === 0) {
-                            renderFavoritesList();
+                        
+                        // 检查是否还有收藏项
+                        if (favoritesList.children.length === 0) {
+                            favoritesList.innerHTML = '<div class="no-results">暂无收藏</div>';
                         }
-                    });
-                    
-                    favoritesList.appendChild(itemElement);
-                }
+                    }, 300); // 动画持续时间
+                });
+                
+                favoritesList.appendChild(itemElement);
             });
 
             // 更新分页（如果需要的话）
@@ -996,3 +1012,85 @@
 
     // 添加收藏按钮事件监听
     document.getElementById('show-favorites').addEventListener('click', showFavoritesModal);
+
+    // 修改 hideModal 函数来隐藏指定的模态框
+    function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // 修改关闭按钮的处理函数
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止事件冒泡
+            // 找到最近的 modal 父元素并隐藏
+            const modal = btn.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        });
+    });
+
+    // 添加状态管理对象
+    const modalState = {
+        imageModal: {
+            currentPage: 1,
+            isInitialized: false
+        },
+        searchModal: {
+            currentPage: 1,
+            keyword: '',
+            isInitialized: false
+        },
+        favoritesModal: {
+            currentPage: 1,
+            isInitialized: false
+        }
+    };
+
+    // 修改关闭按钮的处理函数
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const modal = btn.closest('.modal');
+            if (modal) {
+                modal.style.display = 'none';
+                // 标记为未初始化，以便下次打开时可以选择是否刷新
+                switch(modal.id) {
+                    case 'image-modal':
+                        modalState.imageModal.isInitialized = false;
+                        break;
+                    case 'search-modal':
+                        modalState.searchModal.isInitialized = false;
+                        break;
+                    case 'favorites-modal':
+                        modalState.favoritesModal.isInitialized = false;
+                        break;
+                }
+            }
+        });
+    });
+
+    // 修改 ESC 键处理
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            const visibleModal = document.querySelector('.modal[style*="display: block"]');
+            if (visibleModal) {
+                visibleModal.style.display = 'none';
+                // 标记为未初始化
+                switch(visibleModal.id) {
+                    case 'image-modal':
+                        modalState.imageModal.isInitialized = false;
+                        break;
+                    case 'search-modal':
+                        modalState.searchModal.isInitialized = false;
+                        break;
+                    case 'favorites-modal':
+                        modalState.favoritesModal.isInitialized = false;
+                        break;
+                }
+            }
+        }
+    });

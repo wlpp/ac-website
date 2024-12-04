@@ -30,6 +30,9 @@
                     <button class="speed-btn" data-speed="3000">3秒</button>
                 </div>
             </div>
+            <button class="control-btn" id="show-favorites">
+                <i class="fas fa-heart"></i>
+            </button>
             <button class="control-btn" id="show-list">
                 <i class="fas fa-th"></i>
             </button>
@@ -64,6 +67,18 @@
             </div>
             <div class="image-list" id="search-result-list"></div>
             <div id="search-pagination"></div>
+        </div>
+    </div>
+
+    <div id="favorites-modal" class="modal">
+        <div class="modal-content">
+            <button class="close-modal">
+                <i class="fas fa-times"></i>
+            </button>
+            <div class="modal-body">
+                <div class="image-list" id="favorites-list"></div>
+                <div id="favorites-pagination"></div>
+            </div>
         </div>
     </div>
 

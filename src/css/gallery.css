@@ -532,3 +532,28 @@ body {
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
+
+.favorite-btn {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 5px;
+    transition: color 0.3s;
+}
+
+.favorite-btn.active {
+    color: #ff4757;
+}
+
+.item-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+}
+
+.item-footer h3 {
+    margin: 0;
+    flex: 1;
+}

@@ -42,6 +42,9 @@
     // 添加取消预加载的控制器
     let preloadController = null;
 
+    // 在文件开头添加收藏相关变量
+    const favoritesSet = new Set();
+
     // 更新图片计数器
     function updateCounter() {
         imageCounter.textContent = `${currentIndex + 1}/${demoImages.length}`;
@@ -309,6 +312,7 @@
 
     // 页面加载时进行权限检查
     document.addEventListener('DOMContentLoaded', async () => {
+        loadFavorites();
         const hasPermission = await checkPermission();
         if (!hasPermission) {
             return;
@@ -439,9 +443,15 @@
                 const itemElement = document.createElement('div');
                 itemElement.className = 'image-item';
                 itemElement.dataset.aid = item.aid;
+                const isFavorited = favoritesSet.has(item.aid);
                 itemElement.innerHTML = `
                     <img src="${item.image_url}" alt="${item.title}">
-                    <h3>${item.title}</h3>
+                    <div class="item-footer">
+                        <h3>${item.title}</h3>
+                        <button class="favorite-btn ${isFavorited ? 'active' : ''}" data-aid="${item.aid}">
+                            <i class="fas fa-heart"></i>
+                        </button>
+                    </div>
                 `;
                 itemElement.addEventListener('click', async () => {
                     const aid = itemElement.dataset.aid;
@@ -479,6 +489,15 @@
                         hideLoadingToast(); // 隐藏加载提示
                     }
                 });
+                
+                // 添加收藏按钮点击事件
+                const favoriteBtn = itemElement.querySelector('.favorite-btn');
+                favoriteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    toggleFavorite(item);
+                    favoriteBtn.classList.toggle('active');
+                });
+                
                 imageList.appendChild(itemElement);
             });
             
@@ -572,6 +591,7 @@
     function hideAllModals() {
         imageModal.style.display = 'none';
         searchModal.style.display = 'none';
+        document.getElementById('favorites-modal').style.display = 'none'; // 添加收藏模态框
         searchInput.value = '';  // 清空搜索输入
     }
 
@@ -579,7 +599,10 @@
     document.getElementById('show-list').addEventListener('click', showModal);
     document.getElementById('show-search').addEventListener('click', showSearchModal);
     document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', hideAllModals);
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation(); // 防止事件冒泡
+            hideAllModals();
+        });
     });
 
     // ESC 键关闭所有弹框
@@ -794,3 +817,182 @@
     function hideLoadingToast() {
         loadingToast.style.display = 'none';
     }
+
+    // 修改收藏相关函数，简化为只使用 localStorage
+    function toggleFavorite(item) {
+        const userData = getCookie('userData');
+        if (!userData || !userData.username) {
+            message.warning('请先登录');
+            return;
+        }
+
+        const itemId = item.aid;
+        const username = userData.username;
+        const favoriteKey = `gallery-favorites-${username}`; // 为每个用户创建���立的收藏列表
+
+        // 从 localStorage 获取当前收藏列表
+        let favorites = new Set(JSON.parse(localStorage.getItem(favoriteKey) || '[]'));
+
+        if (favorites.has(itemId)) {
+            favorites.delete(itemId);
+            message.success('已取消收藏');
+        } else {
+            favorites.add(itemId);
+            message.success('已添加到收藏');
+        }
+
+        // 直接保存到 localStorage
+        localStorage.setItem(favoriteKey, JSON.stringify(Array.from(favorites)));
+        
+        // 更新内存中的收藏集合
+        favoritesSet.clear();
+        favorites.forEach(id => favoritesSet.add(id));
+    }
+
+    // 简化加载收藏函数
+    function loadFavorites() {
+        const userData = getCookie('userData');
+        if (!userData || !userData.username) {
+            favoritesSet.clear();
+            return;
+        }
+
+        const favoriteKey = `gallery-favorites-${userData.username}`;
+        const saved = localStorage.getItem(favoriteKey);
+        
+        favoritesSet.clear();
+        if (saved) {
+            const favorites = JSON.parse(saved);
+            favorites.forEach(id => favoritesSet.add(id));
+        }
+    }
+
+    // 修改渲染收藏列表函数
+    async function renderFavoritesList() {
+        const userData = getCookie('userData');
+        if (!userData || !userData.username) {
+            message.warning('请先登录');
+            return;
+        }
+
+        // 修改选择器以匹配新的 HTML 结构
+        const favoritesList = document.querySelector('#favorites-modal .image-list');
+        if (!favoritesList) {
+            console.error('找不到收藏列表容器');
+            return;
+        }
+
+        if (favoritesSet.size === 0) {
+            favoritesList.innerHTML = '<div class="no-results">暂无收藏</div>';
+            return;
+        }
+
+        // 显示加载动画
+        favoritesList.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+            </div>
+        `;
+
+        try {
+            const promises = Array.from(favoritesSet).map(aid => 
+                fetchGalleryImages(aid).then(response => {
+                    if (response && response.success) {
+                        return {
+                            aid: aid,
+                            ...response.data
+                        };
+                    }
+                    return null;
+                })
+            );
+
+            const responses = await Promise.all(promises);
+            
+            // 清空加载动画
+            favoritesList.innerHTML = '';
+
+            // 添加收藏项
+            responses.forEach(response => {
+                if (response) {
+                    const itemElement = document.createElement('div');
+                    itemElement.className = 'image-item';
+                    itemElement.dataset.aid = response.aid;
+                    itemElement.innerHTML = `
+                        <img src="${response.images[0]}" alt="${response.title || ''}">
+                        <div class="item-footer">
+                            <h3>${response.title || ''}</h3>
+                            <button class="favorite-btn active" data-aid="${response.aid}">
+                                <i class="fas fa-heart"></i>
+                            </button>
+                        </div>
+                    `;
+                    
+                    // 添加点击事件
+                    itemElement.addEventListener('click', async () => {
+                        const aid = itemElement.dataset.aid;
+                        showLoadingToast();
+                        
+                        try {
+                            const galleryResponse = await fetchGalleryImages(aid);
+                            if (galleryResponse && galleryResponse.success) {
+                                await preloadImages(galleryResponse.data.images);
+                                demoImages.length = 0;
+                                demoImages.push(...galleryResponse.data.images);
+                                currentIndex = 0;
+                                hideAllModals();
+                                initImages();
+                            }
+                        } catch (error) {
+                            console.error('加载图片失败:', error);
+                        } finally {
+                            hideLoadingToast();
+                        }
+                    });
+
+                    // 添加收藏按钮点击事件
+                    const favoriteBtn = itemElement.querySelector('.favorite-btn');
+                    favoriteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const aid = favoriteBtn.dataset.aid;
+                        toggleFavorite({ aid });
+                        itemElement.remove();
+                        if (favoritesSet.size === 0) {
+                            renderFavoritesList();
+                        }
+                    });
+                    
+                    favoritesList.appendChild(itemElement);
+                }
+            });
+
+            // 更新分页（如果需要的话）
+            const favoritesPagination = document.getElementById('favorites-pagination');
+            if (favoritesPagination) {
+                // 这里可以添加分页逻辑
+                favoritesPagination.innerHTML = ''; // 暂时清空分页
+            }
+
+        } catch (error) {
+            console.error('渲染收藏列表失败:', error);
+            favoritesList.innerHTML = `
+                <div class="loading-container">
+                    <div class="error">加载失败</div>
+                </div>
+            `;
+        }
+    }
+
+    // 显示收藏列表弹框
+    function showFavoritesModal() {
+        // 先关闭其他模态框
+        imageModal.style.display = 'none';
+        searchModal.style.display = 'none';
+        
+        const favoritesModal = document.getElementById('favorites-modal');
+        favoritesModal.style.display = 'block';
+        renderFavoritesList(); // 渲染收藏列表
+    }
+
+    // 添加收藏按钮事件监听
+    document.getElementById('show-favorites').addEventListener('click', showFavoritesModal);

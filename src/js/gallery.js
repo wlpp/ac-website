@@ -384,7 +384,100 @@
         }
     }
 
-    // 渲染图文列表
+    // 浏览历史的存储键名
+    const HISTORY_STORAGE_KEY = 'gallery_history';
+
+    // 浏览历史管理函数
+    function saveToHistory(aid, title, currentPage) {
+        try {
+            const history = getHistory();
+            const newEntry = {
+                aid,
+                title,
+                timestamp: Date.now(),
+                page: currentPage
+            };
+            
+            // 移除重复项
+            const uniqueHistory = history.filter(item => item.aid !== aid);
+            uniqueHistory.unshift(newEntry); // 将新记录添加到开头
+            
+            // 只保留最新的50条记录
+            const trimmedHistory = uniqueHistory.slice(0, 50);
+            localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(trimmedHistory));
+        } catch (error) {
+            console.error('保存浏览记录失败:', error);
+        }
+    }
+
+    function getHistory() {
+        try {
+            const history = localStorage.getItem(HISTORY_STORAGE_KEY);
+            return history ? JSON.parse(history) : [];
+        } catch (error) {
+            console.error('获取浏览记录失败:', error);
+            return [];
+        }
+    }
+
+    // 渲染浏览历史
+    function renderHistory() {
+        const historyList = document.getElementById('history-list');
+        const history = getHistory();
+        
+        if (history.length === 0) {
+            historyList.innerHTML = '<div class="no-results">暂无浏览记录</div>';
+            return;
+        }
+        
+        historyList.innerHTML = '';
+        history.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'image-item';
+            itemElement.dataset.aid = item.aid;
+            
+            const date = new Date(item.timestamp);
+            const formattedDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+            
+            itemElement.innerHTML = `
+                <div class="history-item-content">
+                    <h3>${item.title}</h3>
+                    <p class="history-time">${formattedDate}</p>
+                </div>
+            `;
+            
+            itemElement.addEventListener('click', async () => {
+                showLoadingToast(); // 显示加载提示
+                try {
+                    const galleryResponse = await fetchGalleryImages(item.aid);
+                    if (galleryResponse && galleryResponse.success) {
+                        const images = galleryResponse.data.images;
+                        await preloadImages(images);
+                        demoImages.length = 0;
+                        demoImages.push(...images);
+                        currentIndex = 0;
+                        hideAllModals();
+                        initImages();
+                        
+                        // 进入全屏模式
+                        const gallery = document.getElementById('gallery');
+                        if (gallery.requestFullscreen) {
+                            await gallery.requestFullscreen();
+                        }
+                        rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                    }
+                } catch (error) {
+                    console.error('加载图片失败:', error);
+                } finally {
+                    hideLoadingToast(); // 隐藏加载提示
+                }
+            });
+            
+            historyList.appendChild(itemElement);
+        });
+    }
+
+    // 修改 renderArticleList 函数，添加 async 关键字
     async function renderArticleList(page = 1) {
         const imageList = document.getElementById('image-list');
         const modal = document.getElementById('image-modal');
@@ -422,6 +515,9 @@
                     </div>
                 `;
                 itemElement.addEventListener('click', async () => {
+                    // 点击时保存到历史记录
+                    saveToHistory(item.aid, item.title, page);
+                    
                     const aid = itemElement.dataset.aid;
                     showLoadingToast(); // 显示加载提示
                     
@@ -452,10 +548,6 @@
                                 const gallery = document.getElementById('gallery');
                                 if (gallery.requestFullscreen) {
                                     await gallery.requestFullscreen();
-                                } else if (gallery.webkitRequestFullscreen) {
-                                    await gallery.webkitRequestFullscreen();
-                                } else if (gallery.msRequestFullscreen) {
-                                    await gallery.msRequestFullscreen();
                                 }
                                 rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
                                 
@@ -550,6 +642,7 @@
     function hideAllModals() {
         hideModal('image-modal');
         hideModal('search-modal');
+        hideModal('history-modal');
         searchInput.value = '';  // 清空搜索输入
     }
 
@@ -1029,3 +1122,17 @@
             }
         }
     }
+
+    // 显示历史记录弹框
+    function showHistoryModal() {
+        exitFullScreen();
+        hideModal('image-modal');
+        hideModal('search-modal');
+        
+        const historyModal = document.getElementById('history-modal');
+        historyModal.style.display = 'block';
+        renderHistory();
+    }
+
+    // 添加历史记录按钮的事件监听
+    document.getElementById('show-favorites').addEventListener('click', showHistoryModal);

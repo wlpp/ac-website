@@ -447,6 +447,18 @@
                                 
                                 // 初始化图片显示
                                 initImages();
+                                
+                                // 进入全屏模式
+                                const gallery = document.getElementById('gallery');
+                                if (gallery.requestFullscreen) {
+                                    await gallery.requestFullscreen();
+                                } else if (gallery.webkitRequestFullscreen) {
+                                    await gallery.webkitRequestFullscreen();
+                                } else if (gallery.msRequestFullscreen) {
+                                    await gallery.msRequestFullscreen();
+                                }
+                                rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                                
                             } catch (error) {
                                 console.error('加载图片失败:', error);
                             }
@@ -542,7 +554,10 @@
     }
 
     // 然后定义显示各个模态框的函数
-    function showModal() {
+    async function showModal() {
+        // 先退出全屏
+        await exitFullScreen();
+        
         // 隐藏其他可能显示的弹框
         hideModal('search-modal');
         hideModal('favorites-modal');
@@ -557,7 +572,10 @@
         }
     }
 
-    function showSearchModal() {
+    async function showSearchModal() {
+        // 先退出全屏
+        await exitFullScreen();
+        
         // 隐藏其他可能显示的弹框
         hideModal('image-modal');
         hideModal('favorites-modal');
@@ -680,6 +698,18 @@
                                 
                                 // 初始化图片显示
                                 initImages();
+                                
+                                // 进入全屏模式
+                                const gallery = document.getElementById('gallery');
+                                if (gallery.requestFullscreen) {
+                                    await gallery.requestFullscreen();
+                                } else if (gallery.webkitRequestFullscreen) {
+                                    await gallery.webkitRequestFullscreen();
+                                } else if (gallery.msRequestFullscreen) {
+                                    await gallery.msRequestFullscreen();
+                                }
+                                rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                                
                             } catch (error) {
                                 console.error('加载图片失败:', error);
                             }
@@ -981,3 +1011,21 @@
 
     // 添加按钮点击事件
     rotateScreenBtn.addEventListener('click', toggleFullScreen);
+
+    // 添加退出全屏的辅助函数
+    async function exitFullScreen() {
+        if (document.fullscreenElement) {
+            try {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    await document.webkitExitFullscreen();
+                } else if (document.msExitFullscreen) {
+                    await document.msExitFullscreen();
+                }
+                rotateScreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+            } catch (error) {
+                console.error('退出全屏失败:', error);
+            }
+        }
+    }

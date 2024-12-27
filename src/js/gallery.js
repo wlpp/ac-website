@@ -884,7 +884,7 @@
         });
     }
 
-    // 简化载收藏函数
+    // 简化加载收藏函数
     function loadFavorites() {
         const userData = getCookie('userData');
         if (!userData || !userData.username) {
@@ -934,7 +934,7 @@
         `;
 
         try {
-            // 使用收藏列表中的 aid 获取图片数据
+            // 使用收藏列表中的 aid ��取图片数据
             const promises = favorites.map(aid => 
                 fetchGalleryImages(aid).then(response => {
                     if (response && response.success) {
@@ -1252,29 +1252,3 @@
 
     // 添加按钮点击事件
     rotateScreenBtn.addEventListener('click', toggleFullScreen);
-
-    // 修改为屏幕旋转控制函数
-    function toggleRotateScreen() {
-        const gallery = document.getElementById('gallery');
-        
-        if (document.documentElement.style.transform === '') {
-            // 切换到横屏
-            document.documentElement.style.transform = 'rotate(90deg)';
-            document.documentElement.style.transformOrigin = '50% 50%';
-            document.documentElement.style.width = '100vh';
-            document.documentElement.style.height = '100vw';
-            document.documentElement.style.margin = 'calc((100vw - 100vh) / 2) calc((100vh - 100vw) / 2)';
-            rotateScreenBtn.innerHTML = '<i class="fas fa-rotate-left"></i>';
-        } else {
-            // 恢复竖屏
-            document.documentElement.style.transform = '';
-            document.documentElement.style.transformOrigin = '';
-            document.documentElement.style.width = '';
-            document.documentElement.style.height = '';
-            document.documentElement.style.margin = '';
-            rotateScreenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
-        }
-    }
-
-    // 修改按钮点击事件
-    rotateScreenBtn.addEventListener('click', toggleRotateScreen);

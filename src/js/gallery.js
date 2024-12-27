@@ -180,73 +180,11 @@
         return null;
     }
 
-    // 权限检查函数
-    async function checkPermission() {
-        const userData = getCookie('userData');
-        const gallery = document.getElementById('gallery');
-        console.log(userData);  
-        if (!userData || !userData.token) {
-            window.location.href = '/';
-            return false;
-        }
-
-        try {
-            // 直接使用 gallery-list 接口检查权限
-            const response = await fetch(`${window.baseURL}/api/gallery-list?page=1`, {
-                headers: {
-                    'Authorization': `Bearer ${userData.token}`
-                }
-            });
-            console.log(response.status);
-            if (response.status === 403) {
-                message.error('权限不足，需要管理员权限');
-                setTimeout(() => {
-                    window.location.href = '/';
-                }, 0);
-                return false;
-            }
-
-            if (!response.ok) {
-                throw new Error('验证失败');
-            }
-
-            // 如果请求成功,可以直接使用返回的数据初始化图片列表
-            const data = await response.json();
-            if (data.success) {
-                gallery.style.display = 'block';
-                // initImagesWithData(data.data);
-            }
-
-            return true;
-        } catch (error) {
-            console.error('权限验证失败:', error);
-            message.error('验证失败，请重新登录');
-            setTimeout(() => {
-                window.location.href = '/';
-            }, 0);
-            return false;
-        }
-    }
-
     // 修改 API 请求函数
     async function fetchGalleryList(page = 1) {
-        const userData = getCookie('userData');
-        if (!userData || !userData.token) {
-            throw new Error('未登录');
-        }
-
         try {
-            const response = await fetch(`${window.baseURL}/api/gallery-list?page=${page}`, {
-                headers: {
-                    'Authorization': `Bearer ${userData.token}`
-                }
-            });
+            const response = await fetch(`${window.baseURL}/api/gallery-list?page=${page}`);
             const data = await response.json();
-            
-            if (response.status === 403) {
-                message.error('权限不足');
-                throw new Error('权限不足');
-            }
             
             if (data.success) {
                 return data;
@@ -259,24 +197,9 @@
     }
 
     async function fetchGalleryImages(aid) {
-        const userData = getCookie('userData');
-        if (!userData || !userData.token) {
-            throw new Error('未登录');
-        }
-
         try {
-            const response = await fetch(`${window.baseURL}/api/gallery-imgs?aid=${aid}`, {
-                headers: {
-                    'Authorization': `Bearer ${userData.token}`
-                }
-            });
+            const response = await fetch(`${window.baseURL}/api/gallery-imgs?aid=${aid}`);
             const data = await response.json();
-            
-            if (response.status === 403) {
-                message.error('权限不足');
-                throw new Error('权限不足');
-            }
-            
             return data;
         } catch (error) {
             console.error('获取画廊图片失败:', error);
@@ -285,24 +208,9 @@
     }
 
     async function fetchSearchResults(keyword, page = 1) {
-        const userData = getCookie('userData');
-        if (!userData || !userData.token) {
-            throw new Error('未登录');
-        }
-
         try {
-            const response = await fetch(`${window.baseURL}/api/gallery-search?q=${encodeURIComponent(keyword)}&page=${page}`, {
-                headers: {
-                    'Authorization': `Bearer ${userData.token}`
-                }
-            });
+            const response = await fetch(`${window.baseURL}/api/gallery-search?q=${encodeURIComponent(keyword)}&page=${page}`);
             const data = await response.json();
-            
-            if (response.status === 403) {
-                message.error('权限不足');
-                throw new Error('权限不足');
-            }
-            
             return data;
         } catch (error) {
             console.error('搜索失败:', error);
@@ -310,15 +218,64 @@
         }
     }
 
-    // 页面加载时进行权限检查
+    // 添加加密解密工具函数
+    function encrypt(text) {
+        // 使用 Base64 进行基本加密
+        return btoa(encodeURIComponent(text));
+    }
+
+    function decrypt(encoded) {
+        try {
+            // 解密 Base64 编码的字符串
+            return decodeURIComponent(atob(encoded));
+        } catch (e) {
+            console.error('解密失败:', e);
+            return null;
+        }
+    }
+
+    // 添加获取用户 cookie 的函数
+    function getUserCookie() {
+        try {
+            const nameEQ = "userData=";
+            const ca = document.cookie.split(';');
+            for(let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) === 0) {
+                    const encryptedData = c.substring(nameEQ.length, c.length);
+                    const decryptedData = decrypt(encryptedData);
+                    return decryptedData ? JSON.parse(decryptedData) : null;
+                }
+            }
+            return null;
+        } catch (e) {
+            console.error('获取 cookie 失败:', e);
+            return null;
+        }
+    }
+
+    // 权限检查函数
+    function checkAdminAccess() {
+        // 获取用户数据
+        const userData = getUserCookie();
+        
+        if (!userData || userData.username !== 'admin') {
+            // 如果未登录或用户名不是admin，跳转到首页
+            window.location.href = '/';
+            return false;
+        }
+        return true;
+    }
+
+    // 修改页面加载事件，添加权限检查
     document.addEventListener('DOMContentLoaded', async () => {
-        loadFavorites();
-        const hasPermission = await checkPermission();
-        if (!hasPermission) {
+        // 进行权限检查
+        if (!checkAdminAccess()) {
             return;
         }
         
-        // 初始化其他功能
+        loadFavorites();
         initImages();
     });
 
@@ -715,7 +672,7 @@
                                 // 先加载前5张图片
                                 await preloadImages(images);
                                 
-                                // 更新全局图片数组
+                                // 更新全局图片数��
                                 demoImages.length = 0;
                                 demoImages.push(...images);
                                 

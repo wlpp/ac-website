@@ -10,7 +10,6 @@ import re
 from functools import lru_cache
 from datetime import datetime, timedelta
 import threading
-from .user import token_required  # 导入token验证装饰器
 from .config import Config
 
 # 设置日志
@@ -76,16 +75,8 @@ def gallery_page():
     return send_file(file_path)
 
 @crawling_bp.route('/api/gallery-list')
-@token_required
-def gallery_list(current_user):
+def gallery_list():
     """获取图片列表"""
-    # 检查用户权限
-    if current_user.role != 0:
-        return jsonify({
-            'success': False,
-            'message': '权限不足'
-        }), 403
-    
     try:
         page = request.args.get('page', 1, type=int)
         if page < 1:
@@ -201,16 +192,8 @@ def gallery_list(current_user):
             session.close()
 
 @crawling_bp.route('/api/gallery-imgs')
-@token_required
-def gallery_imgs(current_user):
+def gallery_imgs():
     """获取画廊图片列表"""
-    # 检查用户权限
-    if current_user.role != 0:
-        return jsonify({
-            'success': False,
-            'message': '权限不足'
-        }), 403
-        
     try:
         aid = request.args.get('aid')
         if not aid:
@@ -315,16 +298,8 @@ def gallery_imgs(current_user):
             session.close()
 
 @crawling_bp.route('/api/gallery-search')
-@token_required
-def gallery_search(current_user):
+def gallery_search():
     """搜索图片列表"""
-    # 检查用户权限
-    if current_user.role != 0:
-        return jsonify({
-            'success': False,
-            'message': '权限不足'
-        }), 403
-        
     try:
         # 获取搜索参数
         q = request.args.get('q', '')

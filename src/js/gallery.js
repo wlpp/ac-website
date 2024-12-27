@@ -35,6 +35,7 @@
     const searchResultList = document.getElementById('search-result-list');
     const showSearchBtn = document.getElementById('show-search');
     const closeSearchBtn = document.getElementById('close-search');
+    const rotateScreenBtn = document.getElementById('rotate-screen');
 
     // 添加图片缓存对象
     const imageCache = new Map();
@@ -82,8 +83,26 @@
 
     // 初始化图片
     function initImages() {
-        loadImage(demoImages[currentIndex]);
-        updateCounter();
+        const gallery = document.getElementById('gallery');
+        const currentImage = document.getElementById('current-image');
+        const loading = document.querySelector('.loading');
+
+        if (demoImages.length > 0) {
+            gallery.style.display = 'block';
+            currentImage.src = demoImages[currentIndex];
+            updateImageCounter();
+            
+            // 简化加载事件
+            currentImage.onload = () => {
+                loading.style.display = 'none';
+            };
+            
+            currentImage.onerror = () => {
+                console.error('图片加载失败');
+                loading.style.display = 'none';
+                currentImage.src = '../images/loading.gif';
+            };
+        }
     }
 
     // 切换到上一张图片
@@ -672,7 +691,7 @@
                                 // 先加载前5张图片
                                 await preloadImages(images);
                                 
-                                // 更新全局图片数��
+                                // 更新全局图片数组
                                 demoImages.length = 0;
                                 demoImages.push(...images);
                                 
@@ -865,7 +884,7 @@
         });
     }
 
-    // 简化加载收藏函数
+    // 简化载收藏函数
     function loadFavorites() {
         const userData = getCookie('userData');
         if (!userData || !userData.username) {
@@ -1104,80 +1123,33 @@
         }
     });
 
-    // 添加触摸相关变量
-    let touchStartX = 0;
-    let touchEndX = 0;
-    let isSwiping = false;
-
-    // 添加触摸事件监听
-    function initTouchEvents() {
-        const gallery = document.getElementById('gallery');
-        const currentImage = document.getElementById('current-image');
-        
-        // 触摸开始
-        gallery.addEventListener('touchstart', (e) => {
-            touchStartX = e.touches[0].clientX;
-            isSwiping = false;
-        }, { passive: true });
-
-        // 触摸移动
-        gallery.addEventListener('touchmove', (e) => {
-            if (!isPlaying) {  // 自动播放时禁用滑动
-                touchEndX = e.touches[0].clientX;
-                const diffX = touchEndX - touchStartX;
-                
-                // 如果滑动距离超过50px，标记为滑动操作
-                if (Math.abs(diffX) > 50) {
-                    isSwiping = true;
-                }
-                
-                // 添加拖动效果
-                const translateX = diffX / 2; // 减缓拖动效果
-                currentImage.style.transform = `translateX(${translateX}px)`;
-            }
-        }, { passive: true });
-
-        // 触摸结束
-        gallery.addEventListener('touchend', (e) => {
-            if (!isPlaying) {  // 自动播放时禁用滑动
-                const diffX = touchEndX - touchStartX;
-                
-                // 重置图片位置
-                currentImage.style.transform = '';
-                
-                // 如果是滑动操作，则切换图片
-                if (isSwiping) {
-                    if (diffX > 50) {
-                        showPreviousImage();
-                    } else if (diffX < -50) {
-                        showNextImage();
-                    }
-                } else {
-                    // 如果不是滑动操作，则判断点击位置
-                    const touchX = e.changedTouches[0].clientX;
-                    const screenWidth = window.innerWidth;
-                    
-                    if (touchX < screenWidth / 3) {
-                        showPreviousImage();
-                    } else if (touchX > screenWidth * 2 / 3) {
-                        showNextImage();
-                    }
-                }
-                
-                // 重置触摸状态
-                touchStartX = 0;
-                touchEndX = 0;
-                isSwiping = false;
-            }
-        }, { passive: true });
-
-        // 阻止图片的默认拖动行为
-        currentImage.addEventListener('dragstart', (e) => {
-            e.preventDefault();
-        });
+    // 添加 updateImageCounter 函数
+    function updateImageCounter() {
+        const counter = document.getElementById('image-counter');
+        if (counter && demoImages.length > 0) {
+            counter.textContent = `${currentIndex + 1}/${demoImages.length}`;
+        }
     }
 
-    // 修改 initImages 函数
+    // 修改 showPreviousImage 函数，移除动画效果
+    function showPreviousImage() {
+        if (demoImages.length > 1) {
+            currentIndex = (currentIndex - 1 + demoImages.length) % demoImages.length;
+            currentImage.src = demoImages[currentIndex];
+            updateImageCounter();
+        }
+    }
+
+    // 修改 showNextImage 函数，移除动画效果
+    function showNextImage() {
+        if (demoImages.length > 1) {
+            currentIndex = (currentIndex + 1) % demoImages.length;
+            currentImage.src = demoImages[currentIndex];
+            updateImageCounter();
+        }
+    }
+
+    // 修改 initImages 函数，移除动画相关代码
     function initImages() {
         const gallery = document.getElementById('gallery');
         const currentImage = document.getElementById('current-image');
@@ -1188,114 +1160,8 @@
             currentImage.src = demoImages[currentIndex];
             updateImageCounter();
             
-            // 添加图片加载事件
+            // 简化加载事件
             currentImage.onload = () => {
-                currentImage.style.opacity = '1';
-                loading.style.display = 'none';
-            };
-            
-            currentImage.onerror = () => {
-                console.error('图片加载失败');
-                loading.style.display = 'none';
-                currentImage.src = '../images/loading.gif'; // 设置默认图片
-            };
-        }
-    }
-
-    // 修改 showPreviousImage 和 showNextImage 函数，添加过渡效果
-    function showPreviousImage() {
-        if (demoImages.length > 1) {
-            const currentImage = document.getElementById('current-image');
-            currentImage.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex - 1 + demoImages.length) % demoImages.length;
-                currentImage.src = demoImages[currentIndex];
-                currentImage.style.opacity = '1';
-                updateImageCounter();
-            }, 200);
-        }
-    }
-
-    function showNextImage() {
-        if (demoImages.length > 1) {
-            const currentImage = document.getElementById('current-image');
-            currentImage.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex + 1) % demoImages.length;
-                currentImage.src = demoImages[currentIndex];
-                currentImage.style.opacity = '1';
-                updateImageCounter();
-            }, 200);
-        }
-    }
-
-    // 在文档加载完成后初始化触摸事件
-    document.addEventListener('DOMContentLoaded', () => {
-        initTouchEvents();
-        // ... 其他初始化代码 ...
-    });
-
-    // 添加相关的 CSS 样式
-    /*
-    #current-image {
-        transition: opacity 0.2s ease, transform 0.2s ease;
-    }
-    */
-
-    // 添加 updateImageCounter 函数
-    function updateImageCounter() {
-        const counter = document.getElementById('image-counter');
-        if (counter && demoImages.length > 0) {
-            counter.textContent = `${currentIndex + 1}/${demoImages.length}`;
-        }
-    }
-
-    // 修改 showPreviousImage 函数，确保正确调用 updateImageCounter
-    function showPreviousImage() {
-        if (demoImages.length > 1) {
-            const currentImage = document.getElementById('current-image');
-            currentImage.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex - 1 + demoImages.length) % demoImages.length;
-                currentImage.src = demoImages[currentIndex];
-                currentImage.style.opacity = '1';
-                updateImageCounter();
-            }, 200);
-        }
-    }
-
-    // 修改 showNextImage 函数，确保正确调用 updateImageCounter
-    function showNextImage() {
-        if (demoImages.length > 1) {
-            const currentImage = document.getElementById('current-image');
-            currentImage.style.opacity = '0';
-            
-            setTimeout(() => {
-                currentIndex = (currentIndex + 1) % demoImages.length;
-                currentImage.src = demoImages[currentIndex];
-                currentImage.style.opacity = '1';
-                updateImageCounter();
-            }, 200);
-        }
-    }
-
-    // 修改 initImages 函数，确保初始化时更新计数器
-    function initImages() {
-        const gallery = document.getElementById('gallery');
-        const currentImage = document.getElementById('current-image');
-        const loading = document.querySelector('.loading');
-
-        if (demoImages.length > 0) {
-            gallery.style.display = 'block';
-            currentImage.src = demoImages[currentIndex];
-            updateImageCounter(); // 初始化时更新计数器
-            
-            // 添加图片加载事件
-            currentImage.onload = () => {
-                currentImage.style.opacity = '1';
                 loading.style.display = 'none';
             };
             
@@ -1343,3 +1209,72 @@
             console.error('加载图片失败:', error);
         }
     }
+
+    // 添加点击事件监听
+    currentImage.addEventListener('click', (e) => {
+        e.preventDefault(); // 防止默认行为
+        nextImage();
+    });
+
+    // 添加全屏控制函数
+    function toggleFullScreen() {
+        const gallery = document.getElementById('gallery');
+        
+        if (!document.fullscreenElement) {
+            // 进入全屏
+            if (gallery.requestFullscreen) {
+                gallery.requestFullscreen();
+            } else if (gallery.webkitRequestFullscreen) {
+                gallery.webkitRequestFullscreen();
+            } else if (gallery.msRequestFullscreen) {
+                gallery.msRequestFullscreen();
+            }
+            rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+        } else {
+            // 退出全屏
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            } else if (document.webkitExitFullscreen) {
+                document.webkitExitFullscreen();
+            } else if (document.msExitFullscreen) {
+                document.msExitFullscreen();
+            }
+            rotateScreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+    }
+
+    // 监听全屏变化事件
+    document.addEventListener('fullscreenchange', () => {
+        if (!document.fullscreenElement) {
+            rotateScreenBtn.innerHTML = '<i class="fas fa-expand"></i>';
+        }
+    });
+
+    // 添加按钮点击事件
+    rotateScreenBtn.addEventListener('click', toggleFullScreen);
+
+    // 修改为屏幕旋转控制函数
+    function toggleRotateScreen() {
+        const gallery = document.getElementById('gallery');
+        
+        if (document.documentElement.style.transform === '') {
+            // 切换到横屏
+            document.documentElement.style.transform = 'rotate(90deg)';
+            document.documentElement.style.transformOrigin = '50% 50%';
+            document.documentElement.style.width = '100vh';
+            document.documentElement.style.height = '100vw';
+            document.documentElement.style.margin = 'calc((100vw - 100vh) / 2) calc((100vh - 100vw) / 2)';
+            rotateScreenBtn.innerHTML = '<i class="fas fa-rotate-left"></i>';
+        } else {
+            // 恢复竖屏
+            document.documentElement.style.transform = '';
+            document.documentElement.style.transformOrigin = '';
+            document.documentElement.style.width = '';
+            document.documentElement.style.height = '';
+            document.documentElement.style.margin = '';
+            rotateScreenBtn.innerHTML = '<i class="fas fa-rotate-right"></i>';
+        }
+    }
+
+    // 修改按钮点击事件
+    rotateScreenBtn.addEventListener('click', toggleRotateScreen);

@@ -2,6 +2,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color:transparent;
 }
 
 body {
@@ -595,8 +596,4 @@ body {
 
 .history-page {
     color: #1890ff;
-}
-.close-modal i {
-    color: white;
-    font-size: 18px;
 }

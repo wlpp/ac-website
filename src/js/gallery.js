@@ -43,9 +43,6 @@
     // 添加取消预加载的控制器
     let preloadController = null;
 
-    // 在文件开头添加收藏相关变量
-    const favoritesSet = new Set();
-
     // 更新图片计数器
     function updateCounter() {
         imageCounter.textContent = `${currentIndex + 1}/${demoImages.length}`;
@@ -294,7 +291,6 @@
             return;
         }
         
-        loadFavorites();
         initImages();
     });
 
@@ -419,14 +415,10 @@
                 const itemElement = document.createElement('div');
                 itemElement.className = 'image-item';
                 itemElement.dataset.aid = item.aid;
-                const isFavorited = favoritesSet.has(item.aid);
                 itemElement.innerHTML = `
                     <img src="${item.image_url}" alt="${item.title}">
                     <div class="item-footer">
                         <h3>${item.title}</h3>
-                        <button class="favorite-btn ${isFavorited ? 'active' : ''}" data-aid="${item.aid}">
-                            <i class="fas fa-heart"></i>
-                        </button>
                     </div>
                 `;
                 itemElement.addEventListener('click', async () => {
@@ -464,14 +456,6 @@
                     } finally {
                         hideLoadingToast(); // 隐藏加载提示
                     }
-                });
-                
-                // 添加收藏按钮点击事件
-                const favoriteBtn = itemElement.querySelector('.favorite-btn');
-                favoriteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    toggleFavorite(item);
-                    favoriteBtn.classList.toggle('active');
                 });
                 
                 imageList.appendChild(itemElement);
@@ -542,11 +526,18 @@
         }
     }
 
-    // 先定义 hideAllModals 函数
+    // 添加 hideModal 函数
+    function hideModal(modalId) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // 修改 hideAllModals 函数，使用新的 hideModal 函数
     function hideAllModals() {
-        imageModal.style.display = 'none';
-        searchModal.style.display = 'none';
-        document.getElementById('favorites-modal').style.display = 'none';
+        hideModal('image-modal');
+        hideModal('search-modal');
         searchInput.value = '';  // 清空搜索输入
     }
 
@@ -582,23 +573,9 @@
         }
     }
 
-    function showFavoritesModal() {
-        // 隐藏其他可能显示的弹框
-        hideModal('image-modal');
-        hideModal('search-modal');
-        
-        // 显示收藏弹框
-        const favoritesModal = document.getElementById('favorites-modal');
-        favoritesModal.style.display = 'block';
-        
-        // 每次打开都重新渲染收藏列表，因为收藏状态可能已经改变
-        renderFavoritesList(modalState.favoritesModal.currentPage);
-    }
-
     // 最后添加事件监听
     document.getElementById('show-list').addEventListener('click', showModal);
     document.getElementById('show-search').addEventListener('click', showSearchModal);
-    document.getElementById('show-favorites').addEventListener('click', showFavoritesModal);
 
     // ESC 键只关闭当前显示的弹框
     document.addEventListener('keydown', (e) => {
@@ -823,244 +800,6 @@
         loadingToast.style.display = 'none';
     }
 
-    // 修改收藏相关函数，简化为只使用 localStorage
-    function toggleFavorite(item) {
-        const userData = getCookie('userData');
-        if (!userData || !userData.username) {
-            message.warning('请先登录');
-            return;
-        }
-
-        const itemId = item.aid;
-        const username = userData.username;
-        const favoriteKey = `gallery-favorites-${username}`;
-
-        // 从 localStorage 获取当前收藏数据
-        let favorites = new Set(JSON.parse(localStorage.getItem(favoriteKey) || '[]'));
-
-        // 更新收藏状态
-        if (favorites.has(itemId)) {
-            // 从所有相关存储中移除
-            favorites.delete(itemId);
-            favoritesSet.delete(itemId);
-            
-            // 从 localStorage 中删除
-            localStorage.setItem(favoriteKey, JSON.stringify(Array.from(favorites)));
-            
-            // 特别处理 admin 用户的收藏
-            if (username === 'admin') {
-                const adminKey = 'gallery-favorites-admin';
-                let adminFavorites = JSON.parse(localStorage.getItem(adminKey) || '[]');
-                adminFavorites = adminFavorites.filter(id => id !== itemId);
-                localStorage.setItem(adminKey, JSON.stringify(adminFavorites));
-            }
-
-            message.success('已取消收藏');
-            modalState.favoritesModal.isInitialized = false;
-        } else {
-            // 添加到所有相关存储中
-            favorites.add(itemId);
-            favoritesSet.add(itemId);
-            
-            // 更新 localStorage
-            localStorage.setItem(favoriteKey, JSON.stringify(Array.from(favorites)));
-            
-            // 特别处理 admin 用户的收藏
-            if (username === 'admin') {
-                const adminKey = 'gallery-favorites-admin';
-                let adminFavorites = JSON.parse(localStorage.getItem(adminKey) || '[]');
-                if (!adminFavorites.includes(itemId)) {
-                    adminFavorites.push(itemId);
-                    localStorage.setItem(adminKey, JSON.stringify(adminFavorites));
-                }
-            }
-
-            message.success('已添加到收藏');
-        }
-
-        // 更新所有相关按钮的状态
-        document.querySelectorAll(`.favorite-btn[data-aid="${itemId}"]`).forEach(btn => {
-            btn.classList.toggle('active', favorites.has(itemId));
-        });
-    }
-
-    // 简化加载收藏函数
-    function loadFavorites() {
-        const userData = getCookie('userData');
-        if (!userData || !userData.username) {
-            favoritesSet.clear();
-            return;
-        }
-
-        const favoriteKey = `gallery-favorites-${userData.username}`;
-        const saved = localStorage.getItem(favoriteKey);
-        
-        favoritesSet.clear();
-        if (saved) {
-            const favorites = JSON.parse(saved);
-            favorites.forEach(id => favoritesSet.add(id));
-        }
-    }
-
-    // 修改 renderFavoritesList 函数
-    async function renderFavoritesList() {
-        const userData = getCookie('userData');
-        if (!userData || !userData.username) {
-            message.warning('请先登录');
-            return;
-        }
-
-        const favoritesList = document.querySelector('#favorites-modal .image-list');
-        if (!favoritesList) {
-            console.error('找不到收藏列表容器');
-            return;
-        }
-
-        // 从 localStorage 获取用户的收藏列表
-        const favoriteKey = `gallery-favorites-${userData.username}`;
-        const savedFavorites = localStorage.getItem(favoriteKey);
-        const favorites = savedFavorites ? JSON.parse(savedFavorites) : [];
-
-        if (favorites.length === 0) {
-            favoritesList.innerHTML = '<div class="no-results">暂无收藏</div>';
-            return;
-        }
-
-        // 显示加载动画
-        favoritesList.innerHTML = `
-            <div class="loading-container">
-                <div class="loading-spinner"></div>
-            </div>
-        `;
-
-        try {
-            // 使用收藏列表中的 aid ��取图片数据
-            const promises = favorites.map(aid => 
-                fetchGalleryImages(aid).then(response => {
-                    if (response && response.success) {
-                        return {
-                            aid: aid,
-                            ...response.data
-                        };
-                    }
-                    return null;
-                })
-            );
-
-            const responses = await Promise.all(promises);
-            favoritesList.innerHTML = '';
-
-            responses.forEach(response => {
-                if (response) {
-                    const itemElement = document.createElement('div');
-                    itemElement.className = 'image-item';
-                    itemElement.dataset.aid = response.aid;
-                    itemElement.innerHTML = `
-                        <img src="${response.images[0]}" alt="${response.title || ''}">
-                        <div class="item-footer">
-                            <h3>${response.title || ''}</h3>
-                            <button class="favorite-btn active" data-aid="${response.aid}">
-                                <i class="fas fa-heart"></i>
-                            </button>
-                        </div>
-                    `;
-                    
-                    // 添加点击事件
-                    itemElement.addEventListener('click', async () => {
-                        const aid = itemElement.dataset.aid;
-                        showLoadingToast();
-                        
-                        try {
-                            const galleryResponse = await fetchGalleryImages(aid);
-                            if (galleryResponse && galleryResponse.success) {
-                                await preloadImages(galleryResponse.data.images);
-                                demoImages.length = 0;
-                                demoImages.push(...galleryResponse.data.images);
-                                currentIndex = 0;
-                                hideAllModals();
-                                initImages();
-                            }
-                        } catch (error) {
-                            console.error('加载图片失败:', error);
-                        } finally {
-                            hideLoadingToast();
-                        }
-                    });
-
-                    // 添加收藏按钮点击事件
-                    const favoriteBtn = itemElement.querySelector('.favorite-btn');
-                    favoriteBtn.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const aid = favoriteBtn.dataset.aid;
-                        
-                        // 更新收藏状态
-                        toggleFavorite({ aid });
-                        
-                        // 更新按钮状态
-                        favoriteBtn.classList.remove('active');
-                        
-                        // 添加淡出动画类
-                        itemElement.classList.add('fade-out');
-                        
-                        // 等待动画完成后移除元素
-                        setTimeout(() => {
-                            itemElement.remove();
-                            
-                            // 检查是否还有收藏项
-                            if (favoritesList.children.length === 0) {
-                                favoritesList.innerHTML = '<div class="no-results">暂无收藏</div>';
-                            }
-                        }, 300);
-                    });
-                    
-                    favoritesList.appendChild(itemElement);
-                }
-            });
-
-        } catch (error) {
-            console.error('渲染收藏列表失败:', error);
-            favoritesList.innerHTML = `
-                <div class="loading-container">
-                    <div class="error">加载失败</div>
-                </div>
-            `;
-        }
-    }
-
-    // 显示收藏列表弹框
-    function showFavoritesModal() {
-        // 先关闭其他模态框
-        imageModal.style.display = 'none';
-        searchModal.style.display = 'none';
-        
-        const favoritesModal = document.getElementById('favorites-modal');
-        favoritesModal.style.display = 'block';
-        renderFavoritesList(); // 渲染收藏列表
-    }
-
-    // 添加收藏按钮事件监听
-    document.getElementById('show-favorites').addEventListener('click', showFavoritesModal);
-
-    // 修改 hideModal 函数来隐藏指定的模态框
-    function hideModal(modalId) {
-        const modal = document.getElementById(modalId);
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    // 修改关闭按钮的处理函数
-    document.querySelectorAll('.close-modal').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            e.stopPropagation(); // 防止事件冒泡
-            // 找到最近的 modal 父元素并隐藏
-            const modal = btn.closest('.modal');
-            if (modal) {
-                modal.style.display = 'none';
-            }
-        });
-    });
-
     // 添加状态管理对象
     const modalState = {
         imageModal: {
@@ -1071,10 +810,6 @@
             currentPage: 1,
             keyword: '',
             isInitialized: false
-        },
-        favoritesModal: {
-            currentPage: 1,
-            isInitialized: false
         }
     };
 
@@ -1084,7 +819,7 @@
             e.stopPropagation();
             const modal = btn.closest('.modal');
             if (modal) {
-                modal.style.display = 'none';
+                hideModal(modal.id);
                 // 标记为未初始化，以便下次打开时可以选择是否刷新
                 switch(modal.id) {
                     case 'image-modal':
@@ -1092,9 +827,6 @@
                         break;
                     case 'search-modal':
                         modalState.searchModal.isInitialized = false;
-                        break;
-                    case 'favorites-modal':
-                        modalState.favoritesModal.isInitialized = false;
                         break;
                 }
             }
@@ -1114,9 +846,6 @@
                         break;
                     case 'search-modal':
                         modalState.searchModal.isInitialized = false;
-                        break;
-                    case 'favorites-modal':
-                        modalState.favoritesModal.isInitialized = false;
                         break;
                 }
             }

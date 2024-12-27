@@ -127,10 +127,7 @@ body {
     z-index: 1000;
 }
 
-.close-modal i {
-    color: white;
-    font-size: 18px;
-}
+
 
 .close-modal:hover {
     background: rgba(0, 0, 0, 0.8);
@@ -581,4 +578,25 @@ body {
 
 .image-item:hover {
     background-color: #f5f5f5;
+}
+
+.history-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 5px;
+    color: #666;
+    font-size: 0.8em;
+}
+
+.history-time {
+    margin-right: 10px;
+}
+
+.history-page {
+    color: #1890ff;
+}
+.close-modal i {
+    color: white;
+    font-size: 18px;
 }

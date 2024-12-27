@@ -442,7 +442,10 @@
             itemElement.innerHTML = `
                 <div class="history-item-content">
                     <h3>${item.title}</h3>
-                    <p class="history-time">${formattedDate}</p>
+                    <div class="history-info">
+                        <span class="history-time">${formattedDate}</span>
+                        <span class="history-page">第 ${item.page} 页</span>
+                    </div>
                 </div>
             `;
             
@@ -653,7 +656,7 @@
         
         // 隐藏其他可能显示的弹框
         hideModal('search-modal');
-        hideModal('favorites-modal');
+        hideModal('history-modal');
         
         // 显示图片列表弹框
         imageModal.style.display = 'block';

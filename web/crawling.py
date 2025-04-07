@@ -113,7 +113,7 @@ def gallery_list():
             verify=False
         )
         response.encoding = 'utf-8'
-
+        print(response)
         # 检查响应状态
         if response.status_code != 200:
             logger.error(f"请求失败，状态码：{response.status_code}")
@@ -257,7 +257,7 @@ def gallery_imgs():
                 cleaned_url = cleaned_url.replace('\\', '')
                 img_urls2.append(cleaned_url)
 
-        # 拼接完��的URL
+        # 拼接完成的URL
         full_img_urls = [f"https://{img_url}" for img_url in img_urls2]
 
         # 缓存结果
@@ -815,6 +815,252 @@ def novel_search():
             'success': True,
             'data': result,
             'total': len(result)
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()
+
+@crawling_bp.route('/vodplay')
+def vod_play_page():
+    """视频播放页面路由"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(current_dir, 'src', 'views', 'vodplay.html')
+    return send_file(file_path)
+
+@crawling_bp.route('/api/vod-stream')
+def vod_stream():
+    """获取视频流链接"""
+    try:
+        # 创建会话
+        session = get_session()
+        
+        # 更新 m3u8_url 链接
+        m3u8_url = "https://delivery-node-2sswyguyhsj4lxd9.voe-network.net/engine/hls2/01/11323/w5yqsyujmkxw_,n,.urlset/index-v1-a1.m3u8"  # 修改为新的链接
+        params = {
+            't': '4Sq9I5zTS859kXMz8yduqQhkg_ZUOOj8V34lhzP_ByU',
+            's': '1736751907',
+            'e': '14400',
+            'f': '56617602',
+            'node': 'RPkITe6xxE3U13wyoHeVW ARovZW4geIqHi3XEhOGlg=',
+            'i': '64.32',
+            'sp': '2500',
+            'asn': '46844',
+            'q': 'n'
+        }
+        
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        }
+
+        response = session.get(
+            url=m3u8_url,
+            params=params,
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 获取m3u8内容并处理
+        m3u8_content = response.text
+        
+        # 过滤掉不需要的元数据行
+        filtered_lines = []
+        skip_patterns = [
+            '#EXTM3U',
+            '#EXT-X-VERSION:',
+            '#EXT-X-MEDIA-SEQUENCE:',
+            '#EXT-X-ALLOW-CACHE:',
+            '#EXT-X-TARGETDURATION:',
+            '#EXTINF:',
+            "#EXT-X-ENDLIST",
+            "#EXT-X-DISCONTINUITY",
+            "#EXT-X-PROGRAM-DATE-TIME",
+            "#EXT-X-KEY",
+            "#EXT-X-MAP",
+            "#EXT-X-MEDIA",
+            "#EXT-X-PLAYLIST-TYPE",
+            "#EXT-X-I-FRAMES-ONLY",
+            "#EXT-X-SESSION-DATA",
+            "#EXT-X-SESSION-KEY",
+        ]
+        
+        for line in m3u8_content.splitlines():
+            if not any(line.startswith(pattern) for pattern in skip_patterns):
+                # 确保行不为空且不只包含空白字符
+                if line.strip():
+                    filtered_lines.append(line.strip())
+
+        # 返回处理后的数据
+        result_data = {
+            'success': True,
+            'data': {
+                'ts_urls': filtered_lines,  # 只包含 .ts 文件的 URL
+                'base_url': response.url
+            }
+        }
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()
+
+@crawling_bp.route('/vods')
+def vods_page():
+    """视频列表页面路由"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(current_dir, 'src', 'views', 'vods.html')
+    return send_file(file_path)
+
+@crawling_bp.route('/api/vods-anime')
+def vods_anime():
+    """获取动漫视频列表"""
+    try:
+        # 获取页码参数，默认为1
+        page = request.args.get('page', 1, type=int)
+        if page < 1:
+            page = 1
+        
+        # 获取类型参数，默认为0（热门列表）
+        video_type = request.args.get('type', 0, type=int)
+        if video_type not in [0, 1]:
+            video_type = 0  # 默认值
+
+        # 根据类型构造URL
+        if video_type == 0:
+            url = f'https://www.acgnya.com/vodshow/20--hits------{page}---/'
+        else:
+            url = f'https://www.acgnya.com/vodshow/20--time------{page}---/'
+
+        # 检查缓存
+        cache_key = f'vods_hits_page_{page}_type_{video_type}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+
+        # 设置请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Cookie':'__51vcke__JlffvrDSaxhmAK3d=eef083e1-9892-59c3-a020-a6e1671cc80f; __51vuft__JlffvrDSaxhmAK3d=1736076215649; mac_history_mxpro=%5B%7B%22vod_name%22%3A%22%E6%96%97%E7%BD%97%E5%A4%A7%E9%99%862%EF%BC%9A%E7%BB%9D%E4%B8%96%E5%94%90%E9%97%A8%22%2C%22vod_url%22%3A%22https%3A%2F%2Fwww.acgnya.com%2Fvodplay%2F4104-2-74%2F%22%2C%22vod_part%22%3A%2274%22%7D%2C%7B%22vod_name%22%3A%22%E4%BB%99%E9%80%86%22%2C%22vod_url%22%3A%22https%3A%2F%2Fwww.acgnya.com%2Fvodplay%2F4049-2-1%2F%22%2C%22vod_part%22%3A%221%22%7D%2C%7B%22vod_name%22%3A%22%E5%B8%88%E5%85%84%E5%95%8A%E5%B8%88%E5%85%84%22%2C%22vod_url%22%3A%22https%3A%2F%2Fwww.acgnya.com%2Fvodplay%2F5050-1-1%2F%22%2C%22vod_part%22%3A%221%22%7D%2C%7B%22vod_name%22%3A%22%E4%BA%94%E8%A1%8C%E6%88%98%E7%A5%9E%22%2C%22vod_url%22%3A%22https%3A%2F%2Fwww.acgnya.com%2Fvodplay%2F5934-1-1%2F%22%2C%22vod_part%22%3A%221%22%7D%5D; __51uvsct__JlffvrDSaxhmAK3d=5; mx_style=black; showBtn=true; PHPSESSID=bm3ilb68klmcvq3ckjktm92ua0; __vtins__JlffvrDSaxhmAK3d=%7B%22sid%22%3A%20%22aca8bb67-bbf8-5a87-9690-51a2e324855b%22%2C%20%22vd%22%3A%204%2C%20%22stt%22%3A%2028754%2C%20%22dr%22%3A%207187%2C%20%22expires%22%3A%201736245634201%2C%20%22ct%22%3A%201736243834201%7D'
+        }
+
+        # 创建会话
+        session = get_session()
+
+        # 发送GET请求
+        response = session.get(
+            url, 
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 解析HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        
+        # 找到所有的热门视频项目
+        vod_items = soup.select('.module-poster-item')
+        # 存储结果的列表
+        results = []
+        
+        # 遍历每个热门视频项目
+        for item in vod_items:
+            # 获取链接和标题
+            link = item.get('href', '')
+            title = item.get('title', '')
+            
+            # 获取备注信息
+            note_elem = item.select_one('.module-item-note')
+            note_text = note_elem.get_text(strip=True) if note_elem else ''
+            
+            # 获取图片链接
+            img_elem = item.select_one('.module-item-pic img')
+            img_url = img_elem.get('data-original', '') if img_elem else ''
+            
+            # 将数据添加到结果列表
+            results.append({
+                'title': title,
+                'link': link,
+                'note': note_text,
+                'img': img_url
+            })
+
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': results,
+            'total': len(results)
         }
         gallery_cache[cache_key] = (datetime.now(), result_data)
         

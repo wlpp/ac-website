@@ -42,6 +42,13 @@
 
     // 添加取消预加载的控制器
     let preloadController = null;
+    
+    // 添加缓存任务管理
+    const cacheTasks = new Map();
+    const cacheListBtn = document.getElementById('cache-list-btn');
+    const cacheListModal = document.getElementById('cache-list-modal');
+    const cacheList = document.getElementById('cache-list');
+    const closeCacheListBtn = document.getElementById('close-cache-list');
 
     // 更新图片计数器
     function updateCounter() {
@@ -171,8 +178,11 @@
         });
     });
 
-    // 初始化
-    initImages();
+    // 修改页面加载事件，移除权限检查
+    document.addEventListener('DOMContentLoaded', async () => {
+        // 直接初始化图片，不进行权限检查
+        initImages();
+    });
 
     // 添加 cookie 处理函数
     function getCookie(name) {
@@ -273,26 +283,9 @@
 
     // 权限检查函数
     function checkAdminAccess() {
-        // 获取用户数据
-        const userData = getUserCookie();
-        
-        if (!userData || userData.username !== 'admin') {
-            // 如果未登录或用户名不是admin，跳转到首页
-            window.location.href = '/';
-            return false;
-        }
+        // 移除访问限制，始终返回true
         return true;
     }
-
-    // 修改页面加载事件，添加权限检查
-    document.addEventListener('DOMContentLoaded', async () => {
-        // 进行权限检查
-        if (!checkAdminAccess()) {
-            return;
-        }
-        
-        initImages();
-    });
 
     // 添加域名判断函数
     function getPreloadDelay() {
@@ -301,9 +294,9 @@
     }
 
     // 修改预加载函数
-    async function preloadImages(urls, initialLoadCount = 5) {
-        // 如果存在之前的预加载，取消它
-        if (preloadController) {
+    async function preloadImages(urls, initialLoadCount = 5, taskId = null) {
+        // 如果存在之前的预加载，且不是当前任务，则取消它
+        if (preloadController && !taskId && !Array.from(cacheTasks.values()).some(task => task.status === 'ld')) {
             preloadController.abort();
         }
         
@@ -317,13 +310,31 @@
         // 获取延迟时间
         const delay = getPreloadDelay();
         
+        // 如果提供了任务ID，更新任务状态
+        if (taskId) {
+            updateCacheTaskStatus(taskId, {
+                total: urls.length,
+                completed: 0,
+                status: 'ld'
+            });
+            showCacheListButton();
+        }
+        
         // 修改初始加载部分
         for (const url of initialUrls) {
             if (signal.aborted) {
+                // 如果任务被中断，更新状态为已中断
+                if (taskId) {
+                    updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                }
                 break;
             }
 
             if (imageCache.has(url)) {
+                // 如果提供了任务ID，更新任务进度
+                if (taskId) {
+                    updateCacheTaskProgress(taskId);
+                }
                 continue;
             }
             
@@ -332,18 +343,32 @@
                     const img = new Image();
                     img.onload = () => {
                         imageCache.set(url, img);
+                        // 如果提供了任务ID，更新任务进度
+                        if (taskId) {
+                            updateCacheTaskProgress(taskId);
+                        }
                         resolve(url);
                     };
-                    img.onerror = () => reject(url);
+                    img.onerror = reject;
                     img.src = url;
                 });
                 // 检查是否已取消
-                if (signal.aborted) break;
+                if (signal.aborted) {
+                    // 如果任务被中断，更新状态为已中断
+                    if (taskId) {
+                        updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                    }
+                    break;
+                }
                 // 使用动态延迟时间
                 await new Promise(resolve => setTimeout(resolve, delay));
             } catch (error) {
                 if (!signal.aborted) {
                     console.error('图片预加载失败:', url);
+                    // 如果提供了任务ID，更新任务状态为已中断
+                    if (taskId) {
+                        updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                    }
                 }
             }
         }
@@ -355,31 +380,70 @@
             if (remainingUrls.length > 0) {
                 setTimeout(async () => {
                     for (const url of remainingUrls) {
-                        if (signal.aborted) break;
-                        if (imageCache.has(url)) continue;
+                        if (signal.aborted) {
+                            // 如果任务被中断，更新状态为已中断
+                            if (taskId) {
+                                updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                            }
+                            break;
+                        }
+                        if (imageCache.has(url)) {
+                            // 如果提供了任务ID，更新任务进度
+                            if (taskId) {
+                                updateCacheTaskProgress(taskId);
+                            }
+                            continue;
+                        }
                         
                         try {
                             await new Promise((resolve, reject) => {
                                 const img = new Image();
                                 img.onload = () => {
                                     imageCache.set(url, img);
+                                    // 如果提供了任务ID，更新任务进度
+                                    if (taskId) {
+                                        updateCacheTaskProgress(taskId);
+                                    }
                                     resolve();
                                 };
                                 img.onerror = reject;
                                 img.src = url;
                             });
-                            if (signal.aborted) break;
+                            if (signal.aborted) {
+                                // 如果任务被中断，更新状态为已中断
+                                if (taskId) {
+                                    updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                                }
+                                break;
+                            }
                             await new Promise(resolve => setTimeout(resolve, delay));
                         } catch (error) {
                             if (!signal.aborted) {
                                 console.error('图片预加载失败:', url);
+                                // 如果提供了任务ID，更新任务状态为已中断
+                                if (taskId) {
+                                    updateCacheTaskStatus(taskId, { status: 'cancelled' });
+                                }
                             }
                         }
                     }
                     if (!signal.aborted) {
                         console.log('后台加载剩余图片完成');
+                        // 如果提供了任务ID，更新任务状态为完成
+                        if (taskId) {
+                            updateCacheTaskStatus(taskId, {
+                                status: 'completed'
+                            });
+                        }
                     }
                 }, 0);
+            } else {
+                // 如果没有剩余图片，直接标记为完成
+                if (taskId) {
+                    updateCacheTaskStatus(taskId, {
+                        status: 'completed'
+                    });
+                }
             }
         }
     }
@@ -445,29 +509,59 @@
                     <div class="history-info">
                         <span class="history-time">${formattedDate}</span>
                         <span class="history-page">第 ${item.page} 页</span>
+                        <button class="cache-btn" title="缓存图片">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                 </div>
             `;
             
+            // 添加缓存按钮点击事件
+            const cacheBtn = itemElement.querySelector('.cache-btn');
+            cacheBtn.addEventListener('click', (e) => {
+                handleCacheButtonClick(e, item.aid, item.title);
+            });
+            
             itemElement.addEventListener('click', async () => {
+                // 点击时保存到历史记录
+                saveToHistory(item.aid, item.title, page);
+                
+                const aid = itemElement.dataset.aid;
                 showLoadingToast(); // 显示加载提示
+                
                 try {
-                    const galleryResponse = await fetchGalleryImages(item.aid);
+                    const galleryResponse = await fetchGalleryImages(aid);
+                    
                     if (galleryResponse && galleryResponse.success) {
                         const images = galleryResponse.data.images;
-                        await preloadImages(images);
-                        demoImages.length = 0;
-                        demoImages.push(...images);
-                        currentIndex = 0;
-                        hideAllModals();
-                        initImages();
                         
-                        // 进入全屏模式
-                        const gallery = document.getElementById('gallery');
-                        if (gallery.requestFullscreen) {
-                            await gallery.requestFullscreen();
+                        try {
+                            // 不传入 taskId，这样不会中断现有的缓存任务
+                            await preloadImages(images);
+                            
+                            // 更新全局图片数组
+                            demoImages.length = 0;
+                            demoImages.push(...images);
+                            
+                            // 重置当前索引
+                            currentIndex = 0;
+                            
+                            // 关闭弹框
+                            hideAllModals();
+                            
+                            // 初始化图片显示
+                            initImages();
+                            
+                            // 进入全屏模式
+                            const gallery = document.getElementById('gallery');
+                            if (gallery.requestFullscreen) {
+                                await gallery.requestFullscreen();
+                            }
+                            rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                            
+                        } catch (error) {
+                            console.error('加载图片失败:', error);
                         }
-                        rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
                     }
                 } catch (error) {
                     console.error('加载图片失败:', error);
@@ -512,12 +606,24 @@
                 itemElement.className = 'image-item';
                 itemElement.dataset.aid = item.aid;
                 itemElement.innerHTML = `
-                    <img src="${item.image_url}" alt="${item.title}">
+                    <img src="${item.image_url}" alt="${item.title}" class="item-image">
                     <div class="item-footer">
                         <h3>${item.title}</h3>
+                        <button class="cache-btn" title="缓存图片">
+                            <i class="fas fa-download"></i>
+                        </button>
                     </div>
                 `;
-                itemElement.addEventListener('click', async () => {
+                
+                // 添加缓存按钮点击事件
+                const cacheBtn = itemElement.querySelector('.cache-btn');
+                cacheBtn.addEventListener('click', (e) => {
+                    handleCacheButtonClick(e, item.aid, item.title);
+                });
+                
+                // 添加图片点击事件
+                const itemImage = itemElement.querySelector('.item-image');
+                itemImage.addEventListener('click', async () => {
                     // 点击时保存到历史记录
                     saveToHistory(item.aid, item.title, page);
                     
@@ -531,7 +637,7 @@
                             const images = galleryResponse.data.images;
                             
                             try {
-                                // 先加载前5张图片
+                                // 不传入 taskId，这样不会中断现有的缓存任务
                                 await preloadImages(images);
                                 
                                 // 更新全局图片数组
@@ -547,12 +653,13 @@
                                 // 初始化图片显示
                                 initImages();
                                 
-                                // 进入全屏模式
-                                const gallery = document.getElementById('gallery');
-                                if (gallery.requestFullscreen) {
-                                    await gallery.requestFullscreen();
-                                }
-                                rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                                // 后台预加载图片，不传入taskId，这样不会中断现有的缓存任务
+                                preloadImages(images).catch(error => {
+                                    console.error('后台预加载图片失败:', error);
+                                });
+                                
+                                // 添加到缓存列表
+                                addCacheTask(aid, item.title, images);
                                 
                             } catch (error) {
                                 console.error('加载图片失败:', error);
@@ -590,7 +697,7 @@
         
         // 上一页按钮
         paginationHTML += `
-            <button class="pagination-btn" onclick="changePage(${pageConfig.currentPage - 1})">
+            <button class="pagination-btn" onclick="changePage(${modalState.imageModal.currentPage - 1})">
                 上一页
             </button>
         `;
@@ -599,7 +706,7 @@
         paginationHTML += `
             <input type="number" 
                    class="page-input" 
-                   value="${pageConfig.currentPage}" 
+                   value="${modalState.imageModal.currentPage}" 
                    min="1" 
                    onchange="handlePageInput(this.value)"
                    onclick="this.select()"
@@ -608,7 +715,7 @@
         
         // 下一页按钮
         paginationHTML += `
-            <button class="pagination-btn" onclick="changePage(${pageConfig.currentPage + 1})">
+            <button class="pagination-btn" onclick="changePage(${modalState.imageModal.currentPage + 1})">
                 下一页
             </button>
         `;
@@ -628,7 +735,7 @@
     // 切换页面
     async function changePage(newPage) {
         if (newPage >= 1) {  // 只检查是否大于等于1
-            pageConfig.currentPage = newPage;
+            modalState.imageModal.currentPage = newPage;
             await renderArticleList(newPage);
         }
     }
@@ -646,6 +753,7 @@
         hideModal('image-modal');
         hideModal('search-modal');
         hideModal('history-modal');
+        hideModal('cache-list-modal');
         searchInput.value = '';  // 清空搜索输入
     }
 
@@ -657,6 +765,7 @@
         // 隐藏其他可能显示的弹框
         hideModal('search-modal');
         hideModal('history-modal');
+        hideModal('cache-list-modal');
         
         // 显示图片列表弹框
         imageModal.style.display = 'block';
@@ -675,6 +784,8 @@
         // 隐藏其他可能显示的弹框
         hideModal('image-modal');
         hideModal('favorites-modal');
+        hideModal('history-modal');
+        hideModal('cache-list-modal');
         
         // 显示搜索弹框
         searchModal.style.display = 'block';
@@ -766,9 +877,24 @@
                 itemElement.dataset.aid = item.aid;
                 itemElement.innerHTML = `
                     <img src="${item.image_url}" alt="${item.title}">
-                    <h3>${item.title}</h3>
+                    <div class="item-footer">
+                        <h3>${item.title}</h3>
+                        <button class="cache-btn" title="缓存图片">
+                            <i class="fas fa-download"></i>
+                        </button>
+                    </div>
                 `;
+                
+                // 添加缓存按钮点击事件
+                const cacheBtn = itemElement.querySelector('.cache-btn');
+                cacheBtn.addEventListener('click', (e) => {
+                    handleCacheButtonClick(e, item.aid, item.title);
+                });
+                
                 itemElement.addEventListener('click', async () => {
+                    // 点击时保存到历史记录
+                    saveToHistory(item.aid, item.title, page);
+                    
                     const aid = itemElement.dataset.aid;
                     showLoadingToast(); // 显示加载提示
                     
@@ -779,7 +905,7 @@
                             const images = galleryResponse.data.images;
                             
                             try {
-                                // 先加载前5张图片
+                                // 不传入 taskId，这样不会中断现有的缓存任务
                                 await preloadImages(images);
                                 
                                 // 更新全局图片数组
@@ -799,12 +925,11 @@
                                 const gallery = document.getElementById('gallery');
                                 if (gallery.requestFullscreen) {
                                     await gallery.requestFullscreen();
-                                } else if (gallery.webkitRequestFullscreen) {
-                                    await gallery.webkitRequestFullscreen();
-                                } else if (gallery.msRequestFullscreen) {
-                                    await gallery.msRequestFullscreen();
                                 }
                                 rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+                                
+                                // 添加到缓存列表
+                                addCacheTask(aid, item.title, images);
                                 
                             } catch (error) {
                                 console.error('加载图片失败:', error);
@@ -816,6 +941,7 @@
                         hideLoadingToast(); // 隐藏加载提示
                     }
                 });
+                
                 searchResultList.appendChild(itemElement);
             });
             
@@ -841,7 +967,7 @@
         
         // 上一页按钮
         paginationHTML += `
-            <button class="pagination-btn" onclick="changeSearchPage(${pageConfig.currentPage - 1})">
+            <button class="pagination-btn" onclick="changeSearchPage(${modalState.searchModal.currentPage - 1})">
                 上一页
             </button>
         `;
@@ -850,7 +976,7 @@
         paginationHTML += `
             <input type="number" 
                    class="page-input" 
-                   value="${pageConfig.currentPage}" 
+                   value="${modalState.searchModal.currentPage}" 
                    min="1" 
                    onchange="handleSearchPageInput(this.value)"
                    onclick="this.select()"
@@ -859,7 +985,7 @@
         
         // 下一页按钮
         paginationHTML += `
-            <button class="pagination-btn" onclick="changeSearchPage(${pageConfig.currentPage + 1})">
+            <button class="pagination-btn" onclick="changeSearchPage(${modalState.searchModal.currentPage + 1})">
                 下一页
             </button>
         `;
@@ -879,7 +1005,7 @@
     // 切换搜索页面
     async function changeSearchPage(newPage) {
         if (newPage >= 1) {
-            pageConfig.currentPage = newPage;
+            modalState.searchModal.currentPage = newPage;
             await renderSearchResults(newPage);
         }
     }
@@ -1048,11 +1174,12 @@
         }
     }
 
-    // 确保在加载新图片集时也更新计数器
+    // 修改 loadImages 函数，确保不会中断缓存任务
     async function loadImages(aid) {
         try {
             const response = await fetchGalleryImages(aid);
             if (response && response.success) {
+                // 不传入 taskId，这样不会中断现有的缓存任务
                 await preloadImages(response.data.images);
                 demoImages.length = 0;
                 demoImages.push(...response.data.images);
@@ -1139,3 +1266,359 @@
 
     // 添加历史记录按钮的事件监听
     document.getElementById('show-favorites').addEventListener('click', showHistoryModal);
+
+    // 添加提示框函数
+    function showToast(message) {
+        // 检查是否已存在提示框
+        let toast = document.getElementById('toast');
+        if (!toast) {
+            toast = document.createElement('div');
+            toast.id = 'toast';
+            toast.style.position = 'fixed';
+            toast.style.bottom = '20px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            toast.style.color = 'white';
+            toast.style.padding = '10px 20px';
+            toast.style.borderRadius = '4px';
+            toast.style.zIndex = '9999';
+            document.body.appendChild(toast);
+        }
+        
+        toast.textContent = message;
+        toast.style.display = 'block';
+        
+        // 3秒后自动隐藏
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    // 添加缓存任务管理函数
+    function addCacheTask(aid, title, images) {
+        // 检查是否已存在相同 aid 的缓存任务
+        for (const [taskId, task] of cacheTasks.entries()) {
+            if (task.aid === aid) {
+                // 如果任务已完成或已取消，则重新添加
+                if (task.status === 'completed' || task.status === 'cancelled') {
+                    // 删除旧任务
+                    cacheTasks.delete(taskId);
+                    break;
+                } else {
+                    // 如果任务正在进行中，则不重复添加
+                    showToast('该图片已在缓存列表中');
+                    return null;
+                }
+            }
+        }
+        
+        const taskId = `task_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        cacheTasks.set(taskId, {
+            id: taskId,
+            aid: aid,
+            title: title,
+            images: images,
+            total: images.length,
+            completed: 0,
+            status: 'pending',
+            timestamp: Date.now()
+        });
+        
+        // 更新缓存列表按钮
+        updateCacheListButton();
+        
+        // 开始缓存任务
+        preloadImages(images, 5, taskId);
+        
+        return taskId;
+    }
+    
+    function updateCacheTaskProgress(taskId) {
+        const task = cacheTasks.get(taskId);
+        if (task) {
+            task.completed++;
+            updateCacheListButton();
+            
+            // 如果缓存列表模态框是打开的，更新UI
+            if (cacheListModal.style.display === 'block') {
+                updateCacheListUI();
+            }
+        }
+    }
+    
+    function updateCacheTaskStatus(taskId, status) {
+        const task = cacheTasks.get(taskId);
+        if (task) {
+            Object.assign(task, status);
+            updateCacheListButton();
+            
+            // 如果缓存列表模态框是打开的，更新UI
+            if (cacheListModal.style.display === 'block') {
+                updateCacheListUI();
+            }
+        }
+    }
+    
+    function showCacheListButton() {
+        if (cacheListBtn) {
+            cacheListBtn.style.display = 'flex';
+        }
+    }
+    
+    function updateCacheListButton() {
+        if (cacheListBtn) {
+            const activeTasks = Array.from(cacheTasks.values()).filter(task => 
+                task.status === 'ld' || task.status === 'pending'
+            );
+            
+            // Always show the cache list button
+            cacheListBtn.style.display = 'flex';
+            
+            // Update the badge with the number of active tasks
+            const badge = cacheListBtn.querySelector('.badge');
+            if (badge) {
+                badge.textContent = activeTasks.length;
+            }
+        }
+    }
+    
+    function updateCacheListUI() {
+        if (!cacheList) return;
+        
+        cacheList.innerHTML = '';
+        
+        // 按时间戳排序，最新的在前面
+        const sortedTasks = Array.from(cacheTasks.values()).sort((a, b) => b.timestamp - a.timestamp);
+        
+        if (sortedTasks.length === 0) {
+            cacheList.innerHTML = '<div class="no-results">暂无缓存任务</div>';
+            return;
+        }
+        
+        sortedTasks.forEach(task => {
+            const taskElement = document.createElement('div');
+            taskElement.className = `cache-item ${task.status}`;
+            taskElement.dataset.taskId = task.id;
+            
+            let statusText = '';
+            let actionButtons = '';
+            
+            switch (task.status) {
+                case 'pending':
+                    statusText = '等待中';
+                    actionButtons = `
+                        <button class="cache-item-btn cancel" title="取消">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    break;
+                case 'ld':
+                    statusText = '缓存中';
+                    actionButtons = `
+                        <button class="cache-item-btn cancel" title="取消">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    break;
+                case 'completed':
+                    statusText = '已完成';
+                    actionButtons = `
+                        <button class="cache-item-btn preview" title="预览">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="cache-item-btn delete" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    break;
+                case 'cancelled':
+                    statusText = '已中断';
+                    actionButtons = `
+                        <button class="cache-item-btn continue" title="继续">
+                            <i class="fas fa-play"></i>
+                        </button>
+                        <button class="cache-item-btn delete" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    break;
+                case 'error':
+                    statusText = '失败';
+                    actionButtons = `
+                        <button class="cache-item-btn retry" title="重试">
+                            <i class="fas fa-redo"></i>
+                        </button>
+                        <button class="cache-item-btn delete" title="删除">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    `;
+                    break;
+            }
+            
+            const progress = task.total > 0 ? Math.round((task.completed / task.total) * 100) : 0;
+            
+            taskElement.innerHTML = `
+                <div class="cache-item-info">
+                    <div class="cache-item-title">${task.title}</div>
+                    <div class="cache-item-progress">
+                        <div class="cache-item-progress-bar" style="width: ${progress}%"></div>
+                    </div>
+                    <div class="cache-item-status">
+                        ${statusText} - ${task.completed}/${task.total} (${progress}%)
+                    </div>
+                </div>
+                <div class="cache-item-actions">
+                    ${actionButtons}
+                </div>
+            `;
+            
+            // 添加按钮事件
+            const cancelBtn = taskElement.querySelector('.cancel');
+            if (cancelBtn) {
+                cancelBtn.addEventListener('click', () => {
+                    if (preloadController) {
+                        preloadController.abort();
+                    }
+                    updateCacheTaskStatus(task.id, { status: 'cancelled' });
+                });
+            }
+            
+            const retryBtn = taskElement.querySelector('.retry');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', () => {
+                    updateCacheTaskStatus(task.id, { 
+                        status: 'pending',
+                        completed: 0
+                    });
+                    preloadImages(task.images, 5, task.id);
+                });
+            }
+            
+            const continueBtn = taskElement.querySelector('.continue');
+            if (continueBtn) {
+                continueBtn.addEventListener('click', () => {
+                    // 从上次中断的位置继续缓存
+                    const remainingImages = task.images.slice(task.completed);
+                    updateCacheTaskStatus(task.id, { 
+                        status: 'ld',
+                        completed: task.completed // 保持已完成的进度
+                    });
+                    preloadImages(remainingImages, 5, task.id);
+                });
+            }
+            
+            const deleteBtn = taskElement.querySelector('.delete');
+            if (deleteBtn) {
+                deleteBtn.addEventListener('click', () => {
+                    cacheTasks.delete(task.id);
+                    updateCacheListButton();
+                    updateCacheListUI();
+                });
+            }
+            
+            const previewBtn = taskElement.querySelector('.preview');
+            if (previewBtn) {
+                previewBtn.addEventListener('click', () => {
+                    previewCacheTask(task.id);
+                });
+            }
+            
+            cacheList.appendChild(taskElement);
+        });
+    }
+    
+    // 显示缓存列表模态框
+    function showCacheListModal() {
+        exitFullScreen();
+        hideModal('image-modal');
+        hideModal('search-modal');
+        hideModal('history-modal');
+        
+        cacheListModal.style.display = 'block';
+        updateCacheListUI();
+    }
+    
+    // 添加缓存列表按钮事件监听
+    if (cacheListBtn) {
+        cacheListBtn.addEventListener('click', showCacheListModal);
+    }
+    
+    // 添加关闭缓存列表模态框事件监听
+    if (closeCacheListBtn) {
+        closeCacheListBtn.addEventListener('click', () => {
+            cacheListModal.style.display = 'none';
+        });
+    }
+
+    // 修改缓存按钮点击事件处理
+    function handleCacheButtonClick(e, aid, title) {
+        e.stopPropagation(); // 阻止事件冒泡，避免触发图片项的点击事件
+        
+        showLoadingToast(); // 显示加载提示
+        
+        // 获取图片数据并开始缓存
+        fetchGalleryImages(aid).then(galleryResponse => {
+            if (galleryResponse && galleryResponse.success) {
+                const images = galleryResponse.data.images;
+                
+                // 添加缓存任务
+                addCacheTask(aid, title, images);
+                
+                // 显示成功提示
+                showToast('开始缓存图片');
+            } else {
+                showToast('获取图片失败');
+            }
+        }).catch(error => {
+            console.error('获取图片失败:', error);
+            showToast('获取图片失败');
+        }).finally(() => {
+            hideLoadingToast(); // 隐藏加载提示
+        });
+    }
+
+    // 实现缓存预览功能
+    function previewCacheTask(taskId) {
+        const task = cacheTasks.get(taskId);
+        if (!task || task.status !== 'completed') {
+            showToast('无法预览未完成的缓存任务');
+            return;
+        }
+        
+        // 更新全局图片数组
+        demoImages.length = 0;
+        demoImages.push(...task.images);
+        
+        // 重置当前索引
+        currentIndex = 0;
+        
+        // 关闭弹框
+        hideAllModals();
+        
+        // 初始化图片显示
+        initImages();
+        
+        // 进入全屏模式
+        const gallery = document.getElementById('gallery');
+        if (gallery.requestFullscreen) {
+            gallery.requestFullscreen();
+        } else if (gallery.webkitRequestFullscreen) {
+            gallery.webkitRequestFullscreen();
+        } else if (gallery.msRequestFullscreen) {
+            gallery.msRequestFullscreen();
+        }
+        rotateScreenBtn.innerHTML = '<i class="fas fa-compress"></i>';
+        
+        // 显示提示
+        showToast('预览缓存图片');
+    }
+
+    // 初始化时显示缓存列表按钮
+    document.addEventListener('DOMContentLoaded', () => {
+        // 确保缓存列表按钮始终显示
+        if (cacheListBtn) {
+            cacheListBtn.style.display = 'flex';
+        }
+    });

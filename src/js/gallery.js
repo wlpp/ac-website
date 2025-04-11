@@ -605,12 +605,36 @@
                 const itemElement = document.createElement('div');
                 itemElement.className = 'image-item';
                 itemElement.dataset.aid = item.aid;
+                
+                // 检查该图片是否已在缓存列表中
+                let cacheStatus = null;
+                for (const task of cacheTasks.values()) {
+                    if (task.aid === item.aid) {
+                        cacheStatus = task.status;
+                        break;
+                    }
+                }
+                
+                // 根据缓存状态设置按钮图标
+                let cacheBtnIcon = '<i class="fas fa-download"></i>';
+                let cacheBtnTitle = '缓存图片';
+                let cacheBtnClass = '';
+                
+                if (cacheStatus === 'completed') {
+                    cacheBtnIcon = '<i class="fas fa-check"></i>';
+                    cacheBtnTitle = '已缓存';
+                    cacheBtnClass = 'cached';
+                } else if (cacheStatus === 'ld' || cacheStatus === 'pending') {
+                    cacheBtnIcon = '<i class="fas fa-spinner fa-spin"></i>';
+                    cacheBtnTitle = '缓存中...';
+                }
+                
                 itemElement.innerHTML = `
                     <img src="${item.image_url}" alt="${item.title}" class="item-image">
                     <div class="item-footer">
                         <h3>${item.title}</h3>
-                        <button class="cache-btn" title="缓存图片">
-                            <i class="fas fa-download"></i>
+                        <button class="cache-btn ${cacheBtnClass}" title="${cacheBtnTitle}">
+                            ${cacheBtnIcon}
                         </button>
                     </div>
                 `;
@@ -875,12 +899,36 @@
                 const itemElement = document.createElement('div');
                 itemElement.className = 'image-item';
                 itemElement.dataset.aid = item.aid;
+                
+                // 检查该图片是否已在缓存列表中
+                let cacheStatus = null;
+                for (const task of cacheTasks.values()) {
+                    if (task.aid === item.aid) {
+                        cacheStatus = task.status;
+                        break;
+                    }
+                }
+                
+                // 根据缓存状态设置按钮图标
+                let cacheBtnIcon = '<i class="fas fa-download"></i>';
+                let cacheBtnTitle = '缓存图片';
+                let cacheBtnClass = '';
+                
+                if (cacheStatus === 'completed') {
+                    cacheBtnIcon = '<i class="fas fa-check"></i>';
+                    cacheBtnTitle = '已缓存';
+                    cacheBtnClass = 'cached';
+                } else if (cacheStatus === 'ld' || cacheStatus === 'pending') {
+                    cacheBtnIcon = '<i class="fas fa-spinner fa-spin"></i>';
+                    cacheBtnTitle = '缓存中...';
+                }
+                
                 itemElement.innerHTML = `
                     <img src="${item.image_url}" alt="${item.title}">
                     <div class="item-footer">
                         <h3>${item.title}</h3>
-                        <button class="cache-btn" title="缓存图片">
-                            <i class="fas fa-download"></i>
+                        <button class="cache-btn ${cacheBtnClass}" title="${cacheBtnTitle}">
+                            ${cacheBtnIcon}
                         </button>
                     </div>
                 `;
@@ -1354,6 +1402,11 @@
             Object.assign(task, status);
             updateCacheListButton();
             
+            // 更新缓存按钮状态
+            if (status.status) {
+                updateCacheButtonStatus(task.aid, status.status);
+            }
+            
             // 如果缓存列表模态框是打开的，更新UI
             if (cacheListModal.style.display === 'block') {
                 updateCacheListUI();
@@ -1622,3 +1675,28 @@
             cacheListBtn.style.display = 'flex';
         }
     });
+
+    // 添加更新缓存按钮状态的函数
+    function updateCacheButtonStatus(aid, status) {
+        // 查找所有具有相同 aid 的缓存按钮
+        const cacheButtons = document.querySelectorAll(`.image-item[data-aid="${aid}"] .cache-btn`);
+        
+        cacheButtons.forEach(btn => {
+            if (status === 'completed') {
+                // 如果缓存完成，将按钮图标改为打勾
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.title = '已缓存';
+                btn.classList.add('cached');
+            } else if (status === 'ld' || status === 'pending') {
+                // 如果正在缓存，显示加载动画
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                btn.title = '缓存中...';
+                btn.classList.remove('cached');
+            } else if (status === 'cancelled') {
+                // 如果已取消，恢复原始状态
+                btn.innerHTML = '<i class="fas fa-download"></i>';
+                btn.title = '缓存图片';
+                btn.classList.remove('cached');
+            }
+        });
+    }

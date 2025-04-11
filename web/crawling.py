@@ -1090,3 +1090,10 @@ def vods_anime():
     finally:
         if 'session' in locals():
             session.close()
+
+@crawling_bp.route('/cartoon')
+def cartoon_page():
+    """漫画页面路由"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(current_dir, 'src', 'views', 'cartoon.html')
+    return send_file(file_path)

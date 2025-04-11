@@ -594,23 +594,24 @@ body {
 .cache-btn {
     background: none;
     border: none;
-    color: #999;
+    color: #666;
     cursor: pointer;
+    font-size: 16px;
     padding: 5px;
-    transition: color 0.3s;
-    margin-left: 5px;
+    transition: all 0.3s ease;
 }
 
 .cache-btn:hover {
-    color: #1890ff;
+    color: #333;
+    transform: scale(1.1);
 }
 
-.cache-btn.active {
-    color: #52c41a;
+.cache-btn.cached {
+    color: #4CAF50; /* 绿色，表示已完成 */
 }
 
-.cache-btn i {
-    font-size: 14px;
+.cache-btn.cached:hover {
+    color: #388E3C; /* 深绿色 */
 }
 
 .cache-item-btn.preview {

@@ -1,5 +1,30 @@
-     // 添加图片数据（包含标题）
-     const imageData = [
+// 检查URL参数，限制访问
+function checkAccess() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessCode = urlParams.get('code');
+    
+    if (accessCode !== '9595') {
+        // 如果没有正确的访问码，直接跳转回首页
+        window.location.href = '/';
+        return false;
+    }
+    return true;
+}
+
+// 在页面加载时检查访问权限
+document.addEventListener('DOMContentLoaded', function() {
+    if (!checkAccess()) {
+        return; // 如果没有权限，停止执行后续代码
+    }
+    
+    // 继续初始化页面
+    initGallery();
+});
+
+// 将原有的初始化代码移到这个函数中
+function initGallery() {
+    // 添加图片数据（包含标题）
+    const imageData = [
         { url: '../images/loading.gif', title: '' },
     ];
 
@@ -94,7 +119,7 @@
         if (demoImages.length > 0) {
             gallery.style.display = 'block';
             currentImage.src = demoImages[currentIndex];
-            updateImageCounter();
+            updateCounter();
             
             // 简化加载事件
             currentImage.onload = () => {
@@ -176,12 +201,6 @@
             const speed = parseInt(btn.dataset.speed);
             autoPlay(speed);
         });
-    });
-
-    // 修改页面加载事件，移除权限检查
-    document.addEventListener('DOMContentLoaded', async () => {
-        // 直接初始化图片，不进行权限检查
-        initImages();
     });
 
     // 添加 cookie 处理函数
@@ -1700,3 +1719,7 @@
             }
         });
     }
+
+    // 在函数末尾直接调用initImages初始化图片
+    initImages();
+}

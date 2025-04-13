@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, make_response, send_file
+from flask import Blueprint, jsonify, request, make_response, send_file, render_template
 from flask_cors import CORS
 import os
 import requests
@@ -11,6 +11,9 @@ from functools import lru_cache
 from datetime import datetime, timedelta
 import threading
 from .config import Config
+import random
+import time
+from lxml import etree
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -1036,6 +1039,7 @@ def vods_anime():
         
         # 遍历每个热门视频项目
         for item in vod_items:
+           
             # 获取链接和标题
             link = item.get('href', '')
             title = item.get('title', '')
@@ -1097,3 +1101,461 @@ def cartoon_page():
     current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     file_path = os.path.join(current_dir, 'src', 'views', 'cartoon.html')
     return send_file(file_path)
+
+@crawling_bp.route('/cartoon/detail/<cid>')
+def cartoon_detail_page(cid):
+    """漫画详情页面"""
+    current_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    file_path = os.path.join(current_dir, 'src', 'views', 'cartoon-detail.html')
+    return send_file(file_path)
+
+@crawling_bp.route('/api/cartoon-hans')
+def cartoon_hans():
+    """获取漫画列表"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        if page < 1:
+            page = 1
+            
+        # 获取类型参数，默认为0（推荐漫画）
+        manga_type = request.args.get('type', 0, type=int)
+        if manga_type not in [0, 1]:
+            manga_type = 0  # 默认值
+            
+        # 检查缓存
+        cache_key = f'cartoon_hans_{manga_type}_{page}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+        
+        # 设置请求头，模拟真实浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0',
+            'Referer': 'https://www.cartoon18.com/',
+            'sec-ch-ua': '"Google Chrome";v="91", "Chromium";v="91"',
+            'sec-ch-ua-mobile': '?0',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+        }
+
+        # 创建会话
+        session = get_session()
+
+        # 根据类型构造URL
+        if manga_type == 0:
+            # 推荐漫画
+            url = f'https://www.cartoon18.com/zh-hans?sort=likes&page={page}'
+        else:
+            # 3D漫画
+            url = f'https://www.cartoon18.com/zh-hans/q/3d?page={page}'
+
+        # 发送GET请求
+        response = session.get(
+            url, 
+            headers=headers, 
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+        
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 解析HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        cartoon_items = soup.select('.card .visited')
+
+        # 提取数据
+        result = []
+        for item in cartoon_items:
+            img = item.find('img')
+            if img:
+                # 直接获取完整的图片URL，不做任何修改
+                img_url = img.get('data-src', '')
+                title = img.get('alt', '')
+                link = item.get('href', '')
+                
+                # 提取pid
+                pid = ''
+                if link:
+                    pid_match = re.findall(r'v/(.*)', link)
+                    if pid_match:
+                        pid = pid_match[0]
+                
+                # 确保链接是完整的URL
+                if link and not link.startswith('http'):
+                    link = f"https://www.cartoon18.com{link}"
+                
+                result.append({
+                    'title': title,
+                    'img': img_url,  # 保持原始图片URL不变
+                    'link': link,
+                    'pid': pid
+                })
+
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': result,
+            'total': len(result)
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()
+
+@crawling_bp.route('/api/cartoon-hans/detail')
+def cartoon_hans_detail():
+    """获取漫画详情"""
+    try:
+        cid = request.args.get('cid')
+        if not cid:
+            return jsonify({
+                'success': False,
+                'message': '缺少漫画ID'
+            }), 400
+            
+        # 检查缓存
+        cache_key = f'cartoon_hans_detail_{cid}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+        
+        # 设置请求头，模拟真实浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.cartoon18.com/',
+            'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'DNT': '1',
+        }
+
+        # 创建会话
+        session = get_session()
+
+        # 构造URL - 使用新的story/full路径
+        url = f'https://www.cartoon18.com/story/{cid}/full'
+
+        # 发送GET请求
+        response = session.get(
+            url, 
+            headers=headers, 
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+        
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+        
+        # 使用正则表达式提取图片链接
+        content = response.text
+        
+        # 先提取图片数字路径部分
+        image_num_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/(\d+)\/'
+        image_num_matches = re.findall(image_num_pattern, content)
+        
+        if not image_num_matches:
+            logger.error("未找到图片路径数字部分")
+            return jsonify({
+                'success': False,
+                'message': '未找到图片',
+                'error': '无法识别图片格式'
+            }), 500
+            
+        logger.info(f"提取到图片路径数字: {image_num_matches[0]}")
+        
+        # 使用找到的数字组装正则表达式
+        image_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/' + image_num_matches[0] + r'\/(.*?)(?:\'|"|>|\s)'
+        image_matches = re.findall(image_pattern, content)
+        
+        # 构建完整的图片URL列表
+        image_urls = [f'https://img.cartoon18.com/images/image/{image_num_matches[0]}/{match}' for match in image_matches]
+        
+        # 去重
+        image_urls = list(dict.fromkeys(image_urls))
+        
+        # 解析HTML以获取其他信息
+        soup = BeautifulSoup(content, 'html.parser')
+        
+        # 提取标题
+        title_elem = soup.select_one('h1') or soup.select_one('.story-title') or soup.select_one('title')
+        title = title_elem.get_text(strip=True) if title_elem else '未知标题'
+        
+        # 提取作者
+        author_elem = soup.select_one('.author-name') or soup.select_one('.info-author')
+        author = author_elem.get_text(strip=True) if author_elem else '未知作者'
+        
+        # 提取简介
+        description_elem = soup.select_one('.story-description') or soup.select_one('.description')
+        description = description_elem.get_text(strip=True) if description_elem else '暂无简介'
+        
+        # 提取标签
+        tags = [tag.get_text(strip=True) for tag in soup.select('.tag-item') or soup.select('.tag')]
+        
+        # 构造结果
+        result = {
+            'title': title,
+            'author': author,
+            'description': description,
+            'tags': tags,
+            'images': image_urls,
+            'total_images': len(image_urls)
+        }
+
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': result
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()
+
+@crawling_bp.route('/api/cartoon-diversity')
+def cartoon_diversity():
+    """获取漫画章节列表"""
+    try:
+        pid = request.args.get('pid')
+        if not pid:
+            return jsonify({
+                'success': False,
+                'message': '缺少漫画ID'
+            }), 400
+        
+        # 检查缓存
+        cache_key = f'cartoon_diversity_{pid}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+        
+        # 设置请求头，模拟真实浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.cartoon18.com/'
+        }
+        
+        # 创建会话
+        session = get_session()
+        
+        # 构造URL
+        url = f'https://www.cartoon18.com/v/{pid}'
+
+        # 发送GET请求
+        response = session.get(
+            url, 
+            headers=headers, 
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        
+        # 尝试使用不同的编码方式
+        encodings = ['utf-8', 'gbk', 'gb2312', 'big5', 'shift_jis']
+        content = None
+        
+        for encoding in encodings:
+            try:
+                # 尝试不同的编码
+                response.encoding = encoding
+                content = response.text
+                # 移除对is_content_garbled的调用，直接使用第一个成功的编码
+                logger.info(f"尝试使用 {encoding} 编码解析内容")
+                break
+            except Exception as e:
+                logger.warning(f"使用 {encoding} 编码解析失败: {str(e)}")
+        
+        if not content or is_content_garbled(content):
+            # 如果所有编码都失败，尝试直接获取内容
+            content = response.content.decode('utf-8', errors='ignore')
+        
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 解析HTML
+        soup = BeautifulSoup(content, 'html.parser')
+        diversity_list = []
+        
+        # 使用lxml解析HTML
+        tree = etree.HTML(content)
+        # 使用XPath提取所有包含btn类的a标签文本和链接
+        try:
+            btn_texts = tree.xpath('//div/div/a[contains(@class,"btn")]/text()')
+            btn_hrefs = tree.xpath('//div/div/a[contains(@class,"btn")]/@href')
+            print(btn_hrefs,'btn_hrefsbtn_hrefsbtn_hrefsbtn_hrefs')
+            diversity_list = []
+            for text,href in zip(btn_texts,btn_hrefs):
+                # text = text.strip()
+                # href = href.get('href', '')
+                print(text,'uuuuuuuuuuuuuuuuu')
+                print(href,'hrefhrefhrefhref')
+                # 从链接中提取数字部分
+                cid = re.findall(r'\d+', href)
+                cid = cid[-1] if cid else ''  # 取最后一组数字
+                print(cid,'cidcidcidcidcidcidcidcid')
+                if text:  # 只添加有文本的元素
+                    if '開始閱讀' in text:
+                        text = '01話'
+                    diversity_list.append({
+                        'diversity': text,
+                        'cid': cid
+                    })
+        except Exception as e:
+            logger.error(f"XPath解析失败: {str(e)}")
+        
+        print(diversity_list,'88484')
+        # 构造结果
+        result = {
+            'diversityList': diversity_list,
+            'total': len(diversity_list)
+        }
+        print(result,'8888888888888888')
+        
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': result
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()
+
+# 用于检测文本是否为乱码
+def is_content_garbled(content):
+    if not content:
+        return True
+    
+    # 如果乱码比例过高，认为是乱码
+    sample = content[:1000] if len(content) > 1000 else content
+    garbled_chars = sum(1 for c in sample if ord(c) > 0x7E or ord(c) < 0x20 and c not in '\n\r\t')
+    
+    # 乱码字符比例
+    garbled_ratio = garbled_chars / len(sample)
+    
+    # 包含基本HTML标签
+    has_html_structure = '<html' in content.lower() and '<body' in content.lower()
+    
+    return garbled_ratio > 0.3 or not has_html_structure

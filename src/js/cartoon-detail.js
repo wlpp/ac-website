@@ -7,7 +7,8 @@ document.addEventListener('DOMContentLoaded', function() {
     function checkDOMElements() {
         const elementIds = [
             'viewer-content', 'manga-title', 'page-info', 
-            'prev-button', 'next-button', 'fullscreen-button'
+            'prev-button', 'next-button', 'fullscreen-button',
+            'view-mode-button'
         ];
         
         let allFound = true;
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const prevButton = document.getElementById('prev-button');
     const nextButton = document.getElementById('next-button');
     const fullscreenButton = document.getElementById('fullscreen-button');
+    const viewModeButton = document.getElementById('view-mode-button');
     const infoPanel = document.getElementById('info-panel');
     const infoPanelBody = document.getElementById('info-panel-body');
     const closeInfoButton = document.getElementById('close-info-button');
@@ -57,6 +59,7 @@ document.addEventListener('DOMContentLoaded', function() {
     let loadedImages = {};         // 已加载图片缓存
     let isFullscreen = false;      // 是否全屏
     let isZoomed = false;          // 是否放大
+    let isScrollMode = false;      // 是否为滚动模式
     let controlsVisible = true;    // 控制栏是否可见 - 默认显示
     let controlsTimer = null;      // 控制栏隐藏定时器
     let touchStartX = 0;           // 触摸开始X坐标
@@ -173,8 +176,8 @@ document.addEventListener('DOMContentLoaded', function() {
         preloadController = new AbortController();
         const signal = preloadController.signal;
         
-        // 设置固定的预加载间隔时间 - 0.5秒/张
-        const PRELOAD_DELAY = 500;
+        // 设置固定的预加载间隔时间 - 1秒/张
+        const PRELOAD_DELAY = 1000;
         
         // 分批预加载: 先加载当前图片和前后几张
         const initialUrls = getCurrentAndNearbyImages(urls, currentImageIndex, initialLoadCount);
@@ -199,7 +202,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     break;
                 }
                 
-                // 固定延迟0.5秒
+                // 固定延迟1秒
                 await new Promise(resolve => setTimeout(resolve, PRELOAD_DELAY));
             } catch (error) {
                 if (!signal.aborted) {
@@ -232,11 +235,11 @@ document.addEventListener('DOMContentLoaded', function() {
                                 break;
                             }
                             
-                            // 固定延迟0.5秒
+                            // 固定延迟1秒
                             await new Promise(resolve => setTimeout(resolve, PRELOAD_DELAY));
                         } catch (error) {
                             if (!signal.aborted) {
-                                console.error('[预加载] 后台图片预加载失败:', error);
+                                console.error('[预加载批次] 单张图片加载失败:', error);
                             }
                         }
                     }
@@ -299,6 +302,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 渲染当前图片 - 优化版
     function renderCurrentImage() {
+        // 如果是滚动模式，不做任何事情，因为滚动模式下不需要单张切换
+        if (isScrollMode) return;
+
         if (!images || images.length === 0 || currentImageIndex < 0 || currentImageIndex >= images.length) {
             console.error('[渲染] 无法渲染图片: 无效的图片数据或索引');
             return;
@@ -400,10 +406,10 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (imagesToPreload.length === 0) return;
         
-        // 设置固定的预加载间隔时间 - 0.5秒/张
-        const PRELOAD_DELAY = 500;
+        // 设置固定的预加载间隔时间 - 1秒/张
+        const PRELOAD_DELAY = 1000;
         
-        // 逐个加载图片，确保每张图片间隔0.5秒
+        // 逐个加载图片，确保每张图片间隔1秒
         (async () => {
             for (let i = 0; i < imagesToPreload.length; i++) {
                 const url = imagesToPreload[i];
@@ -412,7 +418,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 try {
                     await loadSingleImage(url);
-                    // 加载下一张前等待0.5秒
+                    // 加载下一张前等待1秒
                     if (i < imagesToPreload.length - 1) {
                         await new Promise(resolve => setTimeout(resolve, PRELOAD_DELAY));
                     }
@@ -772,6 +778,261 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
+    // 切换视图模式（正常/滚动）
+    function toggleViewMode() {
+        isScrollMode = !isScrollMode;
+        
+        // 更新按钮状态和文字
+        const modeTextElement = viewModeButton.querySelector('.mode-text');
+        
+        if (isScrollMode) {
+            viewModeButton.classList.add('active');
+            viewModeButton.title = "切换正常模式";
+            document.body.classList.add('scroll-mode');
+            
+            // 更新按钮文字
+            if (modeTextElement) {
+                modeTextElement.textContent = "滚动";
+            }
+            
+            // 播放切换动画
+            viewModeButton.classList.add('switching');
+            setTimeout(() => {
+                viewModeButton.classList.remove('switching');
+            }, 600);
+            
+            renderScrollMode();
+        } else {
+            viewModeButton.classList.remove('active');
+            viewModeButton.title = "切换滚动模式";
+            document.body.classList.remove('scroll-mode');
+            
+            // 更新按钮文字
+            if (modeTextElement) {
+                modeTextElement.textContent = "正常";
+            }
+            
+            // 播放切换动画
+            viewModeButton.classList.add('switching');
+            setTimeout(() => {
+                viewModeButton.classList.remove('switching');
+            }, 600);
+            
+            // 移除可能存在的滚动指示器
+            const scrollIndicator = document.querySelector('.scroll-mode-indicator');
+            if (scrollIndicator && document.body.contains(scrollIndicator)) {
+                document.body.removeChild(scrollIndicator);
+            }
+            
+            // 移除可能存在的返回顶部按钮
+            const backToTopBtn = document.querySelector('.back-to-top');
+            if (backToTopBtn && document.body.contains(backToTopBtn)) {
+                document.body.removeChild(backToTopBtn);
+            }
+            
+            // 确保控制栏可见（避免从滚动模式切换回来后控制栏仍然隐藏）
+            document.body.classList.remove('controls-hidden');
+            controlsVisible = true;
+            
+            renderCurrentImage();
+        }
+        
+        // 保存用户偏好
+        localStorage.setItem('manga_scroll_mode', isScrollMode ? 'true' : 'false');
+    }
+    
+    // 渲染滚动模式
+    function renderScrollMode() {
+        if (!images || images.length === 0) {
+            console.error('[滚动模式] 无图片可显示');
+            return;
+        }
+        
+        // 显示加载状态
+        viewerContent.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+                <div class="loading-text">正在加载滚动视图...</div>
+            </div>
+        `;
+        
+        // 创建图片容器
+        const imageContainer = document.createElement('div');
+        imageContainer.className = 'manga-image-container';
+        
+        // 添加滚动指示器
+        const scrollIndicator = document.createElement('div');
+        scrollIndicator.className = 'scroll-mode-indicator';
+        scrollIndicator.textContent = '滚动阅读模式';
+        
+        // 清空容器并添加新元素
+        viewerContent.innerHTML = '';
+        viewerContent.appendChild(imageContainer);
+        document.body.appendChild(scrollIndicator);
+        
+        // 记录加载进度
+        let loadedCount = 0;
+        const totalImages = images.length;
+        let visibleImagesLoaded = false;
+        
+        // 使用IntersectionObserver实现懒加载
+        const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.dataset.src;
+                    if (src) {
+                        img.src = src;
+                        img.removeAttribute('data-src');
+                        observer.unobserve(img);
+                        
+                        // 在首屏图片加载后，允许继续滚动加载其他图片
+                        if (!visibleImagesLoaded && loadedCount >= Math.min(5, totalImages)) {
+                            visibleImagesLoaded = true;
+                            scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
+                        }
+                    }
+                }
+            });
+        }, {
+            rootMargin: '100px', // 提前100px开始加载
+            threshold: 0.1 // 当10%的图片进入视口时
+        });
+        
+        // 批量创建图片占位符
+        images.forEach((url, index) => {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'manga-image-wrapper';
+            imgContainer.style.width = '100%';
+            imgContainer.style.display = 'flex';
+            imgContainer.style.justifyContent = 'center';
+            // imgContainer.style.marginBottom = '2 px';
+            
+            const img = new Image();
+            img.className = 'manga-image-viewer';
+            img.alt = `${mangaData?.title || '漫画'} - 第${index + 1}页`;
+            img.dataset.index = index;
+            img.dataset.src = url; // 先存储url而不是直接加载
+            
+            // 设置占位符尺寸和样式
+            img.style.minHeight = '300px';
+            img.style.backgroundColor = 'rgba(0,0,0,0.05)';
+            
+            // 图片加载完成回调
+            img.onload = function() {
+                loadedCount++;
+                img.style.backgroundColor = 'transparent';
+                img.style.minHeight = 'auto';
+                
+                // 更新加载状态
+                scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
+                
+                if (loadedCount === totalImages) {
+                    // 所有图片加载完成
+                    scrollIndicator.textContent = '滚动阅读模式';
+                    
+                    // 3秒后隐藏指示器
+                    setTimeout(() => {
+                        scrollIndicator.style.opacity = '0';
+                        setTimeout(() => {
+                            if (document.body.contains(scrollIndicator)) {
+                                document.body.removeChild(scrollIndicator);
+                            }
+                        }, 300);
+                    }, 3000);
+                }
+            };
+            
+            // 图片加载失败回调
+            img.onerror = function() {
+                loadedCount++;
+                console.error(`[滚动模式] 图片加载失败: ${url}`);
+                
+                // 替换为错误提示
+                img.removeAttribute('data-src');
+                img.alt = '图片加载失败';
+                img.style.height = '100px';
+                img.style.display = 'flex';
+                img.style.alignItems = 'center';
+                img.style.justifyContent = 'center';
+                img.style.backgroundColor = 'rgba(255,0,0,0.1)';
+                img.style.color = 'red';
+                img.innerHTML = `<div>第${index + 1}页加载失败</div>`;
+                
+                // 更新加载状态
+                scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
+            };
+            
+            // 添加到容器
+            imgContainer.appendChild(img);
+            imageContainer.appendChild(imgContainer);
+            
+            // 观察图片元素
+            lazyLoadObserver.observe(img);
+        });
+        
+        // 预加载前5张图片（无需等待滚动）
+        const preloadCount = Math.min(5, images.length);
+        for (let i = 0; i < preloadCount; i++) {
+            const img = imageContainer.querySelector(`img[data-index="${i}"]`);
+            if (img && img.dataset.src) {
+                img.src = img.dataset.src;
+                img.removeAttribute('data-src');
+            }
+        }
+        
+        // 添加返回顶部按钮
+        const backToTopBtn = document.createElement('button');
+        backToTopBtn.className = 'back-to-top';
+        backToTopBtn.innerHTML = `
+            <svg viewBox="0 0 24 24" width="24" height="24">
+                <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z" fill="currentColor"/>
+            </svg>
+        `;
+        backToTopBtn.style.display = 'none';
+        document.body.appendChild(backToTopBtn);
+        
+        // 滚动监听
+        viewerContent.addEventListener('scroll', function() {
+            if (viewerContent.scrollTop > 300) {
+                backToTopBtn.style.display = 'flex';
+            } else {
+                backToTopBtn.style.display = 'none';
+            }
+        });
+        
+        // 返回顶部点击
+        backToTopBtn.addEventListener('click', function() {
+            viewerContent.scrollTo({top: 0, behavior: 'smooth'});
+        });
+    }
+    
+    // 初始化视图模式
+    function initViewMode() {
+        // 从本地存储中读取上次的模式设置
+        const savedMode = localStorage.getItem('manga_scroll_mode');
+        isScrollMode = savedMode === 'true';
+        
+        // 设置初始状态
+        const modeTextElement = viewModeButton.querySelector('.mode-text');
+        
+        if (isScrollMode) {
+            viewModeButton.classList.add('active');
+            viewModeButton.title = "切换正常模式";
+            document.body.classList.add('scroll-mode');
+            
+            // 设置按钮文字
+            if (modeTextElement) {
+                modeTextElement.textContent = "滚动";
+            }
+        } else {
+            // 设置按钮文字
+            if (modeTextElement) {
+                modeTextElement.textContent = "正常";
+            }
+        }
+    }
+    
     // 绑定事件处理
     function setupEventHandlers() {
         // 直接绑定上一张/下一张按钮
@@ -818,6 +1079,9 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 标题点击显示信息面板
         mangaTitle.addEventListener('click', showInfoPanel);
+        
+        // 视图模式切换按钮
+        viewModeButton.addEventListener('click', toggleViewMode);
     }
     
     // 处理图片点击
@@ -968,6 +1232,14 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 加载内容
     loadMangaDetail().then(() => {
+        // 初始化视图模式
+        initViewMode();
+        
+        // 根据当前模式渲染内容
+        if (isScrollMode && images.length > 0) {
+            renderScrollMode();
+        }
+        
         // 内容加载完成后最后一步再绑定事件
         setupEventHandlers();
     }).catch(error => {

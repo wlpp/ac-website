@@ -919,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
             imgContainer.style.width = '100%';
             imgContainer.style.display = 'flex';
             imgContainer.style.justifyContent = 'center';
-            imgContainer.style.marginBottom = '15px'; // 确保图片之间有间距
+            // imgContainer.style.marginBottom = '15px'; // 确保图片之间有间距
             
             const img = new Image();
             img.className = 'manga-image-viewer';

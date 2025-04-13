@@ -281,18 +281,23 @@ body.controls-hidden .viewer-footer {
     background-color: var(--viewer-bg);
 }
 
-/* 图片查看器样式 */
-.manga-image-viewer {
+/* 正常模式的样式 */
+body:not(.scroll-mode) .viewer-content {
+    padding: 0;
+    margin: 0;
+}
+
+body:not(.scroll-mode) .manga-image-viewer {
+    width: 100%;
+    height: 100%;
     max-width: 100vw;
     max-height: calc(100vh - var(--control-height) * 2);
-    width: auto;
-    height: auto;
     object-fit: contain;
+    display: block;
+    margin: auto;
     transition: transform 0.2s ease;
     user-select: none;
     -webkit-user-drag: none;
-    display: block;
-    margin: auto;
 }
 
 /* 放大状态 */
@@ -1056,7 +1061,7 @@ body.scroll-mode .viewer-content {
 
 body.scroll-mode .manga-image-wrapper {
     scroll-snap-align: start;
-    margin: 20px auto;
+    /* margin: 20px auto; */
     max-width: 100%;
     height: auto;
 }
@@ -1087,7 +1092,7 @@ body.scroll-mode .page-info {
 /* 移动端优化 */
 @media (max-width: 768px) {
     body.scroll-mode .manga-image-wrapper {
-        margin: 10px auto;
+        /* margin: 10px auto; */
     }
     
     body.scroll-mode .page-info {
@@ -1115,8 +1120,10 @@ body.scroll-mode {
 
 /* 移动端优化 */
 @media (max-width: 768px) {
-    .manga-image-viewer {
+    body:not(.scroll-mode) .manga-image-viewer {
         max-height: calc(100vh - var(--control-height));
+        width: 100%;
+        height: 100%;
     }
     
     .viewer-content {

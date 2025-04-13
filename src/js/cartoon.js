@@ -198,11 +198,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         container.innerHTML = items.map(renderMangaCard).join('');
         
-        // 添加点击事件
+        // 添加点击事件，在新标签页打开
         container.querySelectorAll('.manga-card').forEach(card => {
             card.addEventListener('click', () => {
                 const mangaId = card.dataset.id;
-                window.location.href = `/cartoon/detail/${mangaId}`;
+                window.open(`/cartoon/detail/${mangaId}`, '_blank');
             });
         });
     }

@@ -25,10 +25,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // 获取当前漫画ID
+    // 获取当前漫画ID和类型
     const currentPath = window.location.pathname;
     const pidMatch = /\/cartoon\/detail\/(.+)/.exec(currentPath);
     const pid = pidMatch ? pidMatch[1] : null;
+    const searchParams = new URLSearchParams(window.location.search);
+    const manga_type = parseInt(searchParams.get('type') || '0', 10);
     
     if (!pid) {
         showError('未找到漫画ID，请返回列表页重新选择');
@@ -103,21 +105,10 @@ document.addEventListener('DOMContentLoaded', function() {
         showLoading();
         
         try {
-            // 先加载章节列表
-            console.log('[DEBUG] 先加载章节列表');
-            await loadChapterList();
-            
-            // 如果章节列表加载成功且有章节，使用第一个章节的cid
-            if (chapterSeries && chapterSeries.length > 0) {
-                const firstChapterId = chapterSeries[0].id;
-                console.log(`[DEBUG] 使用第一个章节的cid: ${firstChapterId}`);
-                
-                // 加载第一个章节的内容
-                await loadChapterContent(firstChapterId);
-            } else {
-                // 如果没有章节，使用URL中的ID作为备选
-                console.log(`[DEBUG] 没有章节列表，使用URL中的ID: ${pid}`);
-                const response = await fetch(`/api/cartoon-hans/detail?cid=${pid}`);
+            // 对于 type=2 的情况，直接使用 pid 加载内容，不加载章节列表
+            if (manga_type === 2) {
+                console.log(`[DEBUG] manga_type=2，直接使用pid: ${pid}`);
+                const response = await fetch(`/api/cartoon-hans/detail?cid=${pid}&type=${manga_type}`);
                 if (!response.ok) throw new Error('网络请求失败');
                 
                 const data = await response.json();
@@ -134,9 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 更新标题
                 mangaTitle.textContent = mangaData.title || '未知标题';
                 
+                // 隐藏章节列表按钮
+                const chapterListButton = document.getElementById('chapter-list-button');
+                if (chapterListButton) {
+                    chapterListButton.style.display = 'none';
+                }
+                
                 // 只有有图片时才初始化图片界面
                 if (images.length > 0) {
-                    // 预加载初始几张图片
                     await preloadImages(images, 0, 5);
                     renderCurrentImage();
                     updateNavigationButtons();
@@ -147,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
                         localStorage.setItem('gesture_hint_shown', 'true');
                     }
                 } else {
-                    // 显示没有图片的提示
                     viewerContent.innerHTML = `
                         <div class="error-message">
                             <div class="error-icon">⚠️</div>
@@ -155,18 +150,64 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     `;
                 }
+            } else {
+                // 对于 type=0 和 type=1 的情况，先加载章节列表
+                console.log('[DEBUG] manga_type=0/1，先加载章节列表');
+                await loadChapterList();
+                
+                if (chapterSeries && chapterSeries.length > 0) {
+                    const firstChapterId = chapterSeries[0].id;
+                    console.log(`[DEBUG] 使用第一个章节的cid: ${firstChapterId}`);
+                    await loadChapterContent(firstChapterId);
+                } else {
+                    console.log(`[DEBUG] 没有章节列表，使用URL中的ID: ${pid}`);
+                    const response = await fetch(`/api/cartoon-hans/detail?cid=${pid}&type=${manga_type}`);
+                    if (!response.ok) throw new Error('网络请求失败');
+                    
+                    const data = await response.json();
+                    console.log('API响应数据:', data);
+                    
+                    if (!data.success) throw new Error(data.message || '加载失败');
+                    if (!data.data) throw new Error('无效的数据格式');
+                    
+                    mangaData = data.data;
+                    images = mangaData.images || [];
+                    loadedImages = {};
+                    
+                    mangaTitle.textContent = mangaData.title || '未知标题';
+                    
+                    if (images.length > 0) {
+                        await preloadImages(images, 0, 5);
+                        renderCurrentImage();
+                        updateNavigationButtons();
+                        
+                        if (!localStorage.getItem('gesture_hint_shown')) {
+                            showGestureHint();
+                            localStorage.setItem('gesture_hint_shown', 'true');
+                        }
+                    } else {
+                        viewerContent.innerHTML = `
+                            <div class="error-message">
+                                <div class="error-icon">⚠️</div>
+                                <div class="error-text">没有找到任何图片</div>
+                            </div>
+                        `;
+                    }
+                }
             }
         } catch (error) {
             console.error('加载漫画详情失败:', error);
             showError(`加载失败: ${error.message || '未知错误'}`);
             
-            // 尝试加载章节列表，即使详情加载失败
-            try {
-                if (!chapterSeries || chapterSeries.length === 0) {
-                    await loadChapterList();
+            // 只在非type=2的情况下尝试加载章节列表
+            if (manga_type !== 2) {
+                try {
+                    if (!chapterSeries || chapterSeries.length === 0) {
+                        await loadChapterList();
+                    }
+                } catch (chapterError) {
+                    console.error('章节列表加载失败:', chapterError);
                 }
-            } catch (chapterError) {
-                console.error('章节列表加载失败:', chapterError);
             }
         }
     }

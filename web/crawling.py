@@ -1119,7 +1119,7 @@ def cartoon_hans():
             
         # 获取类型参数，默认为0（推荐漫画）
         manga_type = request.args.get('type', 0, type=int)
-        if manga_type not in [0, 1]:
+        if manga_type not in [0, 1, 2]:
             manga_type = 0  # 默认值
             
         # 检查缓存
@@ -1138,13 +1138,6 @@ def cartoon_hans():
             'Connection': 'keep-alive',
             'Upgrade-Insecure-Requests': '1',
             'Cache-Control': 'max-age=0',
-            'Referer': 'https://www.cartoon18.com/',
-            'sec-ch-ua': '"Google Chrome";v="91", "Chromium";v="91"',
-            'sec-ch-ua-mobile': '?0',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'same-origin',
-            'Sec-Fetch-User': '?1',
         }
 
         # 创建会话
@@ -1152,11 +1145,14 @@ def cartoon_hans():
 
         # 根据类型构造URL
         if manga_type == 0:
-            # 精漫推荐
+            # 漫画推荐
             url = f'https://www.cartoon18.com/zh-hans?sort=likes&page={page}'
-        else:
-            # 精漫3
+        elif manga_type == 1:
+            # 精漫3D
             url = f'https://www.cartoon18.com/zh-hans/q/3d?page={page}'
+        elif manga_type == 2:
+            # 绅士漫画
+            url = f'https://www.wnacg.com/albums-index-page-{page}-cate-22.html'
 
         # 发送GET请求
         response = session.get(
@@ -1179,35 +1175,68 @@ def cartoon_hans():
 
         # 解析HTML
         soup = BeautifulSoup(response.text, 'html.parser')
-        cartoon_items = soup.select('.card .visited')
-
-        # 提取数据
         result = []
-        for item in cartoon_items:
-            img = item.find('img')
-            if img:
-                # 直接获取完整的图片URL，不做任何修改
-                img_url = img.get('data-src', '')
-                title = img.get('alt', '')
-                link = item.get('href', '')
+
+        if manga_type == 2:
+            # 绅士漫画数据提取
+            gallery_items = soup.select('.gallary_item .pic_box a')
+            for item in gallery_items:
+                title = item.get('title', '')
+                # 移除<em>和</em>标签
+                title = title.replace('<em>', '').replace('</em>', '')
+                img = item.find('img')
                 
-                # 提取pid
-                pid = ''
-                if link:
-                    pid_match = re.findall(r'v/(.*)', link)
-                    if pid_match:
-                        pid = pid_match[0]
+                # 提取aid
+                href = item.get('href', '')
+                pid = None
+                if href:
+                    # 提取href中最后一个'-'到'.html'之间的数字
+                    start_index = href.rfind('-') + 1
+                    end_index = href.rfind('.html')
+                    if start_index > 0 and end_index > start_index:
+                        pid = href[start_index:end_index]
                 
-                # 确保链接是完整的URL
-                if link and not link.startswith('http'):
-                    link = f"https://www.cartoon18.com{link}"
-                
-                result.append({
-                    'title': title,
-                    'img': img_url,  # 保持原始图片URL不变
-                    'link': link,
-                    'pid': pid
-                })
+                if img:
+                    img_url = img.get('src', '')
+                    if img_url.startswith('/'):
+                        img_url = f"https:{img_url}"
+                    
+                    
+                    result.append({
+                        'title': title,
+                        'img': img_url,
+                        'link': f"https://www.wnacg.com{href}" if href else '',
+                        'pid': pid,
+                        'manga_type': manga_type
+                    })
+        else:
+            # cartoon18数据提取
+            cartoon_items = soup.select('.card .visited')
+            for item in cartoon_items:
+                img = item.find('img')
+                if img:
+                    img_url = img.get('data-src', '')
+                    title = img.get('alt', '')
+                    link = item.get('href', '')
+                    
+                    # 提取pid
+                    pid = ''
+                    if link:
+                        pid_match = re.findall(r'v/(.*)', link)
+                        if pid_match:
+                            pid = pid_match[0]
+                    
+                    # 确保链接是完整的URL
+                    if link and not link.startswith('http'):
+                        link = f"https://www.cartoon18.com{link}"
+                    
+                    result.append({
+                        'title': title,
+                        'img': img_url,
+                        'link': link,
+                        'pid': pid,
+                        'manga_type': manga_type
+                    })
 
         # 缓存结果
         result_data = {
@@ -1249,6 +1278,8 @@ def cartoon_hans_detail():
     """获取漫画详情"""
     try:
         cid = request.args.get('cid')
+        manga_type = request.args.get('type', 0, type=int)
+        
         if not cid:
             return jsonify({
                 'success': False,
@@ -1256,7 +1287,7 @@ def cartoon_hans_detail():
             }), 400
             
         # 检查缓存
-        cache_key = f'cartoon_hans_detail_{cid}'
+        cache_key = f'cartoon_hans_detail_{manga_type}_{cid}'
         cached_data = gallery_cache.get(cache_key)
         if cached_data:
             cache_time, data = cached_data
@@ -1287,82 +1318,134 @@ def cartoon_hans_detail():
         # 创建会话
         session = get_session()
 
-        # 构造URL - 使用新的story/full路径
-        url = f'https://www.cartoon18.com/story/{cid}/full'
+        result = {}
+        
+        if manga_type == 2:
+            # 绅士漫画数据爬取方式
+            url = f'https://www.wnacg.com/photos-gallery-aid-{cid}.html'
+            response = session.get(
+                url, 
+                headers=headers, 
+                proxies=get_proxies(),
+                timeout=(5, 30),
+                verify=False
+            )
+            response.encoding = 'utf-8'
 
-        # 发送GET请求
-        response = session.get(
-            url, 
-            headers=headers, 
-            proxies=get_proxies(),
-            timeout=(5, 30),
-            verify=False
-        )
-        response.encoding = 'utf-8'
-        
-        # 检查响应状态
-        if response.status_code != 200:
-            logger.error(f"请求失败，状态码：{response.status_code}")
-            return jsonify({
-                'success': False,
-                'message': '获取数据失败',
-                'error': f'HTTP {response.status_code}'
-            }), 500
-        
-        # 使用正则表达式提取图片链接
-        content = response.text
-        
-        # 先提取图片数字路径部分
-        image_num_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/(\d+)\/'
-        image_num_matches = re.findall(image_num_pattern, content)
-        
-        if not image_num_matches:
-            logger.error("未找到图片路径数字部分")
-            return jsonify({
-                'success': False,
-                'message': '未找到图片',
-                'error': '无法识别图片格式'
-            }), 500
+            if response.status_code != 200:
+                logger.error(f"请求失败，状态码：{response.status_code}")
+                return jsonify({
+                    'success': False,
+                    'message': '获取数据失败',
+                    'error': f'HTTP {response.status_code}'
+                }), 500
             
-        logger.info(f"提取到图片路径数字: {image_num_matches[0]}")
-        
-        # 使用找到的数字组装正则表达式
-        image_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/' + image_num_matches[0] + r'\/(.*?)(?:\'|"|>|\s)'
-        image_matches = re.findall(image_pattern, content)
-        
-        # 构建完整的图片URL列表
-        image_urls = [f'https://img.cartoon18.com/images/image/{image_num_matches[0]}/{match}' for match in image_matches]
-        
-        # 去重
-        image_urls = list(dict.fromkeys(image_urls))
-        
-        # 解析HTML以获取其他信息
-        soup = BeautifulSoup(content, 'html.parser')
-        
-        # 提取标题
-        title_elem = soup.select_one('h1') or soup.select_one('.story-title') or soup.select_one('title')
-        title = title_elem.get_text(strip=True) if title_elem else '未知标题'
-        
-        # 提取作者
-        author_elem = soup.select_one('.author-name') or soup.select_one('.info-author')
-        author = author_elem.get_text(strip=True) if author_elem else '未知作者'
-        
-        # 提取简介
-        description_elem = soup.select_one('.story-description') or soup.select_one('.description')
-        description = description_elem.get_text(strip=True) if description_elem else '暂无简介'
-        
-        # 提取标签
-        tags = [tag.get_text(strip=True) for tag in soup.select('.tag-item') or soup.select('.tag')]
-        
-        # 构造结果
-        result = {
-            'title': title,
-            'author': author,
-            'description': description,
-            'tags': tags,
-            'images': image_urls,
-            'total_images': len(image_urls)
-        }
+            # 解析图片URL
+            imglist_content = response.text
+            print(imglist_content,'imglist_contentimglist_content')
+            img_urls = re.findall(r'{ url:(.*?)"}', imglist_content)
+            img_urls2 = []
+            
+            for url in img_urls:
+                # 找到第一个'//'和第一个'\'之间的内容
+                start_idx = url.find('//') + 2
+                end_idx = url.find('", caption')
+                if start_idx != -1 and end_idx != -1:
+                    cleaned_url = url[start_idx:end_idx]
+                    cleaned_url = cleaned_url.replace('\\', '')
+                    img_urls2.append(cleaned_url)
+
+            # 拼接完整的URL
+            full_img_urls = [f"https://{img_url}" for img_url in img_urls2]
+            
+            # 解析HTML获取其他信息
+            soup = BeautifulSoup(imglist_content, 'html.parser')
+            
+            # 提取标题
+            title_elem = soup.select_one('.bread') or soup.select_one('h2')
+            title = title_elem.get_text(strip=True) if title_elem else '未知标题'
+            
+            # 构造结果
+            result = {
+                'title': title,
+                'author': '未知作者',  # wnacg.com通常不显示作者信息
+                'description': '',  # wnacg.com通常不显示描述
+                'tags': [],  # wnacg.com通常不显示标签
+                'images': full_img_urls,
+                'total_images': len(full_img_urls)
+            }
+            
+        else:
+            # cartoon18数据爬取方式
+            url = f'https://www.cartoon18.com/story/{cid}/full'
+            response = session.get(
+                url, 
+                headers=headers, 
+                proxies=get_proxies(),
+                timeout=(5, 30),
+                verify=False
+            )
+            response.encoding = 'utf-8'
+            
+            if response.status_code != 200:
+                logger.error(f"请求失败，状态码：{response.status_code}")
+                return jsonify({
+                    'success': False,
+                    'message': '获取数据失败',
+                    'error': f'HTTP {response.status_code}'
+                }), 500
+            
+            content = response.text
+            
+            # 先提取图片数字路径部分
+            image_num_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/(\d+)\/'
+            image_num_matches = re.findall(image_num_pattern, content)
+            
+            if not image_num_matches:
+                logger.error("未找到图片路径数字部分")
+                return jsonify({
+                    'success': False,
+                    'message': '未找到图片',
+                    'error': '无法识别图片格式'
+                }), 500
+                
+            # 使用找到的数字组装正则表达式
+            image_pattern = r'https:\/\/img\.cartoon18\.com\/images\/image\/' + image_num_matches[0] + r'\/(.*?)(?:\'|"|>|\s)'
+            image_matches = re.findall(image_pattern, content)
+            
+            # 构建完整的图片URL列表
+            image_urls = [f'https://img.cartoon18.com/images/image/{image_num_matches[0]}/{match}' for match in image_matches]
+            
+            # 去重
+            image_urls = list(dict.fromkeys(image_urls))
+            
+            # 解析HTML以获取其他信息
+            soup = BeautifulSoup(content, 'html.parser')
+            
+            # 提取标题
+            title_elem = soup.select_one('h1') or soup.select_one('.story-title') or soup.select_one('title')
+            title = title_elem.get_text(strip=True) if title_elem else '未知标题'
+            
+            # 提取作者
+            author_elem = soup.select_one('.author-name') or soup.select_one('.info-author')
+            author = author_elem.get_text(strip=True) if author_elem else '未知作者'
+            
+            # 提取简介
+            description_elem = soup.select_one('.story-description') or soup.select_one('.description')
+            description = description_elem.get_text(strip=True) if description_elem else '暂无简介'
+            
+            # 提取标签
+            tags = [tag.get_text(strip=True) for tag in soup.select('.tag-item') or soup.select('.tag')]
+            
+            # 构造结果
+            result = {
+                'title': title,
+                'author': author,
+                'description': description,
+                'tags': tags,
+                'images': image_urls,
+                'total_images': len(image_urls)
+            }
 
         # 缓存结果
         result_data = {
@@ -1569,7 +1652,7 @@ def cartoon_search():
     try:
         # 获取搜索参数
         kw = request.args.get('kw', '')
-        search_type = request.args.get('type', 0, type=int)
+        manga_type = request.args.get('type', 0, type=int)
         
         if not kw:
             return jsonify({
@@ -1578,7 +1661,7 @@ def cartoon_search():
             }), 400
             
         # 检查缓存
-        cache_key = f'cartoon_search_{search_type}_{kw}'
+        cache_key = f'cartoon_search_{manga_type}_{kw}'
         cached_data = gallery_cache.get(cache_key)
         if cached_data:
             cache_time, data = cached_data
@@ -1598,65 +1681,122 @@ def cartoon_search():
         session = get_session()
         
         # 根据type构造不同的搜索URL
-        if search_type == 0:
+        if manga_type == 0 or  manga_type == 1:
             # cartoon18.com搜索
             url = f'https://www.cartoon18.com/q/{kw}?page=1'
+            
+            # 发送GET请求
+            response = session.get(
+                url,
+                headers=headers,
+                proxies=get_proxies(),
+                timeout=(5, 30),
+                verify=False
+            )
+            response.encoding = 'utf-8'
+            
+            # 检查响应状态
+            if response.status_code != 200:
+                logger.error(f"搜索请求失败，状态码：{response.status_code}")
+                return jsonify({
+                    'success': False,
+                    'message': '搜索失败',
+                    'error': f'HTTP {response.status_code}'
+                }), 500
+                
+            # 解析HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            cartoon_items = soup.select('.card .visited')
+            
+            # 提取数据
+            result = []
+            for item in cartoon_items:
+                img = item.find('img')
+                if img:
+                    img_url = img.get('data-src', '')
+                    title = img.get('alt', '')
+                    link = item.get('href', '')
+                    
+                    # 提取pid
+                    pid = ''
+                    if link:
+                        pid_match = re.findall(r'v/(.*)', link)
+                        if pid_match:
+                            pid = pid_match[0]
+                    
+                    # 确保链接是完整的URL
+                    if link and not link.startswith('http'):
+                        link = f"https://www.cartoon18.com{link}"
+                    
+                    result.append({
+                        'title': title,
+                        'img': img_url,
+                        'link': link,
+                        'pid': pid,
+                        'manga_type': manga_type
+                    })
+        elif manga_type == 2:
+            # 绅士漫画搜索 (wnacg.com)
+            url = f'https://www.wnacg.com/search/index.php?q={kw}&m=&syn=yes&f=_all&s=create_time_DESC&p=1'
+            
+            # 发送GET请求
+            response = session.get(
+                url,
+                headers=headers,
+                proxies=get_proxies(),
+                timeout=(5, 30),
+                verify=False
+            )
+            response.encoding = 'utf-8'
+            
+            # 检查响应状态
+            if response.status_code != 200:
+                logger.error(f"搜索请求失败，状态码：{response.status_code}")
+                return jsonify({
+                    'success': False,
+                    'message': '搜索失败',
+                    'error': f'HTTP {response.status_code}'
+                }), 500
+            
+            # 解析HTML
+            soup = BeautifulSoup(response.text, 'html.parser')
+            gallery_items = soup.select('.gallary_item .pic_box a')
+            
+            # 提取数据
+            result = []
+            for item in gallery_items:
+                title = item.get('title', '')
+                # 移除<em>和</em>标签
+                title = title.replace('<em>', '').replace('</em>', '')
+                img = item.find('img')
+                
+                # 提取aid
+                href = item.get('href', '')
+                pid = None
+                if href:
+                    # 提取href中最后一个'-'到'.html'之间的数字
+                    start_index = href.rfind('-') + 1
+                    end_index = href.rfind('.html')
+                    if start_index > 0 and end_index > start_index:
+                        pid = href[start_index:end_index]
+                
+                if img:
+                    img_url = img.get('src', '')
+                    if img_url.startswith('/'):
+                        img_url = f"https:{img_url}"
+                    
+                    result.append({
+                        'title': title,
+                        'img': img_url,
+                        'link': f"https://www.wnacg.com{href}" if href else '',
+                        'pid': pid
+                    })
         else:
             return jsonify({
                 'success': False,
                 'message': '暂不支持该搜索类型'
             }), 400
             
-        # 发送GET请求
-        response = session.get(
-            url,
-            headers=headers,
-            proxies=get_proxies(),
-            timeout=(5, 30),
-            verify=False
-        )
-        response.encoding = 'utf-8'
-        
-        # 检查响应状态
-        if response.status_code != 200:
-            logger.error(f"搜索请求失败，状态码：{response.status_code}")
-            return jsonify({
-                'success': False,
-                'message': '搜索失败',
-                'error': f'HTTP {response.status_code}'
-            }), 500
-            
-        # 解析HTML
-        soup = BeautifulSoup(response.text, 'html.parser')
-        cartoon_items = soup.select('.card .visited')
-        
-        # 提取数据
-        result = []
-        for item in cartoon_items:
-            img = item.find('img')
-            if img:
-                img_url = img.get('data-src', '')
-                title = img.get('alt', '')
-                link = item.get('href', '')
-                
-                # 提取pid
-                pid = ''
-                if link:
-                    pid_match = re.findall(r'v/(.*)', link)
-                    if pid_match:
-                        pid = pid_match[0]
-                
-                # 确保链接是完整的URL
-                if link and not link.startswith('http'):
-                    link = f"https://www.cartoon18.com{link}"
-                
-                result.append({
-                    'title': title,
-                    'img': img_url,
-                    'link': link,
-                    'pid': pid
-                })
-                
         # 缓存结果
         result_data = {
             'success': True,

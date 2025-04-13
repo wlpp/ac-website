@@ -3,15 +3,18 @@
 // 在全局作用域声明函数，使分页按钮可以调用它们
 let loadRecommendedManga;
 let load3DManga;
+let loadGentlemanManga;
 
 document.addEventListener('DOMContentLoaded', function() {
     // 分页配置
     const ITEMS_PER_PAGE = 12;
     let currentPageRecommended = 1;
     let currentPage3D = 1;
+    let currentPageGentleman = 1;
     let isLoading = false;
     let recommendedLoaded = false;
     let d3Loaded = false;
+    let gentlemanLoaded = false;
     
     // 设置预估的总漫画数量，因为API只返回当前页的数据量
     const ESTIMATED_TOTAL_MANGA = 100; // 预估值，可以根据实际情况调整
@@ -19,13 +22,15 @@ document.addEventListener('DOMContentLoaded', function() {
     // 漫画数据缓存
     const mangaCache = {
         recommended: new Map(),
-        '3d': new Map()
+        '3d': new Map(),
+        gentleman: new Map()
     };
 
     // 加载状态管理
     const loadingState = {
         recommended: false,
-        '3d': false
+        '3d': false,
+        gentleman: false
     };
 
     // 渲染漫画卡片
@@ -63,11 +68,11 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
     }
 
-    // 加载精漫推荐 - 将函数赋值给全局变量
+    // 加载漫画推荐 - 将函数赋值给全局变量
     loadRecommendedManga = async function(page = 1) {
         const container = document.getElementById('recommended-manga');
         if (!container) {
-            console.error('找不到精漫推荐容器元素');
+            console.error('找不到漫画推荐容器元素');
             return;
         }
         
@@ -117,7 +122,7 @@ document.addEventListener('DOMContentLoaded', function() {
             // 否则，使用预估的总数
             updatePagination('recommended', hasData ? ESTIMATED_TOTAL_MANGA : (page - 1) * ITEMS_PER_PAGE, page);
         } catch (error) {
-            console.error('加载精漫推荐失败:', error);
+            console.error('加载漫画推荐失败:', error);
             showError(container, '加载失败，请稍后重试', () => loadRecommendedManga(page));
         } finally {
             loadingState.recommended = false;
@@ -183,6 +188,68 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // 加载绅士3D - 将函数赋值给全局变量
+    loadGentlemanManga = async function(page = 1) {
+        const container = document.getElementById('gentleman-manga');
+        if (!container) {
+            console.error('找不到绅士3D容器元素');
+            return;
+        }
+        
+        // 更新当前页码
+        currentPageGentleman = page;
+        
+        const cacheKey = `page_${page}`;
+        
+        // 检查缓存
+        if (mangaCache['gentleman'] && mangaCache['gentleman'].has(cacheKey)) {
+            const cachedData = mangaCache['gentleman'].get(cacheKey);
+            renderMangaList(container, cachedData.items);
+            updatePagination('gentleman', ESTIMATED_TOTAL_MANGA, page);
+            return;
+        }
+
+        // 显示加载动画
+        showLoading(container);
+        loadingState['gentleman'] = true;
+
+        try {
+            const response = await fetch(`/api/cartoon-hans?page=${page}&type=2`);
+            if (!response.ok) throw new Error('网络请求失败');
+            
+            const data = await response.json();
+            if (!data.success) throw new Error(data.message || '加载失败');
+            
+            if (!data.data || !Array.isArray(data.data)) {
+                throw new Error('无效的数据格式');
+            }
+
+            // 检查当前页面是否有数据
+            const hasData = data.data.length > 0;
+
+            // 缓存数据
+            if (!mangaCache['gentleman']) {
+                mangaCache['gentleman'] = new Map();
+            }
+            mangaCache['gentleman'].set(cacheKey, {
+                items: data.data,
+                total: hasData ? ESTIMATED_TOTAL_MANGA : 0
+            });
+
+            // 渲染数据
+            renderMangaList(container, data.data);
+            
+            // 如果当前页没有数据，则可能已到达最后一页
+            // 否则，使用预估的总数
+            updatePagination('gentleman', hasData ? ESTIMATED_TOTAL_MANGA : (page - 1) * ITEMS_PER_PAGE, page);
+        } catch (error) {
+            console.error('加载绅士3D失败:', error);
+            showError(container, '加载失败，请稍后重试', () => loadGentlemanManga(page));
+        } finally {
+            loadingState['gentleman'] = false;
+        }
+    }
+
     // 渲染漫画列表
     function renderMangaList(container, items) {
         if (!container) {
@@ -202,7 +269,10 @@ document.addEventListener('DOMContentLoaded', function() {
         container.querySelectorAll('.manga-card').forEach(card => {
             card.addEventListener('click', () => {
                 const mangaId = card.dataset.id;
-                window.open(`/cartoon/detail/${mangaId}`, '_blank');
+                // 从漫画数据中获取 manga_type
+                const mangaData = items.find(item => item.pid === mangaId);
+                const mangaType = mangaData ? mangaData.manga_type : 0;
+                window.open(`/cartoon/detail/${mangaId}?type=${mangaType}`, '_blank');
             });
         });
     }
@@ -214,83 +284,45 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error(`找不到${type}分页容器`);
             return;
         }
-        const totalPages = Math.ceil(total / ITEMS_PER_PAGE);
         
-        let paginationHTML = '';
-        
-        // 上一页按钮
-        paginationHTML += `
-            <button class="pagination-btn" 
-                    ${currentPage === 1 ? 'disabled' : ''} 
-                    onclick="load${type === 'recommended' ? 'Recommended' : '3D'}Manga(${currentPage - 1})">
-                上一页
-            </button>
-        `;
-        
-        // 显示页码范围
-        const maxPagesToShow = 5; // 显示的最大页码数
-        let startPage = Math.max(1, currentPage - Math.floor(maxPagesToShow / 2));
-        let endPage = Math.min(totalPages, startPage + maxPagesToShow - 1);
-        
-        // 调整startPage，确保显示足够数量的页码
-        if (endPage - startPage + 1 < maxPagesToShow) {
-            startPage = Math.max(1, endPage - maxPagesToShow + 1);
-        }
-        
-        // 第一页
-        if (startPage > 1) {
-            paginationHTML += `
-                <button class="pagination-btn" 
-                        onclick="load${type === 'recommended' ? 'Recommended' : '3D'}Manga(1)">
-                    1
+        let paginationHTML = `
+            <div class="pagination-container">
+                <button class="pagination-btn prev-btn" 
+                        onclick="load${type === 'recommended' ? 'Recommended' : type === '3d' ? '3D' : 'Gentleman'}Manga(${currentPage - 1})">
+                    上一页
                 </button>
-            `;
-            
-            if (startPage > 2) {
-                paginationHTML += '<span class="pagination-ellipsis">...</span>';
-            }
-        }
-        
-        // 页码按钮
-        for (let i = startPage; i <= endPage; i++) {
-            paginationHTML += `
-                <button class="pagination-btn ${i === currentPage ? 'active' : ''}" 
-                        onclick="load${type === 'recommended' ? 'Recommended' : '3D'}Manga(${i})">
-                    ${i}
+                <div class="pagination-input-group">
+                    <input  
+                           class="pagination-input" 
+                           value="${currentPage}" 
+                           data-type="${type}"
+                           onkeypress="if(event.key === 'Enter') { 
+                               load${type === 'recommended' ? 'Recommended' : type === '3d' ? '3D' : 'Gentleman'}Manga(this.value);
+                           }">
+                </div>
+                <button class="pagination-btn next-btn" 
+                        onclick="load${type === 'recommended' ? 'Recommended' : type === '3d' ? '3D' : 'Gentleman'}Manga(${currentPage + 1})">
+                    下一页
                 </button>
-            `;
-        }
-        
-        // 最后一页
-        if (endPage < totalPages) {
-            if (endPage < totalPages - 1) {
-                paginationHTML += '<span class="pagination-ellipsis">...</span>';
-            }
-            
-            paginationHTML += `
-                <button class="pagination-btn" 
-                        onclick="load${type === 'recommended' ? 'Recommended' : '3D'}Manga(${totalPages})">
-                    ${totalPages}
-                </button>
-            `;
-        }
-        
-        // 下一页按钮
-        paginationHTML += `
-            <button class="pagination-btn" 
-                    ${currentPage === totalPages ? 'disabled' : ''} 
-                    onclick="load${type === 'recommended' ? 'Recommended' : '3D'}Manga(${currentPage + 1})">
-                下一页
-            </button>
+            </div>
         `;
         
         container.innerHTML = paginationHTML;
+
+        // 添加输入框事件监听
+        const input = container.querySelector('.pagination-input');
+        input.addEventListener('blur', function() {
+            if (this.value !== currentPage.toString()) {
+                window[`load${type === 'recommended' ? 'Recommended' : type === '3d' ? '3D' : 'Gentleman'}Manga`](this.value);
+            }
+        });
     }
 
     // 标签切换功能
     function setupTabs() {
         const tabs = document.querySelectorAll('.tab-btn');
         const sections = document.querySelectorAll('.manga-section');
+        const searchTypeSelect = document.getElementById('search-type-select');
         
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
@@ -322,9 +354,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 targetSection.style.display = 'block';
                 targetSection.classList.add('active');
                 
+                // 根据当前标签更新搜索类型下拉框的值
+                if (targetId === 'recommended') {
+                    searchTypeSelect.value = '0';
+                } else if (targetId === '3d') {
+                    searchTypeSelect.value = '1';
+                } else if (targetId === 'gentleman') {
+                    searchTypeSelect.value = '2';
+                }
+                
                 // 根据目标ID加载对应数据
                 if (targetId === 'recommended') {
-                    console.log('正在加载精漫推荐...');
+                    console.log('正在加载漫画推荐...');
                     // 获取容器内的卡片元素
                     const container = document.getElementById('recommended-manga');
                     
@@ -343,6 +384,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         !container.querySelector('.manga-card')) {
                         load3DManga(1);
                     }
+                } else if (targetId === 'gentleman') {
+                    console.log('正在加载绅士3D...');
+                    // 获取容器内的卡片元素
+                    const container = document.getElementById('gentleman-manga');
+                    
+                    // 如果容器为空或者没有漫画卡片，则加载数据
+                    if (!container || container.children.length === 0 || 
+                        !container.querySelector('.manga-card')) {
+                        loadGentlemanManga(1);
+                    }
                 }
             });
         });
@@ -352,34 +403,14 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupSearch() {
         const searchInput = document.getElementById('search-input');
         const searchButton = document.getElementById('search-button');
-        const searchTypeGroup = document.querySelector('.search-type-group');
+        const searchTypeSelect = document.getElementById('search-type-select');
         const searchSection = document.getElementById('search-section');
         const searchMangaGrid = document.getElementById('search-manga');
         const mainSections = document.querySelectorAll('.manga-section');
         
-        // 处理搜索类型按钮点击
-        searchTypeGroup.addEventListener('click', (e) => {
-            const btn = e.target.closest('.search-type-btn');
-            if (!btn) return;
-            
-            // 移除其他按钮的active类
-            searchTypeGroup.querySelectorAll('.search-type-btn').forEach(button => {
-                button.classList.remove('active');
-            });
-            
-            // 添加active类到点击的按钮
-            btn.classList.add('active');
-            
-            // 如果搜索框有内容，自动触发搜索
-            if (searchInput.value.trim()) {
-                performSearch();
-            }
-        });
-        
         const performSearch = async () => {
             const searchTerm = searchInput.value.trim();
-            const activeType = searchTypeGroup.querySelector('.search-type-btn.active');
-            const type = activeType ? activeType.dataset.type : '0';
+            const type = searchTypeSelect.value;
             
             if (!searchTerm) return;
             
@@ -415,11 +446,15 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         };
         
+        // 搜索按钮点击事件
         searchButton.addEventListener('click', performSearch);
+        
+        // 输入框回车事件
         searchInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') performSearch();
         });
         
+        // 输入框退格键事件
         searchInput.addEventListener('keyup', (e) => {
             if (e.key === 'Backspace' && searchInput.value === '') {
                 searchSection.style.display = 'none';
@@ -430,11 +465,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             }
         });
+        
+        // 搜索类型改变时，如果输入框有内容则自动搜索
+        searchTypeSelect.addEventListener('change', () => {
+            if (searchInput.value.trim()) {
+                performSearch();
+            }
+        });
     }
 
     // 初始化页面
     function initPage() {
-        // 初始加载精漫推荐
+        // 初始加载漫画推荐
         loadRecommendedManga(1);
         
         // 设置标签切换、分页和搜索功能

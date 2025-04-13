@@ -24,7 +24,11 @@
         <div class="search-container">
             <div class="search-box">
                 <div class="search-type-group">
-                    <button class="search-type-btn active" data-type="0">精漫搜索</button>
+                    <select id="search-type-select">
+                        <option value="0">推荐</option>
+                        <option value="1">精漫3D</option>
+                        <option value="2">绅士3D</option>
+                    </select>
                 </div>
                 <input type="text" id="search-input">
                 <button id="search-button">
@@ -37,8 +41,9 @@
 
         <div class="tab-container">
             <div class="tabs">
-                <button class="tab-btn active" data-tab="recommended">精漫推荐</button>
+                <button class="tab-btn active" data-tab="recommended">漫画推荐</button>
                 <button class="tab-btn" data-tab="3d">精漫3D</button>
+                <button class="tab-btn" data-tab="gentleman">绅士3D</button>
             </div>
         </div>
 
@@ -54,10 +59,10 @@
 
             <section class="manga-section" id="recommended-section">
                 <div class="section-header">
-                    <h2 class="section-title">精漫推荐</h2>
+                    <h2 class="section-title">漫画推荐</h2>
                 </div>
                 <div class="manga-grid" id="recommended-manga">
-                    <!-- 精漫推荐将通过JavaScript动态加载 -->
+                    <!-- 漫画推荐将通过JavaScript动态加载 -->
                 </div>
                 <div class="pagination" id="recommended-pagination">
                     <!-- 分页按钮将通过JavaScript动态生成 -->
@@ -72,6 +77,18 @@
                     <!-- 精漫3D将通过JavaScript动态加载 -->
                 </div>
                 <div class="pagination" id="3d-pagination">
+                    <!-- 分页按钮将通过JavaScript动态生成 -->
+                </div>
+            </section>
+
+            <section class="manga-section" id="gentleman-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">绅士3D</h2>
+                </div>
+                <div class="manga-grid" id="gentleman-manga">
+                    <!-- 绅士3D将通过JavaScript动态加载 -->
+                </div>
+                <div class="pagination" id="gentleman-pagination">
                     <!-- 分页按钮将通过JavaScript动态生成 -->
                 </div>
             </section>

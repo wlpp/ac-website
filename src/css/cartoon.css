@@ -93,9 +93,10 @@ body {
 .search-type-group {
     display: flex;
     border-right: 1px solid rgba(0, 0, 0, 0.1);
+    padding: 0 10px;
 }
 
-.search-type-btn {
+#search-type-select {
     padding: 12px 20px;
     border: none;
     background: none;
@@ -104,18 +105,25 @@ body {
     font-weight: 500;
     cursor: pointer;
     transition: var(--transition);
-    position: relative;
-    white-space: nowrap;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    background-size: 16px;
+    padding-right: 32px;
 }
 
-.search-type-btn:hover {
+#search-type-select:hover {
     color: var(--primary-color);
-    background-color: rgba(255, 107, 107, 0.1);
 }
 
-.search-type-btn.active {
-    color: var(--primary-color);
-    background-color: rgba(255, 107, 107, 0.15);
+#search-type-select option {
+    padding: 8px 12px;
+    background-color: white;
+    color: var(--dark-color);
 }
 
 /* .search-type-btn.active::after {
@@ -316,16 +324,22 @@ body {
     font-weight: 500;
 }
 
-/* 分页样式 - 优化 */
+/* 分页容器 */
 .pagination {
+    margin-top: 2rem;
+    margin-bottom: 2rem;
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
-    margin-top: 30px;
-    flex-wrap: wrap;
 }
 
+.pagination-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+/* 分页按钮 */
 .pagination-btn {
     background-color: white;
     border: 1px solid #ddd;
@@ -347,39 +361,38 @@ body {
     box-shadow: 0 4px 8px rgba(255, 107, 107, 0.2);
 }
 
-.pagination-btn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
+/* 页码输入组 */
+.pagination-input-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
-.pagination-btn.active {
-    background-color: var(--primary-color);
-    color: white;
-    border-color: var(--primary-color);
-    font-weight: bold;
-}
-
-.pagination-ellipsis {
-    padding: 0 8px;
-    color: var(--dark-color);
-}
-
-#page-info-recommended,
-#page-info-3d {
-    margin: 0 15px;
-    font-weight: 500;
-}
-
-/* 页脚样式 */
-.anime-footer {
+.pagination-input {
+    width: 60px;
+    background-color: white;
+    border: 1px solid #ddd;
+    padding: 8px;
+    border-radius: var(--border-radius);
     text-align: center;
-    padding: 30px 0;
-    margin-top: 50px;
-    border-top: 1px solid #eee;
-    color: #666;
+    font-size: 0.95rem;
+    color: var(--dark-color);
+    transition: var(--transition);
 }
 
-/* 响应式设计 */
+.pagination-input:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.2);
+    transform: translateY(-2px);
+}
+
+.pagination-total {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+}
+
+/* 移动端适配 */
 @media (max-width: 768px) {
     .anime-header {
         flex-direction: column;
@@ -417,10 +430,24 @@ body {
         font-size: 1.1rem;
     }
     
+    .pagination-container {
+        gap: 0.5rem;
+    }
+
     .pagination-btn {
         padding: 6px 12px;
         min-width: 35px;
         font-size: 0.9rem;
+    }
+
+    .pagination-input {
+        width: 50px;
+        padding: 6px;
+        font-size: 0.9rem;
+    }
+
+    .pagination-total {
+        font-size: 0.85rem;
     }
 
     .search-box {
@@ -436,12 +463,13 @@ body {
         background-color: white;
         border-radius: var(--border-radius) var(--border-radius) 0 0;
         box-shadow: var(--box-shadow);
+        padding: 0;
     }
 
-    .search-type-btn {
-        flex: 1;
-        text-align: center;
-        padding: 10px 15px;
+    #search-type-select {
+        width: 100%;
+        padding: 12px 15px;
+        background-position: right 15px center;
     }
 
     .search-input-group {

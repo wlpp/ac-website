@@ -33,6 +33,84 @@ document.addEventListener('DOMContentLoaded', function() {
         gentleman: false
     };
 
+    // 收藏相关功能
+    const FAVORITES_KEY = 'manga_favorites';
+    let favorites = new Map(JSON.parse(localStorage.getItem(FAVORITES_KEY) || '[]'));
+
+    function toggleFavorite(mangaId, title, cover) {
+        if (favorites.has(mangaId)) {
+            favorites.delete(mangaId);
+        } else {
+            // 获取当前选中的搜索类型
+            const searchTypeSelect = document.getElementById('search-type-select');
+            const mangaType = searchTypeSelect.value;
+            console.log(mangaType,'mangaType')
+            favorites.set(mangaId, { 
+                title, 
+                cover,
+                type: mangaType // 保存漫画类型
+            });
+        }
+        localStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(favorites)));
+        updateFavoriteButtons();
+    }
+
+    function updateFavoriteButtons() {
+        document.querySelectorAll('.favorite-btn').forEach(btn => {
+            const mangaId = btn.dataset.mangaId;
+            btn.classList.toggle('active', favorites.has(mangaId));
+        });
+    }
+
+    function showFavorites() {
+        const modal = document.getElementById('favorites-modal');
+        const grid = document.getElementById('favorites-grid');
+        grid.innerHTML = '';
+
+        if (favorites.size === 0) {
+            grid.innerHTML = '<div class="no-favorites">暂无收藏的漫画</div>';
+            modal.style.display = 'block';
+            return;
+        }
+
+        for (const [mangaId, manga] of favorites) {
+            const card = document.createElement('div');
+            card.className = 'manga-card';
+            card.innerHTML = `
+                <div class="manga-cover">
+                    <img src="${manga.cover}" alt="${manga.title}" loading="lazy">
+                    <button class="favorite-btn active" data-manga-id="${mangaId}">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="manga-info">
+                    <h3 class="manga-title">${manga.title}</h3>
+                </div>
+            `;
+            card.addEventListener('click', (e) => {
+                if (!e.target.closest('.favorite-btn')) {
+                    // 获取当前选中的搜索类型作为 manga_type
+                    const searchTypeSelect = document.getElementById('search-type-select');
+                    const mangaType = manga.type;
+                    const encodedTitle = encodeURIComponent(manga.title);
+                    window.open(`/cartoon/detail/${mangaId}?type=${mangaType}&title=${encodedTitle}`, '_blank');
+                }
+            });
+            card.querySelector('.favorite-btn').addEventListener('click', (e) => {
+                e.stopPropagation();
+                toggleFavorite(mangaId, manga.title, manga.cover);
+                card.remove();
+                if (favorites.size === 0) {
+                    grid.innerHTML = '<div class="no-favorites">暂无收藏的漫画</div>';
+                }
+            });
+            grid.appendChild(card);
+        }
+        modal.style.display = 'block';
+    }
+
     // 渲染漫画卡片
     function renderMangaCard(manga) {
         return `
@@ -42,6 +120,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
                 <div class="manga-info">
                     <h3 class="manga-title">${manga.title}</h3>
+                    <button class="favorite-btn" data-manga-id="${manga.pid}" title="添加到收藏">
+                        <svg viewBox="0 0 24 24">
+                            <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                        </svg>
+                    </button>
                 </div>
             </div>
         `;
@@ -256,7 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('渲染目标容器不存在');
             return;
         }
-        // 添加空值检查
         if (!Array.isArray(items)) {
             console.error('无效的漫画数据:', items);
             container.innerHTML = '<div class="error-message">数据加载异常</div>';
@@ -266,13 +348,27 @@ document.addEventListener('DOMContentLoaded', function() {
         container.innerHTML = items.map(renderMangaCard).join('');
         
         // 添加点击事件，在新标签页打开
-        container.querySelectorAll('.manga-card').forEach(card => {
-            card.addEventListener('click', () => {
+        container.querySelectorAll('.manga-cover').forEach(cover => {
+            cover.addEventListener('click', () => {
+                const card = cover.closest('.manga-card');
                 const mangaId = card.dataset.id;
-                // 从漫画数据中获取 manga_type
+                // 从漫画数据中获取 manga_type 和 title
                 const mangaData = items.find(item => item.pid === mangaId);
                 const mangaType = mangaData ? mangaData.manga_type : 0;
-                window.open(`/cartoon/detail/${mangaId}?type=${mangaType}`, '_blank');
+                const encodedTitle = encodeURIComponent(mangaData.title || '未知标题');
+                window.open(`/cartoon/detail/${mangaId}?type=${mangaType}&title=${encodedTitle}`, '_blank');
+            });
+        });
+
+        // 添加收藏按钮事件
+        container.querySelectorAll('.favorite-btn').forEach(btn => {
+            const mangaId = btn.dataset.mangaId;
+            const mangaData = items.find(item => item.pid === mangaId);
+            btn.classList.toggle('active', favorites.has(mangaId));
+            
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 阻止事件冒泡
+                toggleFavorite(mangaId, mangaData.title, mangaData.img);
             });
         });
     }
@@ -486,4 +582,16 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 启动应用
     initPage();
+
+    // 初始化收藏功能
+    document.getElementById('show-favorites-btn').addEventListener('click', showFavorites);
+    document.getElementById('close-favorites-btn').addEventListener('click', () => {
+        document.getElementById('favorites-modal').style.display = 'none';
+    });
+
+    document.getElementById('favorites-modal').addEventListener('click', (e) => {
+        if (e.target === e.currentTarget) {
+            e.target.style.display = 'none';
+        }
+    });
 }); 

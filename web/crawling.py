@@ -245,7 +245,7 @@ def gallery_imgs():
                 'message': '获取数据失败',
                 'error': f'HTTP {response.status_code}'
             }), 500
-
+        print(response.text,'response.text')
         # 解析图片URL
         imglist_content = response.text
         img_urls = re.findall(r'{ url:(.*?)"}', imglist_content)
@@ -1383,7 +1383,7 @@ def cartoon_hans_detail():
                 headers=headers, 
                 proxies=get_proxies(),
                 timeout=(5, 30),
-                verify=False
+                verify=False    
             )
             response.encoding = 'utf-8'
             

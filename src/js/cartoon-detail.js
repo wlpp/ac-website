@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const pid = pidMatch ? pidMatch[1] : null;
     const searchParams = new URLSearchParams(window.location.search);
     const manga_type = parseInt(searchParams.get('type') || '0', 10);
+    const urlTitle = searchParams.get('title') || '未知标题';
     
     if (!pid) {
         showError('未找到漫画ID，请返回列表页重新选择');
@@ -123,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 loadedImages = {}; // 重置已加载图片缓存
                 
                 // 更新标题
-                mangaTitle.textContent = mangaData.title || '未知标题';
+                mangaTitle.textContent = urlTitle;
                 
                 // 隐藏章节列表按钮
                 const chapterListButton = document.getElementById('chapter-list-button');
@@ -174,7 +175,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     images = mangaData.images || [];
                     loadedImages = {};
                     
-                    mangaTitle.textContent = mangaData.title || '未知标题';
+                    mangaTitle.textContent = urlTitle;
                     
                     if (images.length > 0) {
                         await preloadImages(images, 0, 5);
@@ -662,7 +663,7 @@ document.addEventListener('DOMContentLoaded', function() {
             currentImageIndex = 0;
             
             // 更新标题
-            mangaTitle.textContent = mangaData.title || '未知标题';
+            mangaTitle.textContent = urlTitle;
             
             // 开始预加载图片 - 使用新的高效预加载
             if (images.length > 0) {

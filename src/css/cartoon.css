@@ -87,7 +87,48 @@ body {
     box-shadow: var(--box-shadow);
     border-radius: var(--border-radius);
     overflow: hidden;
+    background-color: white;
 }
+
+.search-type-group {
+    display: flex;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.search-type-btn {
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    color: var(--dark-color);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+    white-space: nowrap;
+}
+
+.search-type-btn:hover {
+    color: var(--primary-color);
+    background-color: rgba(255, 107, 107, 0.1);
+}
+
+.search-type-btn.active {
+    color: var(--primary-color);
+    background-color: rgba(255, 107, 107, 0.15);
+}
+
+/* .search-type-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 3px;
+    background-color: var(--primary-color);
+    border-radius: 3px 3px 0 0;
+} */
 
 #search-input {
     flex: 1;
@@ -95,6 +136,7 @@ body {
     border: none;
     font-size: 1rem;
     outline: none;
+    min-width: 200px;
 }
 
 #search-button {
@@ -104,10 +146,18 @@ body {
     padding: 0 20px;
     cursor: pointer;
     transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 #search-button:hover {
     background-color: #ff5252;
+}
+
+#search-button svg {
+    width: 20px;
+    height: 20px;
 }
 
 /* 标签切换样式 */
@@ -371,6 +421,43 @@ body {
         padding: 6px 12px;
         min-width: 35px;
         font-size: 0.9rem;
+    }
+
+    .search-box {
+        flex-wrap: wrap;
+        box-shadow: none;
+    }
+
+    .search-type-group {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        margin-bottom: 1px;
+        background-color: white;
+        border-radius: var(--border-radius) var(--border-radius) 0 0;
+        box-shadow: var(--box-shadow);
+    }
+
+    .search-type-btn {
+        flex: 1;
+        text-align: center;
+        padding: 10px 15px;
+    }
+
+    .search-input-group {
+        display: flex;
+        width: 100%;
+        box-shadow: var(--box-shadow);
+        border-radius: 0 0 var(--border-radius) var(--border-radius);
+        background-color: white;
+    }
+
+    #search-input {
+        padding: 12px 15px;
+    }
+
+    #search-button {
+        padding: 0 15px;
     }
 }
 

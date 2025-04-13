@@ -1152,10 +1152,10 @@ def cartoon_hans():
 
         # 根据类型构造URL
         if manga_type == 0:
-            # 推荐漫画
+            # 精漫推荐
             url = f'https://www.cartoon18.com/zh-hans?sort=likes&page={page}'
         else:
-            # 3D漫画
+            # 精漫3
             url = f'https://www.cartoon18.com/zh-hans/q/3d?page={page}'
 
         # 发送GET请求
@@ -1483,10 +1483,6 @@ def cartoon_diversity():
             print(btn_hrefs,'btn_hrefsbtn_hrefsbtn_hrefsbtn_hrefs')
             diversity_list = []
             for text,href in zip(btn_texts,btn_hrefs):
-                # text = text.strip()
-                # href = href.get('href', '')
-                print(text,'uuuuuuuuuuuuuuuuu')
-                print(href,'hrefhrefhrefhref')
                 # 从链接中提取数字部分
                 cid = re.findall(r'\d+', href)
                 cid = cid[-1] if cid else ''  # 取最后一组数字
@@ -1559,3 +1555,139 @@ def is_content_garbled(content):
     has_html_structure = '<html' in content.lower() and '<body' in content.lower()
     
     return garbled_ratio > 0.3 or not has_html_structure
+
+@crawling_bp.route('/api/cartoon-search')
+def cartoon_search():
+    """搜索漫画
+    
+    type参数说明：
+    0 - 漫画搜索 (cartoon18.com)
+    1 - 预留其他漫画源1
+    2 - 预留其他漫画源2
+    3 - 预留其他漫画源3
+    """
+    try:
+        # 获取搜索参数
+        kw = request.args.get('kw', '')
+        search_type = request.args.get('type', 0, type=int)
+        
+        if not kw:
+            return jsonify({
+                'success': False,
+                'message': '请输入搜索关键词'
+            }), 400
+            
+        # 检查缓存
+        cache_key = f'cartoon_search_{search_type}_{kw}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+        
+        # 设置请求头
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Connection': 'keep-alive',
+            'Referer': 'https://www.cartoon18.com/'
+        }
+        
+        # 创建会话
+        session = get_session()
+        
+        # 根据type构造不同的搜索URL
+        if search_type == 0:
+            # cartoon18.com搜索
+            url = f'https://www.cartoon18.com/q/{kw}?page=1'
+        else:
+            return jsonify({
+                'success': False,
+                'message': '暂不支持该搜索类型'
+            }), 400
+            
+        # 发送GET请求
+        response = session.get(
+            url,
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+        
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"搜索请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '搜索失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+            
+        # 解析HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        cartoon_items = soup.select('.card .visited')
+        
+        # 提取数据
+        result = []
+        for item in cartoon_items:
+            img = item.find('img')
+            if img:
+                img_url = img.get('data-src', '')
+                title = img.get('alt', '')
+                link = item.get('href', '')
+                
+                # 提取pid
+                pid = ''
+                if link:
+                    pid_match = re.findall(r'v/(.*)', link)
+                    if pid_match:
+                        pid = pid_match[0]
+                
+                # 确保链接是完整的URL
+                if link and not link.startswith('http'):
+                    link = f"https://www.cartoon18.com{link}"
+                
+                result.append({
+                    'title': title,
+                    'img': img_url,
+                    'link': link,
+                    'pid': pid
+                })
+                
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': result,
+            'total': len(result)
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+        
+    except requests.Timeout as e:
+        logger.error(f"搜索请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"搜索网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"搜索处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()

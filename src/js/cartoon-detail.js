@@ -70,6 +70,12 @@ document.addEventListener('DOMContentLoaded', function() {
     let navDebounceTime = 500;     // 导航防抖间隔(毫秒)
     let imageCache = new Map();    // 图片缓存
     let preloadController = null;  // 预加载控制器
+    let lastClickTime = 0;         // 用来跟踪最后点击时间
+    let longPressTimer = null;
+    let isLongPress = false;
+    const LONG_PRESS_DURATION = 500; // 长按触发时间（毫秒）
+    let scrollTimeout;
+    let lastScrollPosition = 0;
     
     // 显示加载状态
     function showLoading() {
@@ -340,7 +346,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 绑定图片事件
             img.addEventListener('click', handleImageClick);
-            img.addEventListener('dblclick', handleImageDoubleClick);
             
             // 预加载下一批图片
             preloadNextBatch();
@@ -365,7 +370,6 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // 绑定图片事件
             img.addEventListener('click', handleImageClick);
-            img.addEventListener('dblclick', handleImageDoubleClick);
             
             // 预加载下一批图片
             preloadNextBatch();
@@ -790,6 +794,12 @@ document.addEventListener('DOMContentLoaded', function() {
             viewModeButton.title = "切换正常模式";
             document.body.classList.add('scroll-mode');
             
+            // 移除可能存在的点击区域指示器
+            const leftArea = document.querySelector('.click-area-left');
+            const rightArea = document.querySelector('.click-area-right');
+            if (leftArea) leftArea.remove();
+            if (rightArea) rightArea.remove();
+            
             // 更新按钮文字
             if (modeTextElement) {
                 modeTextElement.textContent = "滚动";
@@ -806,6 +816,9 @@ document.addEventListener('DOMContentLoaded', function() {
             viewModeButton.classList.remove('active');
             viewModeButton.title = "切换滚动模式";
             document.body.classList.remove('scroll-mode');
+            
+            // 添加点击区域指示器
+            addClickAreaIndicators();
             
             // 更新按钮文字
             if (modeTextElement) {
@@ -906,13 +919,18 @@ document.addEventListener('DOMContentLoaded', function() {
             imgContainer.style.width = '100%';
             imgContainer.style.display = 'flex';
             imgContainer.style.justifyContent = 'center';
-            // imgContainer.style.marginBottom = '2 px';
+            imgContainer.style.marginBottom = '15px'; // 确保图片之间有间距
             
             const img = new Image();
             img.className = 'manga-image-viewer';
             img.alt = `${mangaData?.title || '漫画'} - 第${index + 1}页`;
             img.dataset.index = index;
             img.dataset.src = url; // 先存储url而不是直接加载
+            
+            // 重置内联样式，防止与CSS类冲突
+            img.style.width = 'auto';
+            img.style.height = 'auto';
+            img.style.maxWidth = '100%';
             
             // 设置占位符尺寸和样式
             img.style.minHeight = '300px';
@@ -1072,10 +1090,10 @@ document.addEventListener('DOMContentLoaded', function() {
         // 键盘控制
         document.addEventListener('keydown', handleKeyDown);
         
-        // 触摸手势支持
+        // 触摸手势支持 - 使用 passive 选项
         viewerContent.addEventListener('touchstart', handleTouchStart, {passive: true});
         viewerContent.addEventListener('touchmove', handleTouchMove, {passive: true});
-        viewerContent.addEventListener('touchend', handleTouchEnd);
+        viewerContent.addEventListener('touchend', handleTouchEnd, {passive: true});
         
         // 标题点击显示信息面板
         mangaTitle.addEventListener('click', showInfoPanel);
@@ -1086,20 +1104,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 处理图片点击
     function handleImageClick(event) {
+        // 如果是滚动模式，不处理点击
+        if (isScrollMode) return;
+        
         // 如果点击事件是由双击触发的，不处理
         if (event.detail > 1) return;
         
-        // 不再切换控制栏的显示/隐藏
-        // 只有在放大模式时才处理
+        // 记录点击的时间，用于区分点击和长按
+        const clickTime = new Date().getTime();
+        
+        // 如果距离上次点击时间太短，忽略此次点击（防抖动）
+        if (clickTime - lastClickTime < 300) {
+            lastClickTime = clickTime;
+            return;
+        }
+        
+        lastClickTime = clickTime;
+        
+        // 放大模式时，点击切换缩放状态
         if (isZoomed) {
             toggleZoom(event.clientX, event.clientY);
+        } else {
+            // 非放大模式时，点击切换到下一张图片
+            // 在屏幕右半部分点击切换到下一张，左半部分点击切换到上一张
+            const viewportWidth = window.innerWidth;
+            if (event.clientX > viewportWidth / 2) {
+                nextImage();
+            } else {
+                prevImage();
+            }
         }
-    }
-    
-    // 处理图片双击
-    function handleImageDoubleClick(event) {
-        event.preventDefault();
-        toggleZoom(event.clientX, event.clientY);
     }
     
     // 处理全屏状态变化
@@ -1154,6 +1188,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 处理触摸开始
     function handleTouchStart(event) {
+        // 在滚动模式下不拦截触摸事件，让系统默认的滚动行为生效
+        if (isScrollMode) return;
+        
+        // 只在非滚动模式下处理触摸事件
         const touch = event.touches[0];
         touchStartX = touch.clientX;
         touchStartY = touch.clientY;
@@ -1161,12 +1199,34 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // 处理触摸移动
     function handleTouchMove(event) {
-        if (isZoomed) return; // 如果已放大，不进行滑动切换
+        // 在滚动模式下不处理，允许默认的滚动行为
+        if (isScrollMode) return;
+        
+        // 如果已放大，不处理滑动
+        if (isZoomed) return;
+        
+        const touch = event.touches[0];
+        const deltaX = touch.clientX - touchStartX;
+        const deltaY = touch.clientY - touchStartY;
+        
+        // 判断是否为垂直滑动（垂直距离大于水平距离）
+        if (Math.abs(deltaY) > Math.abs(deltaX) && Math.abs(deltaY) > 30) {
+            // 向下滑动显示控制栏，向上滑动隐藏控制栏
+            if (deltaY > 0 && !controlsVisible) {
+                toggleControls(true);
+            } else if (deltaY < 0 && controlsVisible) {
+                toggleControls(false);
+            }
+        }
     }
     
-    // 处理触摸结束 - 使用新的导航控制
+    // 处理触摸结束
     function handleTouchEnd(event) {
-        if (isZoomed) return; // 如果已放大，不进行滑动切换
+        // 在滚动模式下不处理
+        if (isScrollMode) return;
+        
+        // 如果已放大，不处理滑动
+        if (isZoomed) return;
         
         const touch = event.changedTouches[0];
         const touchEndX = touch.clientX;
@@ -1180,11 +1240,9 @@ document.addEventListener('DOMContentLoaded', function() {
             // 水平滑动
             if (Math.abs(deltaX) > 50) { // 至少滑动50px才触发
                 if (deltaX > 0) {
-                    // 向右滑动，显示上一张
-                    prevImage(); // 使用更新的prevImage函数
+                    prevImage();
                 } else {
-                    // 向左滑动，显示下一张
-                    nextImage(); // 使用更新的nextImage函数
+                    nextImage();
                 }
             }
         }
@@ -1242,7 +1300,333 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // 内容加载完成后最后一步再绑定事件
         setupEventHandlers();
+        
+        // 初始化移动设备优化
+        initMobileOptimization();
     }).catch(error => {
         console.error('初始化过程出错:', error);
+    });
+
+    // 禁用双击缩放
+    function disableDoubleTapZoom() {
+        let lastTouchEnd = 0;
+        document.addEventListener('touchend', function(e) {
+            // 获取当前时间
+            const now = new Date().getTime();
+            
+            // 如果两次点击间隔小于 300ms，认为是双击
+            if (now - lastTouchEnd <= 300) {
+                // 阻止默认行为，包括双击缩放
+                e.preventDefault();
+            }
+            
+            // 更新最后一次触摸结束时间
+            lastTouchEnd = now;
+        }, false);
+    }
+
+    // 添加初始化移动设备优化的函数
+    function initMobileOptimization() {
+        // 检测是否是移动设备
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (isMobile) {
+            console.log('[移动端] 启用移动设备优化');
+            
+            // 禁用双击缩放
+            disableDoubleTapZoom();
+            
+            // 在移动设备上，默认先隐藏控制栏
+            setTimeout(() => {
+                if (controlsVisible && !isScrollMode) { // 只在非滚动模式下自动隐藏控制栏
+                    toggleControls(false);
+                }
+            }, 3000);
+            
+            // 第一次访问时显示触控提示
+            if (!localStorage.getItem('touch_hints_shown')) {
+                showTouchHints();
+                localStorage.setItem('touch_hints_shown', 'true');
+            }
+            
+            // 添加点击区域指示器（仅在非滚动模式下）
+            if (!isScrollMode) {
+                addClickAreaIndicators();
+            }
+        }
+    }
+
+    // 更新手势提示内容
+    function showTouchHints() {
+        gestureHint.classList.add('active');
+        
+        // 更新提示文本
+        const hintText = gestureHint.querySelector('.hint-text');
+        if (hintText) {
+            hintText.innerHTML = `
+                <p>左右滑动切换图片</p>
+                <p>上下滑动显示/隐藏控制栏</p>
+                <p>双击可放大/缩小</p>
+            `;
+        }
+        
+        setTimeout(() => {
+            gestureHint.classList.remove('active');
+        }, 5000);
+    }
+
+    // 添加点击区域指示器
+    function addClickAreaIndicators() {
+        // 如果是滚动模式，不添加点击区域
+        if (isScrollMode) return;
+        
+        // 创建左侧点击区域
+        const leftArea = document.createElement('div');
+        leftArea.className = 'click-area-left';
+        
+        // 创建右侧点击区域
+        const rightArea = document.createElement('div');
+        rightArea.className = 'click-area-right';
+        
+        // 添加到查看器内容区域
+        viewerContent.appendChild(leftArea);
+        viewerContent.appendChild(rightArea);
+        
+        // 添加点击事件
+        leftArea.addEventListener('click', function(e) {
+            e.stopPropagation(); // 阻止事件冒泡
+            prevImage();
+        });
+        
+        rightArea.addEventListener('click', function(e) {
+            e.stopPropagation(); // 阻止事件冒泡
+            nextImage();
+        });
+    }
+
+    // 添加触摸事件处理
+    function setupTouchEvents() {
+        const viewerContent = document.querySelector('.viewer-content');
+        if (!viewerContent) return;
+
+        let startX = 0;
+        let startY = 0;
+        let startTime = 0;
+        let isSwiping = false;
+
+        viewerContent.addEventListener('touchstart', (e) => {
+            if (isScrollMode) return; // 滚动模式下不处理触摸事件
+            
+            const touch = e.touches[0];
+            startX = touch.clientX;
+            startY = touch.clientY;
+            startTime = Date.now();
+            isLongPress = false;
+            isSwiping = false;
+
+            // 设置长按定时器
+            longPressTimer = setTimeout(() => {
+                isLongPress = true;
+                toggleControlsVisibility();
+            }, LONG_PRESS_DURATION);
+        });
+
+        viewerContent.addEventListener('touchmove', (e) => {
+            if (isScrollMode) return;
+
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+
+            if (isLongPress) {
+                e.preventDefault();
+                return;
+            }
+
+            const touch = e.touches[0];
+            const deltaX = touch.clientX - startX;
+            const deltaY = touch.clientY - startY;
+
+            // 如果水平移动距离大于垂直移动距离，且移动距离超过阈值，则认为是滑动
+            if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 30) {
+                isSwiping = true;
+                e.preventDefault();
+            }
+        });
+
+        viewerContent.addEventListener('touchend', (e) => {
+            if (isScrollMode) return;
+
+            if (longPressTimer) {
+                clearTimeout(longPressTimer);
+                longPressTimer = null;
+            }
+
+            if (isLongPress) {
+                e.preventDefault();
+                return;
+            }
+
+            const endTime = Date.now();
+            const timeDiff = endTime - startTime;
+
+            // 如果是快速点击（小于 300ms）且没有明显移动，则切换图片
+            if (timeDiff < 300 && !isSwiping) {
+                const touch = e.changedTouches[0];
+                const viewerRect = viewerContent.getBoundingClientRect();
+                const touchX = touch.clientX - viewerRect.left;
+                
+                // 点击左侧 40% 区域显示上一张，右侧 40% 区域显示下一张
+                if (touchX < viewerRect.width * 0.4) {
+                    showPreviousImage();
+                } else if (touchX > viewerRect.width * 0.6) {
+                    showNextImage();
+                }
+            }
+        });
+
+        // 禁用双击缩放
+        viewerContent.addEventListener('dblclick', (e) => {
+            e.preventDefault();
+        });
+    }
+
+    function toggleControlsVisibility() {
+        document.body.classList.toggle('controls-hidden');
+    }
+
+    async function toggleScrollMode() {
+        isScrollMode = !isScrollMode;
+        document.body.classList.toggle('scroll-mode', isScrollMode);
+        const scrollModeButton = document.querySelector('.scroll-mode-button');
+        scrollModeButton.classList.toggle('active', isScrollMode);
+        
+        const viewerContent = document.querySelector('.viewer-content');
+        const mangaImageContainer = document.querySelector('.manga-image-container');
+        
+        if (isScrollMode) {
+            viewerContent.style.overflowY = 'auto';
+            mangaImageContainer.style.transform = 'none';
+            await preloadAllImages();
+            
+            // 延迟执行滚动到当前图片的操作
+            setTimeout(() => {
+                const currentWrapper = document.querySelectorAll('.manga-image-wrapper')[currentImageIndex];
+                if (currentWrapper) {
+                    currentWrapper.scrollIntoView({ behavior: 'auto', block: 'start' });
+                }
+            }, 100);
+        } else {
+            viewerContent.style.overflowY = 'hidden';
+            mangaImageContainer.style.transform = `translateX(-${currentImageIndex * 100}%)`;
+        }
+        
+        optimizeScrollPerformance();
+    }
+
+    async function preloadAllImages() {
+        const loadingPromises = images.map(url => {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => resolve();
+                img.onerror = () => reject();
+                img.src = url;
+            });
+        });
+        
+        try {
+            await Promise.all(loadingPromises);
+            console.log('所有图片预加载完成');
+        } catch (error) {
+            console.error('图片预加载失败:', error);
+        }
+    }
+
+    function updateCurrentImageFromScroll() {
+        clearTimeout(scrollTimeout);
+        
+        scrollTimeout = setTimeout(() => {
+            if (!isScrollMode) return;
+            
+            const viewerContent = document.querySelector('.viewer-content');
+            const imageWrappers = document.querySelectorAll('.manga-image-wrapper');
+            const scrollPosition = viewerContent.scrollTop;
+            
+            // 找到当前视口中最接近顶部的图片
+            let minDistance = Infinity;
+            let currentIndex = 0;
+            
+            imageWrappers.forEach((wrapper, index) => {
+                const rect = wrapper.getBoundingClientRect();
+                const distance = Math.abs(rect.top);
+                
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    currentIndex = index;
+                }
+            });
+            
+            if (currentIndex !== currentImageIndex) {
+                currentImageIndex = currentIndex;
+                updatePageInfo();
+            }
+        }, 100);
+    }
+
+    function optimizeScrollPerformance() {
+        const imageWrappers = document.querySelectorAll('.manga-image-wrapper');
+        const viewerContent = document.querySelector('.viewer-content');
+        const viewportHeight = window.innerHeight;
+        let scrollTicking = false;
+        
+        const updateVisibility = () => {
+            if (scrollTicking) return;
+            
+            scrollTicking = true;
+            requestAnimationFrame(() => {
+                const scrollTop = viewerContent.scrollTop;
+                
+                imageWrappers.forEach(wrapper => {
+                    const rect = wrapper.getBoundingClientRect();
+                    const img = wrapper.querySelector('img');
+                    
+                    // 检查图片是否在视口附近
+                    const isNearViewport = rect.top < viewportHeight * 2 && rect.bottom > -viewportHeight;
+                    
+                    if (isNearViewport) {
+                        if (img.dataset.src && !img.src) {
+                            img.src = img.dataset.src;
+                            delete img.dataset.src;
+                        }
+                        wrapper.style.visibility = 'visible';
+                    } else {
+                        wrapper.style.visibility = 'hidden';
+                    }
+                });
+                
+                scrollTicking = false;
+            });
+        };
+        
+        if (isScrollMode) {
+            viewerContent.addEventListener('scroll', updateVisibility);
+            viewerContent.addEventListener('scroll', updateCurrentImageFromScroll);
+            updateVisibility();
+        } else {
+            viewerContent.removeEventListener('scroll', updateVisibility);
+            viewerContent.removeEventListener('scroll', updateCurrentImageFromScroll);
+        }
+    }
+
+    // 在初始化时添加滚动模式按钮
+    document.addEventListener('DOMContentLoaded', () => {
+        const header = document.querySelector('.viewer-header');
+        const scrollModeButton = document.createElement('button');
+        scrollModeButton.className = 'scroll-mode-button';
+        scrollModeButton.innerHTML = '<i class="fas fa-scroll"></i>';
+        scrollModeButton.title = '切换滚动模式';
+        scrollModeButton.onclick = toggleScrollMode;
+        header.appendChild(scrollModeButton);
     });
 }); 

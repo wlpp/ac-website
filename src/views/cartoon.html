@@ -23,7 +23,10 @@
 
         <div class="search-container">
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="搜索漫画...">
+                <div class="search-type-group">
+                    <button class="search-type-btn active" data-type="0">精漫搜索</button>
+                </div>
+                <input type="text" id="search-input">
                 <button id="search-button">
                     <svg viewBox="0 0 24 24" width="24" height="24">
                         <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" fill="currentColor"/>
@@ -34,18 +37,27 @@
 
         <div class="tab-container">
             <div class="tabs">
-                <button class="tab-btn active" data-tab="recommended">推荐漫画</button>
-                <button class="tab-btn" data-tab="3d">3D漫画</button>
+                <button class="tab-btn active" data-tab="recommended">精漫推荐</button>
+                <button class="tab-btn" data-tab="3d">精漫3D</button>
             </div>
         </div>
 
         <main>
+            <section class="manga-section" id="search-section" style="display: none;">
+                <div class="section-header">
+                    <h2 class="section-title">搜索结果</h2>
+                </div>
+                <div class="manga-grid" id="search-manga">
+                    <!-- 搜索结果将通过JavaScript动态加载 -->
+                </div>
+            </section>
+
             <section class="manga-section" id="recommended-section">
                 <div class="section-header">
-                    <h2 class="section-title">推荐漫画</h2>
+                    <h2 class="section-title">精漫推荐</h2>
                 </div>
                 <div class="manga-grid" id="recommended-manga">
-                    <!-- 推荐漫画将通过JavaScript动态加载 -->
+                    <!-- 精漫推荐将通过JavaScript动态加载 -->
                 </div>
                 <div class="pagination" id="recommended-pagination">
                     <!-- 分页按钮将通过JavaScript动态生成 -->
@@ -54,10 +66,10 @@
 
             <section class="manga-section" id="3d-section" style="display: none;">
                 <div class="section-header">
-                    <h2 class="section-title">3D漫画</h2>
+                    <h2 class="section-title">精漫3D</h2>
                 </div>
                 <div class="manga-grid" id="3d-manga">
-                    <!-- 3D漫画将通过JavaScript动态加载 -->
+                    <!-- 精漫3D将通过JavaScript动态加载 -->
                 </div>
                 <div class="pagination" id="3d-pagination">
                     <!-- 分页按钮将通过JavaScript动态生成 -->

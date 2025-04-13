@@ -140,19 +140,19 @@ body {
 } */
 
 #search-input {
-    flex: 1;
-    padding: 15px 20px;
+    width: 54%;
+    padding: 15px 10px;
     border: none;
     font-size: 1rem;
     outline: none;
-    min-width: 200px;
+    box-sizing: border-box;
 }
 
 #search-button {
+    flex: 1;
     background-color: var(--primary-color);
     color: white;
     border: none;
-    padding: 0 20px;
     cursor: pointer;
     transition: var(--transition);
     display: flex;
@@ -864,4 +864,85 @@ body {
 
 .favorites-grid .favorite-btn {
     margin-left: 10px;
+}
+
+/* 移动端适配 */
+@media (max-width: 768px) {
+    .favorites-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+        padding: 15px;
+    }
+
+    .favorites-grid .manga-card {
+        margin-bottom: 0;
+    }
+
+    .favorites-grid .manga-info {
+        padding: 10px;
+    }
+
+    .favorites-grid .manga-title {
+        font-size: 0.9rem;
+    }
+
+    .favorites-grid .favorite-btn {
+        padding: 6px;
+        margin-left: 5px;
+    }
+
+    .favorites-grid .favorite-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* 优化模态框内容在移动端的显示 */
+    .favorites-content {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        border-radius: 0;
+        padding: 12px;
+    }
+
+    .favorites-header {
+        padding: 12px;
+        margin-bottom: 12px;
+    }
+
+    .favorites-title {
+        font-size: 18px;
+    }
+
+    #close-favorites-btn {
+        padding: 6px;
+    }
+
+    #close-favorites-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+
+    /* 优化无收藏时的提示文本 */
+    .no-favorites {
+        padding: 30px;
+        font-size: 14px;
+    }
+}
+
+/* 小屏幕设备的特殊处理 */
+@media (max-width: 480px) {
+    .favorites-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        padding: 10px;
+    }
+
+    .favorites-grid .manga-info {
+        padding: 8px;
+    }
+
+    .favorites-grid .manga-title {
+        font-size: 0.85rem;
+    }
 } 

@@ -677,7 +677,7 @@ body:not(.scroll-mode) .manga-image-viewer {
 @media (max-width: 768px) {
     .manga-title {
         font-size: 1rem;
-        max-width: 40%;
+        max-width: 60%;
     }
     
     .back-button span, .nav-button span {
@@ -882,12 +882,24 @@ body:not(.scroll-mode) .manga-image-viewer {
     align-items: center;
     padding-top: 60px;
     touch-action: pan-y pinch-zoom !important;
+    /* 添加硬件加速 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
 }
 
 .scroll-mode .manga-image-wrapper {
     position: relative;
     margin: 0 15px;
     touch-action: pan-y pinch-zoom !important;
+    /* 添加硬件加速 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
 }
 
 .scroll-mode .manga-image-viewer {
@@ -897,6 +909,12 @@ body:not(.scroll-mode) .manga-image-viewer {
     margin: 0 auto;
     display: block;
     touch-action: pan-y pinch-zoom !important;
+    /* 添加硬件加速 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
 }
 
 /* 滚动模式指示器改进 */
@@ -969,6 +987,15 @@ body:not(.scroll-mode) .manga-image-viewer {
     align-items: initial;
     justify-content: initial;
     touch-action: pan-y pinch-zoom !important;
+    /* 添加硬件加速 */
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: transform;
+    /* 优化滚动性能 */
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 .scroll-mode .manga-image-container {

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const pid = pidMatch ? pidMatch[1] : null;
     const searchParams = new URLSearchParams(window.location.search);
     const manga_type = parseInt(searchParams.get('type') || '0', 10);
-    const urlTitle = searchParams.get('title') || '未知标题';
+    const urlTitle = searchParams.get('title') || '';
     
     if (!pid) {
         showError('未找到漫画ID，请返回列表页重新选择');
@@ -379,7 +379,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const img = new Image();
             img.id = 'current-image';
             img.className = 'manga-image-viewer';
-            img.alt = `${mangaData?.title || '漫画'} - 第${currentImageIndex + 1}页`;
+            // img.alt = `${mangaData?.title || '漫画'} - 第${currentImageIndex + 1}页`;
             img.src = cachedImg.src;
             
             // 立即显示图片（因为已经预加载了）
@@ -399,7 +399,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const img = new Image();
         img.id = 'current-image';
         img.className = 'manga-image-viewer';
-        img.alt = `${mangaData?.title || '漫画'} - 第${currentImageIndex + 1}页`;
+        // img.alt = `${mangaData?.title || '漫画'} - 第${currentImageIndex + 1}页`;
         
         // 加载成功回调
         img.onload = function() {
@@ -740,7 +740,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <img src="${images[0] || ''}" alt="${mangaData.title}" loading="lazy">
                 </div>
                 <div class="manga-details">
-                    <h1 class="manga-title-large">${mangaData.title || '未知标题'}</h1>
+                    <h1 class="manga-title-large">${mangaData.title || ''}</h1>
                     <div class="manga-author">${mangaData.author || '未知作者'}</div>
                     <div class="manga-description">${mangaData.description || '暂无简介'}</div>
                     <div class="manga-tags">${tagsHTML}</div>
@@ -925,73 +925,49 @@ document.addEventListener('DOMContentLoaded', function() {
         viewerContent.appendChild(imageContainer);
         document.body.appendChild(scrollIndicator);
         
+        // 使用 DocumentFragment 优化批量 DOM 操作
+        const fragment = document.createDocumentFragment();
+        
         // 记录加载进度
         let loadedCount = 0;
         const totalImages = images.length;
-        let visibleImagesLoaded = false;
         
-        // 使用IntersectionObserver实现懒加载
+        // 使用 IntersectionObserver 实现懒加载
         const lazyLoadObserver = new IntersectionObserver((entries, observer) => {
             entries.forEach(entry => {
                 if (entry.isIntersecting) {
                     const img = entry.target;
                     const src = img.dataset.src;
                     if (src) {
-                        img.src = src;
-                        img.removeAttribute('data-src');
-                        observer.unobserve(img);
-                        
-                        // 在首屏图片加载后，允许继续滚动加载其他图片
-                        if (!visibleImagesLoaded && loadedCount >= Math.min(5, totalImages)) {
-                            visibleImagesLoaded = true;
-                            scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
+                        // 使用 requestIdleCallback 在浏览器空闲时加载图片
+                        if ('requestIdleCallback' in window) {
+                            requestIdleCallback(() => {
+                                loadImage(img, src, observer);
+                            });
+                        } else {
+                            loadImage(img, src, observer);
                         }
                     }
                 }
             });
         }, {
-            rootMargin: '100px', // 提前100px开始加载
-            threshold: 0.1 // 当10%的图片进入视口时
+            rootMargin: '100px',
+            threshold: 0.1
         });
         
-        // 批量创建图片占位符
-        images.forEach((url, index) => {
-            const imgContainer = document.createElement('div');
-            imgContainer.className = 'manga-image-wrapper';
-            imgContainer.style.width = '100%';
-            imgContainer.style.display = 'flex';
-            imgContainer.style.justifyContent = 'center';
-            // imgContainer.style.marginBottom = '15px'; // 确保图片之间有间距
+        // 优化图片加载函数
+        function loadImage(img, src, observer) {
+            const tempImage = new Image();
             
-            const img = new Image();
-            img.className = 'manga-image-viewer';
-            img.alt = `${mangaData?.title || '漫画'} - 第${index + 1}页`;
-            img.dataset.index = index;
-            img.dataset.src = url; // 先存储url而不是直接加载
-            
-            // 重置内联样式，防止与CSS类冲突
-            img.style.width = 'auto';
-            img.style.height = 'auto';
-            img.style.maxWidth = '100%';
-            
-            // 设置占位符尺寸和样式
-            img.style.minHeight = '300px';
-            img.style.backgroundColor = 'rgba(0,0,0,0.05)';
-            
-            // 图片加载完成回调
-            img.onload = function() {
-                loadedCount++;
-                img.style.backgroundColor = 'transparent';
-                img.style.minHeight = 'auto';
+            tempImage.onload = () => {
+                img.src = src;
+                img.removeAttribute('data-src');
+                observer.unobserve(img);
                 
-                // 更新加载状态
+                loadedCount++;
                 scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
                 
                 if (loadedCount === totalImages) {
-                    // 所有图片加载完成
-                    scrollIndicator.textContent = '滚动阅读模式';
-                    
-                    // 3秒后隐藏指示器
                     setTimeout(() => {
                         scrollIndicator.style.opacity = '0';
                         setTimeout(() => {
@@ -1003,41 +979,47 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             };
             
-            // 图片加载失败回调
-            img.onerror = function() {
-                loadedCount++;
-                console.error(`[滚动模式] 图片加载失败: ${url}`);
-                
-                // 替换为错误提示
-                img.removeAttribute('data-src');
+            tempImage.onerror = () => {
+                console.error(`[滚动模式] 图片加载失败: ${src}`);
                 img.alt = '图片加载失败';
-                img.style.height = '100px';
-                img.style.display = 'flex';
-                img.style.alignItems = 'center';
-                img.style.justifyContent = 'center';
-                img.style.backgroundColor = 'rgba(255,0,0,0.1)';
-                img.style.color = 'red';
-                img.innerHTML = `<div>第${index + 1}页加载失败</div>`;
-                
-                // 更新加载状态
-                scrollIndicator.textContent = `已加载 ${loadedCount}/${totalImages}`;
+                observer.unobserve(img);
+                loadedCount++;
             };
             
-            // 添加到容器
+            tempImage.src = src;
+        }
+        
+        // 批量创建图片占位符
+        images.forEach((url, index) => {
+            const imgContainer = document.createElement('div');
+            imgContainer.className = 'manga-image-wrapper';
+            imgContainer.dataset.index = index;
+            
+            const img = new Image();
+            img.className = 'manga-image-viewer';
+            // img.alt = `${mangaData?.title || '漫画'} - 第${index + 1}页`;
+            img.dataset.src = url;
+            
+            // 设置占位符尺寸和样式
+            img.style.minHeight = '300px';
+            img.style.backgroundColor = 'rgba(0,0,0,0.05)';
+            
             imgContainer.appendChild(img);
-            imageContainer.appendChild(imgContainer);
+            fragment.appendChild(imgContainer);
             
             // 观察图片元素
             lazyLoadObserver.observe(img);
         });
         
-        // 预加载前5张图片（无需等待滚动）
-        const preloadCount = Math.min(5, images.length);
+        // 一次性添加所有元素
+        imageContainer.appendChild(fragment);
+        
+        // 预加载前几张图片
+        const preloadCount = Math.min(3, images.length);
         for (let i = 0; i < preloadCount; i++) {
             const img = imageContainer.querySelector(`img[data-index="${i}"]`);
             if (img && img.dataset.src) {
-                img.src = img.dataset.src;
-                img.removeAttribute('data-src');
+                loadImage(img, img.dataset.src, lazyLoadObserver);
             }
         }
         
@@ -1052,18 +1034,25 @@ document.addEventListener('DOMContentLoaded', function() {
         backToTopBtn.style.display = 'none';
         document.body.appendChild(backToTopBtn);
         
-        // 滚动监听
-        viewerContent.addEventListener('scroll', function() {
-            if (viewerContent.scrollTop > 300) {
-                backToTopBtn.style.display = 'flex';
-            } else {
-                backToTopBtn.style.display = 'none';
+        // 使用 requestAnimationFrame 优化滚动监听
+        let ticking = false;
+        viewerContent.addEventListener('scroll', () => {
+            if (!ticking) {
+                requestAnimationFrame(() => {
+                    const scrollTop = viewerContent.scrollTop;
+                    backToTopBtn.style.display = scrollTop > 300 ? 'flex' : 'none';
+                    ticking = false;
+                });
+                ticking = true;
             }
         });
         
-        // 返回顶部点击
-        backToTopBtn.addEventListener('click', function() {
-            viewerContent.scrollTo({top: 0, behavior: 'smooth'});
+        // 返回顶部点击事件
+        backToTopBtn.addEventListener('click', () => {
+            viewerContent.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
         });
     }
     
@@ -1586,34 +1575,43 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function updateCurrentImageFromScroll() {
-        clearTimeout(scrollTimeout);
+        // 使用 requestAnimationFrame 优化滚动性能
+        if (scrollTimeout) {
+            cancelAnimationFrame(scrollTimeout);
+        }
         
-        scrollTimeout = setTimeout(() => {
+        scrollTimeout = requestAnimationFrame(() => {
             if (!isScrollMode) return;
             
             const viewerContent = document.querySelector('.viewer-content');
             const imageWrappers = document.querySelectorAll('.manga-image-wrapper');
             const scrollPosition = viewerContent.scrollTop;
             
-            // 找到当前视口中最接近顶部的图片
-            let minDistance = Infinity;
-            let currentIndex = 0;
+            // 使用 IntersectionObserver 来检测当前可见的图片
+            if (!window.scrollObserver) {
+                window.scrollObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const index = parseInt(entry.target.dataset.index);
+                            if (currentImageIndex !== index) {
+                                currentImageIndex = index;
+                                updatePageInfo();
+                            }
+                        }
+                    });
+                }, {
+                    threshold: 0.5
+                });
+            }
             
-            imageWrappers.forEach((wrapper, index) => {
-                const rect = wrapper.getBoundingClientRect();
-                const distance = Math.abs(rect.top);
-                
-                if (distance < minDistance) {
-                    minDistance = distance;
-                    currentIndex = index;
+            // 观察所有图片
+            imageWrappers.forEach(wrapper => {
+                if (!wrapper.dataset.observed) {
+                    window.scrollObserver.observe(wrapper);
+                    wrapper.dataset.observed = 'true';
                 }
             });
-            
-            if (currentIndex !== currentImageIndex) {
-                currentImageIndex = currentIndex;
-                updatePageInfo();
-            }
-        }, 100);
+        });
     }
 
     function optimizeScrollPerformance() {

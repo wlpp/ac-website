@@ -881,40 +881,89 @@ body:not(.scroll-mode) .manga-image-viewer {
     flex-direction: column;
     align-items: center;
     padding-top: 60px;
-    touch-action: pan-y pinch-zoom !important;
-    /* 添加硬件加速 */
+    /* 优化滚动性能 */
     transform: translateZ(0);
-    -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
+    contain: content;
 }
 
 .scroll-mode .manga-image-wrapper {
     position: relative;
     margin: 0 15px;
-    touch-action: pan-y pinch-zoom !important;
-    /* 添加硬件加速 */
+    width: 100%;
+    max-width: 1200px; /* 限制最大宽度 */
+    /* 优化渲染性能 */
     transform: translateZ(0);
-    -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
+    contain: content;
 }
 
 .scroll-mode .manga-image-viewer {
-    max-width: 100%;
-    width: auto;
+    width: 100%;
     height: auto;
-    margin: 0 auto;
     display: block;
-    touch-action: pan-y pinch-zoom !important;
-    /* 添加硬件加速 */
+    margin: 0 auto;
+    /* 优化图片渲染 */
     transform: translateZ(0);
-    -webkit-transform: translateZ(0);
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
     will-change: transform;
+    contain: content;
+    object-fit: contain;
+}
+
+/* 图片占位符样式 */
+.image-placeholder {
+    width: 100%;
+    min-height: 300px;
+    background-color: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+    transition: opacity 0.3s ease;
+}
+
+/* 优化滚动容器 */
+.scroll-mode .viewer-content {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    /* 优化滚动性能 */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: scroll-position;
+    contain: content;
+    /* 使用合成层 */
+    z-index: 1;
+}
+
+/* 加载进度条样式优化 */
+.loading-progress {
+    width: 200px;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    margin: 10px 0;
+    overflow: hidden;
+}
+
+.progress-bar {
+    width: 0%;
+    height: 100%;
+    background: linear-gradient(to right, var(--accent-hover), #ff9e9e);
+    transition: width 0.3s ease;
+    border-radius: 2px;
+}
+
+.progress-text {
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+    margin-top: 5px;
+    text-align: center;
 }
 
 /* 滚动模式指示器改进 */
@@ -973,51 +1022,6 @@ body:not(.scroll-mode) .manga-image-viewer {
 .back-to-top svg {
     width: 24px;
     height: 24px;
-}
-
-/* 滚动模式基础样式 */
-.scroll-mode .viewer-content {
-    overflow-y: auto !important;
-    display: block;
-    padding-bottom: 60px;
-    height: 100vh;
-    box-sizing: border-box;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-    align-items: initial;
-    justify-content: initial;
-    touch-action: pan-y pinch-zoom !important;
-    /* 添加硬件加速 */
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    will-change: transform;
-    /* 优化滚动性能 */
-    scroll-behavior: smooth;
-    -webkit-overflow-scrolling: touch;
-}
-
-.scroll-mode .manga-image-container {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding-top: 60px;
-    touch-action: pan-y pinch-zoom !important;
-}
-
-.scroll-mode .nav-button {
-    display: none;
-}
-
-.scroll-mode .page-info {
-    display: none;
-}
-
-/* 在滚动模式下隐藏底部控制栏 */
-.scroll-mode .viewer-footer {
-    display: none;
 }
 
 /* 切换动画 */
@@ -1119,7 +1123,7 @@ body.scroll-mode .page-info {
 /* 移动端优化 */
 @media (max-width: 768px) {
     body.scroll-mode .manga-image-wrapper {
-        /* margin: 10px auto; */
+        margin: 0px auto;
     }
     
     body.scroll-mode .page-info {

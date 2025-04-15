@@ -1,121 +1,224 @@
-// 模拟视频数据
-const vodData = {
-    featured: [],
-    new: []
-};
+// 当前选中的视频类型（0: 嫩草, 1: 动漫）
+let currentType = 0;
+let currentPage = 1;
+let isLoading = false;
+let currentTag = 'news'; // 当前选中的标签类型
 
 // 创建视频卡片元素
 function createVodCard(vod) {
-    // 从 vod.link 中提取 vid
-    const vid = vod.link.match(/\d+/)[0];
-    console.log(vid)
-    // 从 vod.note 中提取数字作为 episodes
-    const episodesMatch = vod.note.match(/\d+/); // 匹配第一个数字
-    const episodes = episodesMatch ? episodesMatch[0] : ''; // 如果找到数字，则使用，否则为空
-
-    // 编码标题
-    const title = encodeURIComponent(vod.title);
-
     return `
-        <div class="vod-card" data-id="${vod.id}" onclick="location.href='/vodplay?vid=${vid}&episodes=${episodes}&title=${title}'">
-            <img class="vod-cover" data-src="${vod.img}" alt="${vod.title}" src="https://tuchuang.voooe.cn/images/2022/05/08/26073943_nCX5.gif">
-            <span class="update-badge">${vod.note}</span>
+        <div class="vod-card" data-vid="${vod.vid}" data-type="${currentType}">
+            <img class="vod-cover" src="${vod.image}" alt="${vod.title}">
+            <span class="update-badge">${vod.date_text}</span>
             <div class="vod-title">${vod.title}</div>
         </div>
     `;
 }
 
-// 懒加载函数
-function lazyLoadImages() {
-    const images = document.querySelectorAll('.vod-cover');
+// 创建分页控件
+function createPagination(currentPage, hasMore) {
+    return `
+        <div class="pagination">
+            <button class="page-btn prev-btn" ${currentPage <= 1 ? 'disabled' : ''}>上一页</button>
+            <span class="page-text">第</span>
+            <input type="number" class="page-input" value="${currentPage}" min="1">
+            <span class="page-text">页</span>
+            <button class="page-btn next-btn" ${!hasMore ? 'disabled' : ''}>下一页</button>
+        </div>
+    `;
+}
 
-    const options = {
-        root: null, // 使用视口作为根元素
-        rootMargin: '0px',
-        threshold: 0.1 // 当10%可见时触发
-    };
+// 显示加载效果
+function showLoading(container) {
+    container.classList.add('loading');
+    const vodsContainer = container.querySelector('.vods-container');
+    if (vodsContainer) {
+        vodsContainer.innerHTML = `
+            <div class="loading-container">
+                <div class="loading-spinner"></div>
+            </div>
+        `;
+    }
+}
 
-    const observer = new IntersectionObserver((entries, observer) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                const src = img.getAttribute('data-src');
-                img.src = src; // 设置真实的图片源
-                img.classList.add('loaded'); // 可选：添加加载完成的类
-                observer.unobserve(img); // 停止观察
-            }
-        });
-    }, options);
+// 隐藏加载效果
+function hideLoading(container) {
+    container.classList.remove('loading');
+}
 
-    images.forEach(img => {
-        observer.observe(img); // 开始观察每个图片
+// 加载视频数据
+async function loadVods(manga_type, tag, page = 1) {
+    try {
+        isLoading = true;
+        const response = await fetch(`/api/vods-list?manga_type=${manga_type}&tag=${tag}&page=${page}`);
+        const result = await response.json();
+        
+        if (result.success) {
+            return {
+                data: result.data,
+                hasMore: result.data.length > 0 // 如果返回数据不为空，则认为还有更多数据
+            };
+        } else {
+            console.error('加载失败:', result.message);
+            return { data: [], hasMore: false };
+        }
+    } catch (error) {
+        console.error('请求错误:', error);
+        return { data: [], hasMore: false };
+    } finally {
+        isLoading = false;
+    }
+}
+
+// 渲染视频列表
+async function renderVodsList(container, manga_type, tag, page) {
+    showLoading(container);
+    
+    const { data, hasMore } = await loadVods(manga_type, tag, page);
+    const contentContainer = container.querySelector('.vods-container');
+    const paginationContainer = container.querySelector('.pagination-container');
+    
+    if (data && data.length > 0) {
+        contentContainer.innerHTML = data.map(vod => createVodCard(vod)).join('');
+    } else {
+        contentContainer.innerHTML = '<div class="no-data">暂无数据</div>';
+    }
+    
+    // 更新分页控件
+    paginationContainer.innerHTML = createPagination(page, hasMore);
+    
+    // 添加分页事件监听
+    const prevBtn = paginationContainer.querySelector('.prev-btn');
+    const nextBtn = paginationContainer.querySelector('.next-btn');
+    const pageInput = paginationContainer.querySelector('.page-input');
+    
+    prevBtn?.addEventListener('click', () => {
+        if (currentPage > 1 && !isLoading) {
+            currentPage--;
+            updateContent(currentType);
+        }
     });
-}
-
-// 获取热门视频数据并渲染
-async function fetchFeaturedVods(page = 1) {
-    try {
-        const response = await fetch(`/api/vods-anime?page=${page}`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-            const featuredContainer = document.getElementById('featuredVods');
-            featuredContainer.innerHTML = data.data
-                .map(vod => createVodCard(vod))
-                .join('');
-            lazyLoadImages(); // 调用懒加载函数
-        } else {
-            console.error('获取热门视频失败:', data.message);
+    
+    nextBtn?.addEventListener('click', () => {
+        if (hasMore && !isLoading) {
+            currentPage++;
+            updateContent(currentType);
         }
-    } catch (error) {
-        console.error('请求失败:', error);
-    }
+    });
+    
+    // 添加页码输入事件监听
+    pageInput?.addEventListener('change', (e) => {
+        const newPage = parseInt(e.target.value);
+        if (!isNaN(newPage) && newPage >= 1 && !isLoading) {
+            currentPage = newPage;
+            updateContent(currentType);
+        } else {
+            e.target.value = currentPage;
+        }
+    });
+    
+    // 添加输入框按下回车事件
+    pageInput?.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.target.blur(); // 触发 change 事件
+        }
+    });
+    
+    hideLoading(container);
 }
 
-// 获取新片数据并渲染
-async function fetchNewVods(page = 1) {
-    try {
-        const response = await fetch(`/api/vods-anime?page=${page}&type=1`, {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-            }
+// 更新页面内容
+async function updateContent(manga_type) {
+    const contentSection = document.querySelector('.content-section');
+    contentSection.style.display = 'block';
+    await renderVodsList(contentSection, manga_type, currentTag, currentPage);
+}
+
+// 初始化页面
+function initPage() {
+    // 获取导航菜单项
+    const menuItems = document.querySelectorAll('.nav-menu a');
+    const subNavItems = document.querySelectorAll('.sub-nav-item');
+    const tagNavItems = document.querySelectorAll('.tag-nav-item');
+    
+    // 添加主导航点击事件监听器
+    menuItems.forEach((item, index) => {
+        item.addEventListener('click', async (e) => {
+            e.preventDefault();
+            menuItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentType = index;
+            currentPage = 1;
+            await updateContent(currentType);
         });
+    });
 
-        const data = await response.json();
-
-        if (data.success) {
-            const newContainer = document.getElementById('newVods');
-            newContainer.innerHTML = data.data
-                .map(vod => createVodCard(vod))
-                .join('');
+    // 添加子导航点击事件监听器
+    subNavItems.forEach((item, index) => {
+        item.addEventListener('click', async (e) => {
+            e.preventDefault();
+            subNavItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentType = index;
             
-            lazyLoadImages(); // 确保调用懒加载函数
-        } else {
-            console.error('获取新片失败:', data.message);
+            // 如果切换到"菠萝"分类，自动选中"热门经典"标签
+            if (index === 1) {
+                tagNavItems.forEach(i => i.classList.remove('active'));
+                tagNavItems[1].classList.add('active');
+                currentTag = 'hots';
+            }
+            
+            currentPage = 1;
+            await updateContent(currentType);
+        });
+    });
+
+    // 添加标签导航点击事件监听器
+    tagNavItems.forEach((item, index) => {
+        item.addEventListener('click', async (e) => {
+            e.preventDefault();
+            // 如果当前是"菠萝"分类，不允许切换到"最新上线"
+            if (currentType === 1 && index === 0) {
+                return;
+            }
+            
+            tagNavItems.forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            currentTag = index === 0 ? 'news' : 'hots';
+            currentPage = 1;
+            await updateContent(currentType);
+        });
+    });
+
+    // 添加卡片点击事件
+    document.querySelector('.content-section').addEventListener('click', (e) => {
+        const card = e.target.closest('.vod-card');
+        if (card) {
+            const vid = card.dataset.vid;
+            const type = card.dataset.type;
+            const title = card.querySelector('.vod-title').textContent;
+            if (vid) {
+                window.open(`/vodplay?vid=${vid}&manga_type=${type}&title=${encodeURIComponent(title)}`);
+                // window.location.href = `/vodplay?vid=${vid}&manga_type=${type}&title=${encodeURIComponent(title)}`;
+            }
         }
-    } catch (error) {
-        console.error('请求失败:', error);
-    }
-}
+    });
 
-// 初始化页面内容
-function initializePage() {
-    // 加载推荐内容
-    fetchFeaturedVods(); // 默认加载第一页的热门视频
+    // 添加搜索功能
+    const searchInput = document.querySelector('.search-box input');
+    const searchBtn = document.querySelector('.search-btn');
 
-    // 加载最新内容
-    fetchNewVods(); // 加载新片上线
+    searchBtn.addEventListener('click', () => {
+        const keyword = searchInput.value.trim();
+        if (keyword) {
+            // TODO: 实现搜索功能
+            console.log('搜索关键词:', keyword);
+        }
+    });
+
+    // 初始加载内容
+    updateContent(currentType);
 }
 
 // 页面加载完成后初始化
-document.addEventListener('DOMContentLoaded', () => {
-    initializePage();
-    initializeSearch();
-});
+document.addEventListener('DOMContentLoaded', initPage);

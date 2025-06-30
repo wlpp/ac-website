@@ -215,10 +215,13 @@ document.addEventListener('DOMContentLoaded', function() {
             if (data.success && data.data.base_url) {
                 initializePlayer(data.data.base_url);
             } else {
-                handleError('获取视频流失败: ' + data.message);
+                message.error('视频加载失败：' + (data.message || '获取视频流失败'));
+                videoLoading.style.display = 'none';
             }
         } catch (error) {
-            handleError('请求视频流接口失败: ' + error.message);
+            message.error('视频加载失败，请检查网络连接后刷新重试');
+            videoLoading.style.display = 'none';
+            console.error('请求视频流接口失败:', error);
         }
     }
 
@@ -248,7 +251,10 @@ document.addEventListener('DOMContentLoaded', function() {
         hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
             console.log('视频清单解析完成');
             videoLoading.style.display = 'none';
-            video.play().catch(e => console.log('自动播放失败:', e));
+            video.play().catch(e => {
+                console.log('自动播放失败:', e);
+                message.warning('浏览器阻止了自动播放，请点击播放按钮开始播放');
+            });
 
             // 更新质量选项
             updateQualityLevels(hls.levels);
@@ -277,30 +283,54 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupNativeEventListeners() {
         video.addEventListener('loadedmetadata', function() {
             videoLoading.style.display = 'none';
-            video.play().catch(e => console.log('自动播放失败:', e));
+            video.play().catch(e => {
+                console.log('自动播放失败:', e);
+                message.warning('浏览器阻止了自动播放，请点击播放按钮开始播放');
+            });
         });
 
         video.addEventListener('error', function(e) {
-            handleError('视频加载失败: ' + e.message);
+            const errorMessage = getVideoErrorMessage(e.target.error);
+            message.error(errorMessage);
+            videoLoading.style.display = 'none';
+            console.error('视频加载错误:', e);
         });
+    }
+
+    // 获取视频错误的具体信息
+    function getVideoErrorMessage(error) {
+        if (!error) return '视频加载失败，请刷新重试';
+        
+        switch (error.code) {
+            case 1: // MEDIA_ERR_ABORTED
+                return '视频加载被中断，请刷新重试';
+            case 2: // MEDIA_ERR_NETWORK
+                return '网络错误导致视频加载失败，请检查网络连接后刷新重试';
+            case 3: // MEDIA_ERR_DECODE
+                return '视频解码失败，请刷新重试';
+            case 4: // MEDIA_ERR_SRC_NOT_SUPPORTED
+                return '视频格式不支持，请使用其他浏览器尝试';
+            default:
+                return '视频加载失败，请刷新重试';
+        }
     }
 
     function handleHlsError(hls, data) {
         switch(data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log("致命网络错误，尝试恢复...");
+                message.error('网络连接不稳定，正在重试...');
                 setTimeout(() => {
                     hls.startLoad();
                 }, 1000);
                 break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log("致命媒体错误，尝试恢复...");
+                message.error('视频播放出错，正在尝试恢复...');
                 setTimeout(() => {
                     hls.recoverMediaError();
                 }, 1000);
                 break;
             default:
-                console.log("无法恢复的错误，重新加载播放器...");
+                message.error('播放器出现错误，正在重新加载...');
                 hls.destroy();
                 setTimeout(() => {
                     initializeVideoStream();

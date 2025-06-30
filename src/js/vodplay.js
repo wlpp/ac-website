@@ -8,17 +8,185 @@ document.addEventListener('DOMContentLoaded', function() {
     const speedMenu = document.getElementById('speedMenu');
     const qualityBtn = document.getElementById('qualityBtn');
     const qualityMenu = document.getElementById('qualityMenu');
+    const collectBtn = document.getElementById('collectBtn');
     let currentHls = null;
 
     // 获取 URL 中的参数
     const urlParams = new URLSearchParams(window.location.search);
     const uid = urlParams.get('uid');
-    const title = urlParams.get('title');
+    const encodedTitle = urlParams.get('title');
+    const img = urlParams.get('img');
+    
+    // 解码标题
+    const title = encodedTitle ? decodeURIComponent(atob(encodedTitle)) : '';
+
+    // 消息提示功能
+    const message = {
+        container: null,
+        
+        // 创建消息容器
+        createContainer() {
+            if (!this.container) {
+                this.container = document.createElement('div');
+                this.container.className = 'message-container';
+                document.body.appendChild(this.container);
+            }
+        },
+        
+        // 显示消息
+        show(type, content) {
+            this.createContainer();
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message message-${type}`;
+            messageDiv.textContent = content;
+            
+            this.container.appendChild(messageDiv);
+            
+            // 2秒后自动移除
+            setTimeout(() => {
+                messageDiv.classList.add('fade-out');
+                setTimeout(() => {
+                    this.container.removeChild(messageDiv);
+                }, 300);
+            }, 2000);
+        },
+        
+        // 成功消息
+        success(content) {
+            this.show('success', content);
+        },
+        
+        // 错误消息
+        error(content) {
+            this.show('error', content);
+        },
+        
+        // 警告消息
+        warning(content) {
+            this.show('warning', content);
+        }
+    };
+
+    // 获取用户 token
+    function getUserToken() {
+        try {
+            const cookies = document.cookie.split(';');
+            const userDataCookie = cookies.find(c => c.trim().startsWith('userData='));
+            if (!userDataCookie) {
+                return null;
+            }
+            
+            const encodedData = userDataCookie.split('=')[1].trim();
+            const decodedData = decodeURIComponent(atob(encodedData));
+            const userData = JSON.parse(decodedData);
+            
+            return userData.token;
+        } catch (e) {
+            console.error('解析用户数据失败:', e);
+            return null;
+        }
+    }
+
+    // 检查用户登录状态
+    function checkLoginStatus() {
+        const token = getUserToken();
+        if (!token) {
+            return false;
+        }
+        return true;
+    }
+
+    // 检查视频是否已收藏
+    async function checkIsCollected() {
+        try {
+            const token = getUserToken();
+            if (!token) return false;
+
+            const response = await fetch(`/api/check-vod-collect?uid=${uid}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+            
+            // 更新收藏按钮状态
+            updateCollectButtonState(result.isCollected);
+            return result.isCollected;
+        } catch (error) {
+            console.error('检查收藏状态失败:', error);
+            return false;
+        }
+    }
+
+    // 更新收藏按钮状态
+    function updateCollectButtonState(isCollected) {
+        if (isCollected) {
+            collectBtn.classList.add('active');
+            collectBtn.querySelector('i').className = 'fas fa-heart';
+        } else {
+            collectBtn.classList.remove('active');
+            collectBtn.querySelector('i').className = 'far fa-heart';
+        }
+    }
+
+    // 处理收藏/取消收藏
+    async function handleCollect() {
+        if (!checkLoginStatus()) {
+            message.error('请先登录');
+            setTimeout(() => {
+                window.location.href = '/login';
+            }, 1500);
+            return;
+        }
+        
+        const token = getUserToken();
+        const isCollected = collectBtn.classList.contains('active');
+        
+        try {
+            const response = await fetch('/api/vod_collect', {
+                method: isCollected ? 'DELETE' : 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    uid: uid,
+                    title: title,
+                    img: decodeURIComponent(img)
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                updateCollectButtonState(!isCollected);
+                message.success(isCollected ? '已取消收藏' : '收藏成功');
+            } else {
+                if (result.message === '请先登录' || result.message === '无效的token') {
+                    message.error('请重新登录');
+                    setTimeout(() => {
+                        window.location.href = '/login';
+                    }, 1500);
+                } else {
+                    message.error(result.message || '操作失败');
+                }
+            }
+        } catch (error) {
+            console.error('收藏操作失败:', error);
+            message.error('操作失败，请稍后重试');
+        }
+    }
+
+    // 添加收藏按钮点击事件
+    if (collectBtn) {
+        collectBtn.addEventListener('click', handleCollect);
+    }
 
     // 设置视频标题
     const videoTitleElement = document.querySelector('.video-title');
     if (videoTitleElement && title) {
-        videoTitleElement.textContent = decodeURIComponent(title);
+        videoTitleElement.textContent = title;
     }
 
     // 基础HLS配置
@@ -223,6 +391,9 @@ document.addEventListener('DOMContentLoaded', function() {
         qualityMenu.classList.remove('show');
     });
 
+    // 初始化时检查收藏状态
+    checkIsCollected();
+    
     // 初始化
     initializeVideoStream();
 });

@@ -9,6 +9,8 @@ import jwt
 from functools import wraps
 import json
 from flask_mail import Mail, Message
+import math
+from sqlalchemy import text
 
 # 创建蓝图
 auth_bp = Blueprint('auth', __name__)
@@ -16,7 +18,6 @@ CORS(auth_bp)
 
 # 添加 JWT 密钥配置
 JWT_SECRET_KEY = 'your-secret-key'  # 在实际应用中应该使用环境变量
-JWT_EXPIRATION_DELTA = timedelta(days=1)  # Token 有效期1天
 
 # 配置邮件发送
 mail = Mail()
@@ -102,16 +103,13 @@ def login():
             response.headers['Content-Type'] = 'application/json; charset=utf-8'
             return response, 403
 
-        # 生成 JWT token
+        # 生成永久有效的 JWT token
         token_data = {
             'user_id': user.id,
-            'username': user.username,
-            'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+            'username': user.username
         }
         
         token = jwt.encode(token_data, JWT_SECRET_KEY, algorithm='HS256')
-        if isinstance(token, bytes):
-            token = token.decode('utf-8')
         
         # 使用 Response 对象返回，设置 ensure_ascii=False
         response = make_response(
@@ -129,30 +127,39 @@ def login():
 
 # 添加验证 token 的装饰器
 def token_required(f):
-    """JWT token 验证装饰器
-    
-    验证请求头中的 Authorization token
-    格式: Bearer <token>
-    
-    装饰的函数将获得 current_user 参数
-    """
     @wraps(f)
     def decorated(*args, **kwargs):
         token = request.headers.get('Authorization')
         if not token:
-            return jsonify({'message': '缺少认证token'}), 401
+            return jsonify({'success': False, 'message': '缺少认证token'}), 401
         
         try:
             # 去掉 'Bearer ' 前缀
             if token.startswith('Bearer '):
                 token = token[7:]
-            data = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
-            current_user = User.query.get(data['user_id'])
-        except:
-            return jsonify({'message': '无效的token'}), 401
             
-        return f(current_user, *args, **kwargs)
-    
+            # 解码 token
+            data = jwt.decode(token, JWT_SECRET_KEY, algorithms=['HS256'])
+            
+            # 获取用户
+            current_user = User.query.get(data.get('user_id'))
+            if not current_user:
+                return jsonify({'success': False, 'message': '用户不存在'}), 401
+                
+            # 检查用户状态
+            if current_user.status != 0:
+                return jsonify({'success': False, 'message': '账号已被禁用'}), 403
+                
+            return f(current_user, *args, **kwargs)
+            
+        except jwt.ExpiredSignatureError:
+            return jsonify({'success': False, 'message': 'token已过期'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'success': False, 'message': '无效的token'}), 401
+        except Exception as e:
+            print(f"认证失败: {str(e)}")
+            return jsonify({'success': False, 'message': '认证失败', 'error': str(e)}), 401
+            
     return decorated
 
 # 注册路由
@@ -417,6 +424,9 @@ def reset_password():
 def init_auth_db():
     """初始化用户数据库"""
     try:
+        # 创建 vods_collect 表
+        db.create_all()
+        
         # 检查是否需要添加测试用户
         if User.query.count() == 0:
             test_user = User(
@@ -429,7 +439,7 @@ def init_auth_db():
             print("Test user added successfully")
                 
     except Exception as e:
-        print(f"User database initialization error: {str(e)}")
+        print(f"Database initialization error: {str(e)}")
         db.session.rollback()
 
 # 添加系统登录路由
@@ -485,12 +495,11 @@ def system_login():
             response.headers['Content-Type'] = 'application/json; charset=utf-8'
             return response, 403
         
-        # 生成 JWT token
+        # 生成永久有效的 JWT token
         token_data = {
             'user_id': user.id,
             'username': user.username,
-            'role': user.role,
-            'exp': datetime.utcnow() + JWT_EXPIRATION_DELTA
+            'role': user.role
         }
         
         token = jwt.encode(token_data, JWT_SECRET_KEY, algorithm='HS256')
@@ -654,3 +663,189 @@ def update_user(current_user, user_id):
         )
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         return response, 500
+
+# 添加收藏相关的数据模型
+class VodCollect(db.Model):
+    __tablename__ = 'vods_collect'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    uid = db.Column(db.String(50), nullable=False)
+    title = db.Column(db.String(200), nullable=False)
+    img = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.now)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'uid': self.uid,
+            'title': self.title,
+            'img': self.img,
+            'created_at': self.created_at.strftime('%Y-%m-%d %H:%M:%S')
+        }
+
+# 添加收藏相关的路由
+@auth_bp.route('/api/vod_collect', methods=['POST'])
+@token_required
+def add_vod_collect(current_user):
+    """添加收藏"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'message': '无效的请求数据'}), 400
+            
+        # 检查必需字段
+        required_fields = ['uid', 'title', 'img']
+        missing_fields = [field for field in required_fields if field not in data]
+        if missing_fields:
+            return jsonify({
+                'success': False, 
+                'message': f'缺少必需字段: {", ".join(missing_fields)}'
+            }), 400
+            
+        # 检查是否已收藏
+        existing = VodCollect.query.filter_by(
+            user_id=current_user.id,
+            uid=data['uid']
+        ).first()
+        
+        if existing:
+            return jsonify({'success': False, 'message': '已经收藏过了'}), 400
+            
+        # 创建新的收藏记录
+        collect = VodCollect(
+            user_id=current_user.id,
+            uid=data['uid'],
+            title=data['title'],
+            img=data['img']
+        )
+        
+        db.session.add(collect)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': '收藏成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"添加收藏失败: {str(e)}")
+        # 返回更详细的错误信息
+        return jsonify({
+            'success': False, 
+            'message': '收藏失败',
+            'error': str(e)
+        }), 500
+
+@auth_bp.route('/api/vod_collect', methods=['DELETE'])
+@token_required
+def remove_vod_collect(current_user):
+    """取消收藏"""
+    try:
+        data = request.get_json()
+        
+        if not data or not data.get('uid'):
+            return jsonify({'success': False, 'message': '参数不完整'}), 400
+            
+        collect = VodCollect.query.filter_by(
+            user_id=current_user.id,
+            uid=data['uid']
+        ).first()
+        
+        if not collect:
+            return jsonify({'success': False, 'message': '未找到收藏记录'}), 404
+            
+        db.session.delete(collect)
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': '取消收藏成功'})
+        
+    except Exception as e:
+        db.session.rollback()
+        print(f"取消收藏失败: {str(e)}")
+        # 返回更详细的错误信息
+        return jsonify({
+            'success': False, 
+            'message': '取消收藏失败',
+            'error': str(e)
+        }), 500
+
+@auth_bp.route('/api/check-vod-collect')
+@token_required
+def check_vod_collect(current_user):
+    """检查视频是否已收藏"""
+    try:
+        uid = request.args.get('uid')
+        if not uid:
+            return jsonify({'success': False, 'message': '参数不完整'}), 400
+            
+        collect = VodCollect.query.filter_by(
+            user_id=current_user.id,
+            uid=uid
+        ).first()
+        
+        return jsonify({
+            'success': True,
+            'isCollected': bool(collect)
+        })
+        
+    except Exception as e:
+        print(f"检查收藏状态失败: {str(e)}")
+        # 返回更详细的错误信息
+        return jsonify({
+            'success': False, 
+            'message': '检查收藏状态失败',
+            'error': str(e)
+        }), 500
+
+@auth_bp.route('/api/vod_collects')
+@token_required
+def get_vod_collects(current_user):
+    """获取用户的收藏列表"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = 12  # 每页显示的数量
+        
+        # 使用 SQLAlchemy ORM 查询
+        query = VodCollect.query.filter_by(user_id=current_user.id)
+        
+        # 按创建时间倒序排序
+        query = query.order_by(VodCollect.created_at.desc())
+        
+        # 执行分页查询
+        pagination = query.paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        # 构建响应数据
+        if pagination.items:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'items': [item.to_dict() for item in pagination.items],
+                    'total': pagination.total,
+                    'current_page': page,
+                    'per_page': per_page,
+                    'total_pages': pagination.pages
+                }
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'data': {
+                    'items': [],
+                    'total': 0,
+                    'current_page': page,
+                    'per_page': per_page,
+                    'total_pages': 0
+                }
+            })
+            
+    except Exception as e:
+        print(f"获取收藏列表失败: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '获取收藏列表失败',
+            'error': str(e)
+        }), 500

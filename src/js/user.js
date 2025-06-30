@@ -406,9 +406,8 @@ function setUserCookie(userData, days) {
     try {
         // 将用户数据对象转换为字符串并加密
         const encryptedData = encrypt(JSON.stringify(userData));
-        const expires = new Date();
-        expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-        document.cookie = `userData=${encryptedData};expires=${expires.toUTCString()};path=/`;
+        // 设置永久 cookie
+        document.cookie = `userData=${encryptedData};path=/`;
     } catch (e) {
         console.error('设置 cookie 失败:', e);
     }

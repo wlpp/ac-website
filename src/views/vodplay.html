@@ -3,27 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Anime Video Player</title>
+    <title>Video Player</title>
     <link rel="stylesheet" href="../css/vodplay.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
 <body>
     <div class="container">
-        <div class="video-wrapper">
-            <video id="videoPlayer" controls>
-                您的浏览器不支持 HTML5 视频播放
-            </video>
+        <div class="video-section">
+            <div class="video-wrapper">
+                <div class="video-loading">
+                    <div class="spinner"></div>
+                    <div class="loading-text">视频加载中...</div>
+                </div>
+                <video id="videoPlayer" controls>
+                    您的浏览器不支持 HTML5 视频播放
+                </video>
+            </div>
             <div class="video-info">
-                <h1 class="video-title">视频标题</h1>
+                <h1 class="video-title"></h1>
+                <div class="video-stats">
+                    <div class="stat-item">
+                        <i class="fas fa-clock"></i>
+                        <span class="duration">00:00</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-signal"></i>
+                        <span class="quality">自动</span>
+                    </div>
+                    <div class="stat-item">
+                        <i class="fas fa-spinner"></i>
+                        <span class="buffered">0%</span>
+                    </div>
+                </div>
             </div>
         </div>
-        <!-- <div class="episode-list">
-            <h2>选集</h2>
-            <div class="episode-grid">
-               
+        
+        <div class="controls-section">
+            <div class="playback-controls">
+                <button class="control-btn" id="playbackSpeedBtn" title="播放速度">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>1.0x</span>
+                </button>
+                <div class="speed-menu" id="speedMenu">
+                    <div class="speed-option" data-speed="0.5">0.5x</div>
+                    <div class="speed-option" data-speed="0.75">0.75x</div>
+                    <div class="speed-option" data-speed="1.0">1.0x</div>
+                    <div class="speed-option" data-speed="1.25">1.25x</div>
+                    <div class="speed-option" data-speed="1.5">1.5x</div>
+                    <div class="speed-option" data-speed="2.0">2.0x</div>
+                </div>
             </div>
-        </div> -->
+            
+            <div class="quality-controls">
+                <button class="control-btn" id="qualityBtn" title="视频质量">
+                    <i class="fas fa-cog"></i>
+                    <span>画质</span>
+                </button>
+                <div class="quality-menu" id="qualityMenu">
+                    <div class="quality-option" data-quality="-1">自动</div>
+                </div>
+            </div>
+        </div>
     </div>
+
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script src="../js/vodplay.js"></script>
 </body>

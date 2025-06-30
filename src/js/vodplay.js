@@ -1,6 +1,30 @@
 document.addEventListener('DOMContentLoaded', function() {
     const video = document.getElementById('videoPlayer');
+    const videoLoading = document.querySelector('.video-loading');
+    const durationSpan = document.querySelector('.duration');
+    const qualitySpan = document.querySelector('.quality');
+    const bufferedSpan = document.querySelector('.buffered');
+    const speedBtn = document.getElementById('playbackSpeedBtn');
+    const speedMenu = document.getElementById('speedMenu');
+    const qualityBtn = document.getElementById('qualityBtn');
+    const qualityMenu = document.getElementById('qualityMenu');
     let currentHls = null;
+
+    // 检测是否为移动设备
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+    // 请求全屏
+    function requestFullscreen() {
+        if (video.requestFullscreen) {
+            video.requestFullscreen();
+        } else if (video.webkitRequestFullscreen) {
+            video.webkitRequestFullscreen();
+        } else if (video.msRequestFullscreen) {
+            video.msRequestFullscreen();
+        } else if (video.mozRequestFullScreen) {
+            video.mozRequestFullScreen();
+        }
+    }
 
     // 获取 URL 中的参数
     const urlParams = new URLSearchParams(window.location.search);
@@ -30,7 +54,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     };
 
-    // 获取视频流地址并初始化播放器
+    // 初始化播放器
     async function initializeVideoStream() {
         try {
             const response = await fetch(`/api/vod-stream?vid=${uid}`);
@@ -46,7 +70,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 初始化播放器
     function initializePlayer(videoUrl) {
         if (Hls.isSupported()) {
             if (currentHls) {
@@ -56,8 +79,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const hls = new Hls(hlsConfig);
             currentHls = hls;
 
-            videoTitleElement.textContent = decodeURIComponent(title) + ' (加载中...)';
-            
             hls.loadSource(videoUrl);
             hls.attachMedia(video);
             
@@ -71,12 +92,19 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 设置HLS事件监听器
     function setupHlsEventListeners(hls) {
-        hls.on(Hls.Events.MANIFEST_PARSED, function() {
+        hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
             console.log('视频清单解析完成');
-            videoTitleElement.textContent = decodeURIComponent(title);
-            video.play().catch(e => console.log('自动播放失败:', e));
+            videoLoading.style.display = 'none';
+            video.play().then(() => {
+                if (isMobile) {
+                    // 在移动设备上自动全屏
+                    requestFullscreen();
+                }
+            }).catch(e => console.log('自动播放失败:', e));
+
+            // 更新质量选项
+            updateQualityLevels(hls.levels);
         });
 
         hls.on(Hls.Events.ERROR, function(event, data) {
@@ -86,21 +114,28 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // 监听缓冲事件
         hls.on(Hls.Events.FRAG_BUFFERED, function() {
-            const buffered = video.buffered;
-            if (buffered.length > 0) {
-                const bufferedEnd = buffered.end(buffered.length - 1);
-                const duration = video.duration;
-                console.log(`已缓冲: ${Math.round((bufferedEnd / duration) * 100)}%`);
+            updateBufferProgress();
+        });
+
+        // 监听质量切换
+        hls.on(Hls.Events.LEVEL_SWITCHED, function(event, data) {
+            const currentLevel = hls.levels[data.level];
+            if (currentLevel) {
+                qualitySpan.textContent = `${currentLevel.height}p`;
             }
         });
     }
 
-    // 设置原生视频事件监听器
     function setupNativeEventListeners() {
         video.addEventListener('loadedmetadata', function() {
-            video.play().catch(e => console.log('自动播放失败:', e));
+            videoLoading.style.display = 'none';
+            video.play().then(() => {
+                if (isMobile) {
+                    // 在移动设备上自动全屏
+                    requestFullscreen();
+                }
+            }).catch(e => console.log('自动播放失败:', e));
         });
 
         video.addEventListener('error', function(e) {
@@ -108,7 +143,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // 处理HLS错误
     function handleHlsError(hls, data) {
         switch(data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
@@ -133,28 +167,88 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // 统一错误处理
     function handleError(message) {
         console.error(message);
         if (videoTitleElement) {
             videoTitleElement.textContent = message;
         }
+        videoLoading.style.display = 'none';
     }
 
-    // 初始化视频流
-    initializeVideoStream();
-
-    function renderEpisodes(episodes) {
-        const episodeList = document.querySelector('.episode-grid');
-        episodeList.innerHTML = ''; // 清空现有内容
-
-        const episodeCount = parseInt(episodes, 10) || 0; // 如果没有有效数字，则默认为 0
-
-        for (let index = 1; index <= episodeCount; index++) {
-            const episodeItem = document.createElement('div');
-            episodeItem.className = 'episode-item';
-            episodeItem.textContent = `第 ${index} 集`; // 显示集数
-            episodeList.appendChild(episodeItem);
+    // 更新缓冲进度
+    function updateBufferProgress() {
+        if (video.buffered.length > 0) {
+            const bufferedEnd = video.buffered.end(video.buffered.length - 1);
+            const duration = video.duration;
+            const progress = Math.round((bufferedEnd / duration) * 100);
+            bufferedSpan.textContent = `${progress}%`;
         }
     }
+
+    // 更新视频时长
+    video.addEventListener('loadedmetadata', function() {
+        const minutes = Math.floor(video.duration / 60);
+        const seconds = Math.floor(video.duration % 60);
+        durationSpan.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    });
+
+    // 播放速度控制
+    speedBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        speedMenu.classList.toggle('show');
+        qualityMenu.classList.remove('show');
+    });
+
+    document.querySelectorAll('.speed-option').forEach(option => {
+        option.addEventListener('click', function() {
+            const speed = parseFloat(this.dataset.speed);
+            video.playbackRate = speed;
+            speedBtn.querySelector('span').textContent = `${speed}x`;
+            document.querySelectorAll('.speed-option').forEach(opt => {
+                opt.classList.remove('active');
+            });
+            this.classList.add('active');
+            speedMenu.classList.remove('show');
+        });
+    });
+
+    // 质量控制
+    qualityBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        qualityMenu.classList.toggle('show');
+        speedMenu.classList.remove('show');
+    });
+
+    function updateQualityLevels(levels) {
+        const qualityMenu = document.getElementById('qualityMenu');
+        qualityMenu.innerHTML = '<div class="quality-option active" data-quality="-1">自动</div>';
+        
+        levels.forEach((level, index) => {
+            const option = document.createElement('div');
+            option.className = 'quality-option';
+            option.dataset.quality = index;
+            option.textContent = `${level.height}p`;
+            option.addEventListener('click', () => {
+                if (currentHls) {
+                    currentHls.currentLevel = parseInt(option.dataset.quality);
+                    document.querySelectorAll('.quality-option').forEach(opt => {
+                        opt.classList.remove('active');
+                    });
+                    option.classList.add('active');
+                    qualitySpan.textContent = option.textContent;
+                    qualityMenu.classList.remove('show');
+                }
+            });
+            qualityMenu.appendChild(option);
+        });
+    }
+
+    // 点击外部关闭菜单
+    document.addEventListener('click', function() {
+        speedMenu.classList.remove('show');
+        qualityMenu.classList.remove('show');
+    });
+
+    // 初始化
+    initializeVideoStream();
 });

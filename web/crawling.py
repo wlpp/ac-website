@@ -1882,3 +1882,158 @@ def vods_list():
     finally:
         if 'session' in locals():
             session.close()
+
+@crawling_bp.route('/api/vods-search')
+def vods_search():
+    """搜索视频"""
+    try:
+        # 获取搜索关键词和页码
+        keyword = request.args.get('keyword', '')
+        page = request.args.get('page', 1, type=int)
+        
+        if not keyword:
+            return jsonify({
+                'success': False,
+                'message': '请输入搜索关键词'
+            }), 400
+            
+        # 检查缓存
+        cache_key = f'vods_search_{keyword}_{page}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+
+        # 创建会话
+        session = get_session()
+        
+        # 设置请求头，模拟真实浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            'Referer': 'https://18j.tv/',
+            'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'DNT': '1',
+        }
+
+        # 构造搜索URL
+        url = f'https://18j.tv/s/page/{page}/wd/{keyword}'
+        
+        # 添加随机延迟
+        time.sleep(random.uniform(1, 3))
+        
+        # 发送请求
+        response = session.get(
+            url=url,
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 解析HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        video_items = soup.select('.list li')
+        
+        # 提取数据，跳过第一个视频
+        result = []
+        for item in video_items:  # 从第二个元素开始
+            try:
+                # 获取链接和标题
+                link = item.find('a')
+                if not link:
+                    continue
+                    
+                title = link.get_text().strip()
+                href = link.get('href', '')
+                
+                # 获取图片URL
+                img = item.find('img')
+                img_url = img.get('src', '') if img else ''
+                
+                # 提取uid
+                uid = None
+                if href:
+                    uid_match = re.search(r'/v/(\d+)', href)
+                    if uid_match:
+                        uid = uid_match.group(1)
+                
+                # 确保链接是完整的URL
+                if href and not href.startswith('http'):
+                    href = f"https://18j.tv{href}"
+                
+                # 确保图片URL是完整的URL
+                if img_url:
+                    if img_url.startswith('//'):
+                        img_url = f"https:{img_url}"
+                    elif img_url.startswith('/'):
+                        img_url = f"https://18j.tv{img_url}"
+                
+                if title and href and uid:
+                    result.append({
+                        'title': title,
+                        'href': href,
+                        'uid': uid,
+                        'img': img_url
+                    })
+            except Exception as e:
+                logger.warning(f"解析视频项时出错: {str(e)}")
+                continue
+
+        # 缓存结果
+        result_data = {
+            'success': True,
+            'data': result,
+            'total': len(result)
+        }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
+        
+        return jsonify(result_data)
+
+    except requests.Timeout as e:
+        logger.error(f"请求超时: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '请求超时',
+            'error': str(e)
+        }), 504
+    except requests.RequestException as e:
+        logger.error(f"网络请求错误: {str(e)}")
+        return jsonify({
+            'success': False,
+            'message': '网络请求失败',
+            'error': str(e)
+        }), 500
+    except Exception as e:
+        logger.error(f"处理数据时发生错误: {str(e)}", exc_info=True)
+        return jsonify({
+            'success': False,
+            'message': '服务器内部错误',
+            'error': str(e)
+        }), 500
+    finally:
+        if 'session' in locals():
+            session.close()

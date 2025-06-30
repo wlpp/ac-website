@@ -1,3 +1,28 @@
+// 检查URL参数，限制访问
+function checkAccess() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const accessCode = urlParams.get('code');
+    
+    if (accessCode !== '9595') {
+        // 如果没有正确的访问码，直接跳转回首页
+        window.location.href = '/';
+        return false;
+    }
+    return true;
+}
+
+// 在页面加载时检查访问权限
+document.addEventListener('DOMContentLoaded', function() {
+    if (!checkAccess()) {
+        return; // 如果没有权限，停止执行后续代码
+    }
+    
+    // 继续初始化页面
+    const cleanupNav = initializeNavigation();
+    const cleanupSearch = initializeSearch();
+    fetchVodsList(1);
+});
+
 // 分页配置
 const pageConfig = {
     currentPage: 1,

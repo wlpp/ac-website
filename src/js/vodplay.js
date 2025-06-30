@@ -10,22 +10,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const qualityMenu = document.getElementById('qualityMenu');
     let currentHls = null;
 
-    // 检测是否为移动设备
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-    // 请求全屏
-    function requestFullscreen() {
-        if (video.requestFullscreen) {
-            video.requestFullscreen();
-        } else if (video.webkitRequestFullscreen) {
-            video.webkitRequestFullscreen();
-        } else if (video.msRequestFullscreen) {
-            video.msRequestFullscreen();
-        } else if (video.mozRequestFullScreen) {
-            video.mozRequestFullScreen();
-        }
-    }
-
     // 获取 URL 中的参数
     const urlParams = new URLSearchParams(window.location.search);
     const uid = urlParams.get('uid');
@@ -96,12 +80,7 @@ document.addEventListener('DOMContentLoaded', function() {
         hls.on(Hls.Events.MANIFEST_PARSED, function(event, data) {
             console.log('视频清单解析完成');
             videoLoading.style.display = 'none';
-            video.play().then(() => {
-                if (isMobile) {
-                    // 在移动设备上自动全屏
-                    requestFullscreen();
-                }
-            }).catch(e => console.log('自动播放失败:', e));
+            video.play().catch(e => console.log('自动播放失败:', e));
 
             // 更新质量选项
             updateQualityLevels(hls.levels);
@@ -130,12 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setupNativeEventListeners() {
         video.addEventListener('loadedmetadata', function() {
             videoLoading.style.display = 'none';
-            video.play().then(() => {
-                if (isMobile) {
-                    // 在移动设备上自动全屏
-                    requestFullscreen();
-                }
-            }).catch(e => console.log('自动播放失败:', e));
+            video.play().catch(e => console.log('自动播放失败:', e));
         });
 
         video.addEventListener('error', function(e) {

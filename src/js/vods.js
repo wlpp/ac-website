@@ -262,12 +262,13 @@ function renderVodCard(vod) {
         <div class="vod-title">${vod.title}</div>
     `;
     
-    // 为卡片添加点击事件（跳转到详情页）
+    // 为卡片添加点击事件（在新标签页中打开详情页）
     cardDiv.addEventListener('click', function(e) {
         // 如果点击的是收藏按钮，不进行跳转
         if (!e.target.closest('.collect-btn')) {
             const encodedTitle = btoa(encodeURIComponent(vod.title));
-            window.location.href = `/vodplay?uid=${vod.uid}&title=${encodedTitle}&img=${encodeURIComponent(vod.img)}`;
+            const url = `/vodplay?uid=${vod.uid}&title=${encodedTitle}&img=${encodeURIComponent(vod.img)}&code=9595`;
+            window.open(url, '_blank');
         }
     });
     

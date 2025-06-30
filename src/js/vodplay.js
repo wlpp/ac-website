@@ -13,25 +13,18 @@ document.addEventListener('DOMContentLoaded', function() {
         videoTitleElement.textContent = decodeURIComponent(title);
     }
 
-    // 优化的HLS配置
+    // 基础HLS配置
     const hlsConfig = {
         debug: false,
         enableWorker: true,
-        lowLatencyMode: true,
-        backBufferLength: 90,
-        maxBufferSize: 30 * 1000 * 1000,
         maxBufferLength: 30,
         maxMaxBufferLength: 600,
-        startLevel: -1,
-        abrEwmaDefaultEstimate: 500000,
-        abrBandWidthFactor: 0.95,
-        abrBandWidthUpFactor: 0.7,
+        manifestLoadingTimeOut: 20000,
+        manifestLoadingMaxRetry: 6,
+        levelLoadingTimeOut: 20000,
+        levelLoadingMaxRetry: 6,
         fragLoadingTimeOut: 20000,
-        manifestLoadingTimeOut: 10000,
-        manifestLoadingMaxRetry: 3,
-        fragLoadingMaxRetry: 4,
-        fragLoadingRetryDelay: 1000,
-        progressive: true,
+        fragLoadingMaxRetry: 6,
         xhrSetup: function(xhr, url) {
             xhr.withCredentials = false;
         }
@@ -93,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // 监听缓冲事件
         hls.on(Hls.Events.FRAG_BUFFERED, function() {
             const buffered = video.buffered;
             if (buffered.length > 0) {
@@ -118,17 +112,23 @@ document.addEventListener('DOMContentLoaded', function() {
     function handleHlsError(hls, data) {
         switch(data.type) {
             case Hls.ErrorTypes.NETWORK_ERROR:
-                console.log("网络错误，尝试恢复...");
-                hls.startLoad();
+                console.log("致命网络错误，尝试恢复...");
+                setTimeout(() => {
+                    hls.startLoad();
+                }, 1000);
                 break;
             case Hls.ErrorTypes.MEDIA_ERROR:
-                console.log("媒体错误，尝试恢复...");
-                hls.recoverMediaError();
+                console.log("致命媒体错误，尝试恢复...");
+                setTimeout(() => {
+                    hls.recoverMediaError();
+                }, 1000);
                 break;
             default:
-                console.log("无法恢复的错误");
+                console.log("无法恢复的错误，重新加载播放器...");
                 hls.destroy();
-                handleError('视频加载失败，请刷新页面重试');
+                setTimeout(() => {
+                    initializeVideoStream();
+                }, 2000);
                 break;
         }
     }
@@ -140,21 +140,6 @@ document.addEventListener('DOMContentLoaded', function() {
             videoTitleElement.textContent = message;
         }
     }
-
-    // 添加视频质量自动调整
-    video.addEventListener('waiting', function() {
-        if (currentHls && currentHls.currentLevel > 0) {
-            // 如果视频在缓冲，尝试降低质量
-            currentHls.currentLevel = currentHls.currentLevel - 1;
-        }
-    });
-
-    // 添加网络状态监听
-    window.addEventListener('online', function() {
-        if (currentHls) {
-            currentHls.startLoad();
-        }
-    });
 
     // 初始化视频流
     initializeVideoStream();

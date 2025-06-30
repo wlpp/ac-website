@@ -12,8 +12,9 @@
             <div class="nav-left">
                 <a href="#" class="logo">嘿嘿视频</a>
                 <div class="nav-menu">
-                    <a href="#" class="active">电影</a>
-                    <a href="#">动漫</a>
+                    <a href="#" class="active" data-type="0">推荐</a>
+                    <a href="#" data-type="1">电影</a>
+                    <a href="#" data-type="2">动漫</a>
                 </div>
             </div>
             <div class="nav-right">
@@ -24,37 +25,24 @@
             </div>
         </div>
     </nav>
-
-    <div class="sub-nav">
-        <div class="sub-nav-container">
-            <a href="#" class="sub-nav-item active">嫩草</a>
-            <a href="#" class="sub-nav-item">菠萝</a>
-        </div>
-    </div>
-
-    <div class="tag-nav">
-        <div class="tag-nav-container">
-            <a href="#" class="tag-nav-item active">最新上线</a>
-            <a href="#" class="tag-nav-item">热门经典</a>
-        </div>
-    </div>
-
+    
     <main>
         <section class="content-section">
-            <div class="vods-container">
-                <!-- 动态加载内容 -->
+            <div class="vods-container" id="vodsContainer">
+                <!-- 视频列表将通过 JavaScript 动态生成 -->
             </div>
+            
             <div class="pagination-container">
-                <!-- 分页控件 -->
+                <div class="pagination">
+                    <button class="page-btn" id="prevPage">上一页</button>
+                    <span class="page-text">第</span>
+                    <input type="text" class="page-input" id="currentPage" value="1" min="1">
+                    <span class="page-text">页</span>
+                    <button class="page-btn" id="nextPage">下一页</button>
+                </div>
             </div>
         </section>
     </main>
-
-    <footer class="footer">
-        <div class="footer-content">
-            <p>&copy; 2024 动漫世界. All rights reserved.</p>
-        </div>
-    </footer>
 
     <script src="../js/vods.js"></script>
 </body>

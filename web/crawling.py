@@ -14,6 +14,8 @@ from .config import Config
 import random
 import time
 from lxml import etree
+from m3u8 import M3U8
+from urllib.parse import urljoin
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -865,87 +867,108 @@ def vod_stream():
     """获取视频流链接"""
     try:
         # 获取参数
-        manga_type = request.args.get('manga_type', type=int)
         vid = request.args.get('vid')
-        
-        if manga_type is None or vid is None:
+        if not vid:
             return jsonify({
                 'success': False,
-                'message': '缺少必要参数'
+                'message': '缺少视频ID'
             }), 400
             
-        # 创建会话
-        session = get_session()
-        
-        # 根据manga_type构造m3u8_url
-        if manga_type == 0:
-            # 嫩草
-            m3u8_url = f"https://nptdyvxznmjw.com{vid}.m3u8"
-        else:
-            # 其他类型的处理逻辑
-            return jsonify({
-                'success': False,
-                'message': '暂不支持该类型'
-            }), 400
-        
+        # 检查缓存
+        cache_key = f'vod_stream_{vid}'
+        cached_data = gallery_cache.get(cache_key)
+        if cached_data:
+            cache_time, data = cached_data
+            if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
+                return jsonify(data)
+
+        # 设置请求头
         headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            'Referer': 'https://18j.tv/',
+            'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'DNT': '1',
         }
 
+        # 创建会话
+        session = get_session()
+
+        # 获取视频页面
+        video_url = f'https://18j.tv/v/{vid}/'
         response = session.get(
-            url=m3u8_url,
+            video_url,
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
+
+        if response.status_code != 200:
+            return jsonify({
+                'success': False,
+                'message': '获取视频页面失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
+
+        # 提取m3u8临时链接
+        pattern = r"const source = '([^']+)'"
+        match = re.search(pattern, response.text)
+        if not match:
+            return jsonify({
+                'success': False,
+                'message': '未找到视频源'
+            }), 404
+
+        # 获取m3u8临时链接
+        m3u8_tmp_url = match.group(1)
+        response = session.get(
+            m3u8_tmp_url,
             headers=headers,
             proxies=get_proxies(),
             timeout=(5, 30),
             verify=False
         )
 
-        # 检查响应状态
         if response.status_code != 200:
-            logger.error(f"请求失败，状态码：{response.status_code}")
             return jsonify({
                 'success': False,
-                'message': '获取数据失败',
+                'message': '获取m3u8临时链接失败',
                 'error': f'HTTP {response.status_code}'
             }), 500
 
-        # 获取m3u8内容并处理
-        m3u8_content = response.text
-        
-        # 过滤掉不需要的元数据行
-        filtered_lines = []
-        skip_patterns = [
-            '#EXTM3U',
-            '#EXT-X-VERSION:',
-            '#EXT-X-MEDIA-SEQUENCE:',
-            '#EXT-X-ALLOW-CACHE:',
-            '#EXT-X-TARGETDURATION:',
-            '#EXTINF:',
-            "#EXT-X-ENDLIST",
-            "#EXT-X-DISCONTINUITY",
-            "#EXT-X-PROGRAM-DATE-TIME",
-            "#EXT-X-KEY",
-            "#EXT-X-MAP",
-            "#EXT-X-MEDIA",
-            "#EXT-X-PLAYLIST-TYPE",
-            "#EXT-X-I-FRAMES-ONLY",
-            "#EXT-X-SESSION-DATA",
-            "#EXT-X-SESSION-KEY",
-        ]
-        for line in m3u8_content.splitlines():
-            if not any(line.startswith(pattern) for pattern in skip_patterns):
-                # 确保行不为空且不只包含空白字符
-                if line.strip():
-                    filtered_lines.append(line.strip())
+        # 提取真实m3u8链接
+        pattern = re.compile(r'https?://[^\s]+')
+        matches = pattern.findall(response.text)
+        if not matches:
+            return jsonify({
+                'success': False,
+                'message': '未找到m3u8链接'
+            }), 404
 
-        # 返回处理后的数据
+        base_url = matches[0]
+
+        # 缓存结果
         result_data = {
             'success': True,
             'data': {
-                'ts_urls': filtered_lines,  # 只包含 .ts 文件的 URL
-                'base_url': response.url
+                'base_url': base_url
             }
         }
+        gallery_cache[cache_key] = (datetime.now(), result_data)
         
         return jsonify(result_data)
 
@@ -1708,141 +1731,128 @@ def cartoon_search():
 
 @crawling_bp.route('/api/vods-list')
 def vods_list():
-    """获取视频列表
-    
-    参数说明：
-    manga_type: 0 - 嫩草, 1 - 动漫
-    tag: 标签类型
-    page: 页码
-    """
+    """获取视频列表"""
     try:
+        # 获取页码和类型参数
         page = request.args.get('page', 1, type=int)
-        manga_type = request.args.get('manga_type', 0, type=int)
-        tag = request.args.get('tag', '', type=str)
+        vod_type = request.args.get('type', 0, type=int)
         
         if page < 1:
             page = 1
             
         # 检查缓存
-        cache_key = f'vods_list_{manga_type}_{tag}_{page}'
+        cache_key = f'vods_list_{vod_type}_{page}'
         cached_data = gallery_cache.get(cache_key)
         if cached_data:
             cache_time, data = cached_data
             if datetime.now() - cache_time < timedelta(minutes=CACHE_EXPIRE_MINUTES):
-                return jsonify(data)    
-        
-        # 随机User-Agent列表
-        user_agents = [
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/92.0.4515.159 Safari/537.36',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:89.0) Gecko/20100101 Firefox/89.0',
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.1.1 Safari/605.1.15',
-        ]
-        
-        # 随机选择User-Agent
-        headers = {
-            'User-Agent': random.choice(user_agents),
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0',
-            'Referer': 'https://ncao2.ncao04.work:23569/',  # 添加 Referer
-        }
+                return jsonify(data)
 
         # 创建会话
         session = get_session()
         
-        result = []
+        # 设置请求头，模拟真实浏览器
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+            'Accept-Encoding': 'identity',
+            'Connection': 'keep-alive',
+            'sec-ch-ua': '"Chromium";v="120", "Google Chrome";v="120"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'same-origin',
+            'Sec-Fetch-User': '?1',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            'DNT': '1',
+        }
+
+        # 根据类型构造URL
+        if vod_type == 0:
+            # 推荐视频
+            url = f'https://18j.tv/label/hot/by/time/page/{page}'
+        elif vod_type == 1:
+            # 电影
+            url = f'https://18j.tv/t/4-{page}/'
+        elif vod_type == 2:
+            # 动漫
+            url = f'https://18j.tv/t/16-{page}/'
+        else:
+            return jsonify({
+                'success': False,
+                'message': '不支持的视频类型'
+            }), 400
         
-        if manga_type == 0:
-            # 基础URL配置
-            base_url = 'https://ncao2.ncao04.work:23569/Html'
-            category_id = '2' if tag == 'news' else '88'
-            
-            # 构造URL
-            url = f'{base_url}/{category_id}/index{"" if page == 1 else f"-{page}"}.html'
-            
-            # 设置延迟
-            time.sleep(1)
-            
-            try:
-                # 发送GET请求
-                response = session.get(
-                    url, 
-                    headers=headers, 
-                    proxies=get_proxies(),
-                    timeout=(5, 30),
-                    verify=False
-                )
-                response.encoding = 'utf-8'
+        # 发送请求
+        response = session.get(
+            url=url,
+            headers=headers,
+            proxies=get_proxies(),
+            timeout=(5, 30),
+            verify=False
+        )
+        response.encoding = 'utf-8'
 
-                # 检查响应状态
-                if response.status_code != 200:
-                    logger.error(f"请求失败，状态码：{response.status_code}")
-                    return jsonify({
-                        'success': False,
-                        'message': '获取数据失败',
-                        'error': f'HTTP {response.status_code}'
-                    }), 500
+        # 检查响应状态
+        if response.status_code != 200:
+            logger.error(f"请求失败，状态码：{response.status_code}")
+            return jsonify({
+                'success': False,
+                'message': '获取数据失败',
+                'error': f'HTTP {response.status_code}'
+            }), 500
 
-                # 使用lxml解析HTML
-                tree = etree.HTML(response.text)
+        # 解析HTML
+        soup = BeautifulSoup(response.text, 'html.parser')
+        video_items = soup.select('.list li')
+        
+        # 提取数据，跳过第一个视频
+        result = []
+        for item in video_items[1:]:  # 从第二个元素开始
+            # 获取链接和标题
+            link = item.find('a')
+            if not link:
+                continue
                 
-                # 使用正则表达式提取图片URL
-                images = re.findall(r'getPicUrl\("(.*?)"\)', response.text)
-                
-                # 提取其他数据
-                titles = tree.xpath('//*[@id="app"]/div/a/div[2]/span/text()')
-                date_texts = tree.xpath('//*[@id="app"]/div/a/div[1]/span/text()')
-                
-                # 组装数据
-                for i in range(len(titles)):
-                    vid = ''
-                    image = ''
-                    if i < len(images):
-                        # 从图片URL中提取vid（.jpg前面的所有值）
-                        vid_match = re.search(r'(.+?)\.jpg', images[i])
-                        if vid_match:
-                            vid = vid_match.group(1)
-                        # 构造完整的图片URL
-                        image = f'https://npvshkstfjfv.com{images[i]}'
-                    
-                    item = {
-                        'image': image,
-                        'title': titles[i].strip() if i < len(titles) else '',
-                        'date_text': date_texts[i].strip() if i < len(date_texts) else '',
-                        'vid': vid
-                    }
-                    result.append(item)
-                    
-            except requests.Timeout:
-                logger.error("请求超时")
-                return jsonify({
-                    'success': False,
-                    'message': '请求超时，请稍后重试'
-                }), 504
-            except requests.RequestException as e:
-                logger.error(f"请求异常: {str(e)}")
-                return jsonify({
-                    'success': False,
-                    'message': '网络请求失败'
-                }), 500
-            except Exception as e:
-                logger.error(f"处理数据时发生错误: {str(e)}")
-                return jsonify({
-                    'success': False,
-                    'message': '服务器内部错误'
-                }), 500
+            title = link.get_text().strip()
+            href = link.get('href', '')
+            
+            # 获取图片URL
+            img = item.find('img')
+            img_url = img.get('src', '') if img else ''
+            
+            # 提取uid
+            uid = None
+            if href:
+                uid_match = re.search(r'\d+', href)
+                if uid_match:
+                    uid = uid_match.group()
+            
+            # 确保链接是完整的URL
+            if href and not href.startswith('http'):
+                href = f"https://18j.tv{href}"
+            
+            # 确保图片URL是完整的URL
+            if img_url and not img_url.startswith('http'):
+                img_url = f"https://18j.tv{img_url}"
+            
+            if title and href and uid:
+                result.append({
+                    'title': title,
+                    'href': href,
+                    'uid': uid,
+                    'img': img_url
+                })
+
         # 缓存结果
         result_data = {
             'success': True,
             'data': result,
-            'total': len(result),
-            'page': page,
-            'manga_type': manga_type,
-            'tag': tag
+            'total': len(result)
         }
         gallery_cache[cache_key] = (datetime.now(), result_data)
         

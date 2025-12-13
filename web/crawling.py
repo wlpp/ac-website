@@ -109,7 +109,8 @@ def gallery_list():
         session = get_session()
 
         # 发送GET请求，使用传入的页码
-        url = f'https://www.wnacg.com/albums-index-page-{page}-cate-22.html'
+        # www.wnacg.com 原地址
+        url = f'https://www.wnacg.ru/albums-index-page-{page}-cate-22.html'
         response = session.get(
             url, 
             headers=headers, 
@@ -228,7 +229,7 @@ def gallery_imgs():
         session = get_session()
 
         # 构造URL并发送请求
-        url = f'https://www.wnacg.com/photos-gallery-aid-{aid}.html'
+        url = f'https://www.wnacg.ru/photos-gallery-aid-{aid}.html'
         response = session.get(
             url, 
             headers=headers, 
@@ -339,7 +340,7 @@ def gallery_search():
         session = get_session()
 
         # 构造搜索URL
-        url = f'https://www.wnacg.com/search/index.php?q={q}&m=&syn=yes&f=_all&s=create_time_DESC&p={page}'
+        url = f'https://www.wnacg.ru/search/index.php?q={q}&m=&syn=yes&f=_all&s=create_time_DESC&p={page}'
         
         response = session.get(
             url, 
@@ -1054,7 +1055,7 @@ def cartoon_hans():
             url = f'https://www.cartoon18.com/zh-hans/q/3d?page={page}'
         elif manga_type == 2:
             # 绅士漫画
-            url = f'https://www.wnacg.com/albums-index-page-{page}-cate-22.html'
+            url = f'https://www.wnacg.ru/albums-index-page-{page}-cate-22.html'
 
         # 发送GET请求
         response = session.get(
@@ -1107,7 +1108,7 @@ def cartoon_hans():
                     result.append({
                         'title': title,
                         'img': img_url,
-                        'link': f"https://www.wnacg.com{href}" if href else '',
+                        'link': f"https://www.wnacg.ru{href}" if href else '',
                         'pid': pid,
                         'manga_type': manga_type
                     })
@@ -1224,7 +1225,7 @@ def cartoon_hans_detail():
         
         if manga_type == 2:
             # 绅士漫画数据爬取方式
-            url = f'https://www.wnacg.com/photos-gallery-aid-{cid}.html'
+            url = f'https://www.wnacg.ru/photos-gallery-aid-{cid}.html'
             response = session.get(
                 url, 
                 headers=headers, 
@@ -1269,9 +1270,9 @@ def cartoon_hans_detail():
             # 构造结果
             result = {
                 'title': title,
-                'author': '未知作者',  # wnacg.com通常不显示作者信息
-                'description': '',  # wnacg.com通常不显示描述
-                'tags': [],  # wnacg.com通常不显示标签
+                'author': '未知作者',  # wnacg.ru通常不显示作者信息
+                'description': '',  # wnacg.ru通常不显示描述
+                'tags': [],  # wnacg.ru通常不显示标签
                 'images': full_img_urls,
                 'total_images': len(full_img_urls)
             }
@@ -1633,8 +1634,8 @@ def cartoon_search():
                         'manga_type': manga_type
                     })
         elif manga_type == 2:
-            # 绅士漫画搜索 (wnacg.com)
-            url = f'https://www.wnacg.com/search/index.php?q={kw}&m=&syn=yes&f=_all&s=create_time_DESC&p=1'
+            # 绅士漫画搜索 (wnacg.ru)
+            url = f'https://www.wnacg.ru/search/index.php?q={kw}&m=&syn=yes&f=_all&s=create_time_DESC&p=1'
             
             # 发送GET请求
             response = session.get(
@@ -1685,7 +1686,7 @@ def cartoon_search():
                     result.append({
                         'title': title,
                         'img': img_url,
-                        'link': f"https://www.wnacg.com{href}" if href else '',
+                        'link': f"https://www.wnacg.ru{href}" if href else '',
                         'pid': pid
                     })
         else:

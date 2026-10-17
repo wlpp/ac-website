@@ -1,1 +1,5 @@
-crawler/ 
+crawler/
+
+# Local PC maintenance toolkit, not part of the website project
+电脑优化/
+.trae/

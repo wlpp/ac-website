@@ -3,3 +3,11 @@ crawler/
 # Local PC maintenance toolkit, not part of the website project
 电脑优化/
 .trae/
+
+# hg_downloader: bundled ffmpeg binaries (~100MB each, exceed GitHub limit),
+# runtime logs, bytecode cache, and cloud-drive token config
+hg_downloader/tools/
+hg_downloader/*.log
+hg_downloader/aliyun.json
+__pycache__/
+*.pyc

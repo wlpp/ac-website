@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>短剧详情 - 黄果短剧下载器</title>
+<link rel="stylesheet" href="/static/common.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f1115; color: #e8eaed; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; min-height: 100vh; }
+  .header { position: relative; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 24px; background: #161922; border-bottom: 1px solid #262b38; }
+  .logo { font-size: 18px; font-weight: 700; color: #ffb84d; cursor: pointer; }
+  .back { position: absolute; right: 24px; top: 50%; transform: translateY(-50%); color: #9aa3b5; font-size: 14px; cursor: pointer; text-decoration: none; }
+  .back:hover { color: #ffb84d; }
+  .main { max-width: 1080px; margin: 0 auto; padding: 26px 24px 90px; }
+  .detail-top { display: flex; gap: 26px; }
+  .cover { width: 240px; flex-shrink: 0; border-radius: 14px; overflow: hidden; border: 1px solid #262b38; background: #10131b; aspect-ratio: 374/420; }
+  .cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .info { flex: 1; min-width: 0; }
+  .title { font-size: 24px; font-weight: 700; line-height: 1.4; }
+  .meta { display: flex; align-items: center; gap: 12px; margin: 12px 0; color: #9aa3b5; font-size: 14px; flex-wrap: wrap; }
+  .score-chip { padding: 2px 10px; border-radius: 8px; background: #2b2413; color: #ffd166; font-weight: 700; }
+  .tag { display: inline-block; padding: 2px 10px; border-radius: 6px; background: #232938; color: #8fa0c0; font-size: 12px; margin-right: 6px; }
+  .desc { margin-top: 14px; color: #b7bfce; font-size: 14px; line-height: 1.8; white-space: pre-wrap; }
+  .dl-all { margin-top: 20px; }
+  .dl-all button { padding: 10px 26px; border: none; border-radius: 10px; background: #ffb84d; color: #1a1207; font-size: 15px; font-weight: 700; cursor: pointer; }
+  .dl-all button:disabled { opacity: .55; cursor: default; }
+  .dl-all button:hover:not(:disabled) { background: #ffc76b; }
+  .dl-all { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .overall-progress { margin-top: 14px; max-width: 460px; }
+  .progress-bar { height: 10px; border-radius: 5px; background: #262b38; overflow: hidden; }
+  .progress-bar > div { height: 100%; background: linear-gradient(90deg, #ffb84d, #ff8c42); border-radius: 5px; transition: width .5s; }
+  .progress-text { margin-top: 6px; font-size: 13px; color: #9aa3b5; display: flex; justify-content: space-between; }
+  .section-title { display: flex; align-items: center; gap: 10px; margin: 34px 0 16px; font-size: 17px; }
+  .section-title::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: #ffb84d; }
+  .section-tip { margin: -10px 0 14px; font-size: 12px; color: #6b7385; }
+  .ep-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px; }
+  .ep-btn { position: relative; padding: 12px 6px; border: 1px solid #2c3345; border-radius: 10px; background: #1d2230; color: #cfd6e4; font-size: 14px; text-align: center; cursor: pointer; overflow: hidden; transition: border-color .15s; }
+  .ep-btn:hover { border-color: #ffb84d; }
+  .ep-btn .ep-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: rgba(255, 184, 77, .18); transition: width .5s; z-index: 0; }
+  .ep-btn span { position: relative; z-index: 1; }
+  .ep-btn .ep-sub { display: block; font-size: 11px; margin-top: 3px; color: #9aa3b5; }
+  .ep-btn.completed { border-color: #2b5a40; background: #14251c; color: #6ee7a0; }
+  .ep-btn.downloading { border-color: #b57e2a; }
+  .ep-btn.failed { border-color: #6b2b2b; background: #251414; color: #ff7a7a; }
+  .loading { padding: 60px 0; text-align: center; color: #6b7385; }
+  .status-fail { color: #ff7a7a; }
+
+  /* ---------- 移动端适配 ---------- */
+  @media (max-width: 640px) {
+    body { -webkit-tap-highlight-color: transparent; }
+    .header { padding: 10px 14px; gap: 10px; }
+    .logo { font-size: 16px; }
+    .main { padding: 16px 14px 90px; }
+    .detail-top { gap: 14px; }
+    .cover { width: 118px; border-radius: 10px; }
+    .title { font-size: 19px; }
+    .meta { gap: 8px; margin: 8px 0; font-size: 13px; }
+    .desc { font-size: 13px; margin-top: 8px; line-height: 1.7; }
+    .dl-all { margin-top: 14px; }
+    .dl-all button { width: 100%; padding: 12px; font-size: 15px; }
+    .overall-progress { max-width: none; }
+    .section-title { font-size: 15px; margin: 24px 0 12px; }
+    .ep-grid { grid-template-columns: repeat(auto-fill, minmax(74px, 1fr)); gap: 8px; }
+    .ep-btn { padding: 9px 4px; font-size: 13px; border-radius: 8px; }
+    .ep-btn .ep-sub { font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo" onclick="window.open('/', '_blank')">黄果短剧下载器</div>
+    <a class="back" href="/" target="_blank">← 返回主页</a>
+  </div>
+
+  <div class="main">
+    <div id="content" class="loading">加载中...</div>
+  </div>
+
+  <!-- 播放弹窗（仅移动端使用：手机无法调起电脑的本地播放器） -->
+  <div class="player-mask" id="playerMask">
+    <div class="player-box">
+      <div class="player-head">
+        <div class="player-title" id="playerTitle"></div>
+        <button class="player-close" onclick="closePlayer()">✕</button>
+      </div>
+      <video id="playerVideo" controls autoplay></video>
+    </div>
+  </div>
+
+<script src="/static/mpegts.js"></script>
+<script src="/static/common.js"></script>
+<script>
+const videoId = parseInt(location.pathname.split("/")[2], 10);
+let meta = null;
+let tsPlayer = null; // mpegts.js 播放器实例（TS流，移动端网页播放用）
+let pausedFlag = false; // 全局暂停状态（由进度轮询同步）
+const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk|HarmonyOS/i.test(navigator.userAgent);
+
+HgCommon.setVideoContext(videoId);
+
+async function loadDetail() {
+  const el = document.getElementById("content");
+  try {
+    const res = await fetch("/api/video/" + videoId);
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "加载失败"); }
+    meta = await res.json();
+    render(meta);
+  } catch (e) {
+    el.className = "loading"; el.textContent = "加载失败: " + e.message;
+  }
+}
+
+function render(m) {
+  const el = document.getElementById("content");
+  const score = m.score ? '<span class="score-chip">' + m.score + '分</span>' : "";
+  const allDone = m.episodes.length > 0 && m.episodes.every(e => e.status === "completed");
+  el.className = "";
+  el.innerHTML =
+    '<div class="detail-top">' +
+      '<div class="cover"><img src="' + HgCommon.imgProxy(m.cover) + '" onerror="HgCommon.imgError(this)"></div>' +
+      '<div class="info">' +
+        '<div class="title">' + m.title + '</div>' +
+        '<div class="meta">' + score + '<span>共 ' + m.total_eps + ' 集</span>' +
+          '<span>' + (m.tags || []).map(t => '<span class="tag">' + t + '</span>').join("") + '</span></div>' +
+        '<div class="desc">' + (m.desc || "暂无简介") + '</div>' +
+        '<div class="dl-all"><button id="dlAllBtn" onclick="downloadAll()"' + (allDone ? " disabled" : "") + '>' +
+          (allDone ? "已全部下载 ✓" : "下载全部") + '</button>' +
+        '<div class="overall-progress" id="overallBox" style="display:none">' +
+          '<div class="progress-bar"><div id="overallBar" style="width:0%"></div></div>' +
+          '<div class="progress-text"><span id="overallText"></span><span id="overallPct"></span></div>' +
+        '</div></div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="section-title">选集</div>' +
+    '<div class="section-tip">未下载：点击下载对应集数 · 已下载（✓）：点击播放（电脑调本地播放器，手机网页播放）</div>' +
+    '<div class="ep-grid" id="epGrid">' +
+      m.episodes.map(e =>
+        '<div class="ep-btn ' + (e.status === "completed" ? "completed" : e.status === "failed" ? "failed" : "") + '" id="ep-' + e.ep + '" role="button" onclick="onEpClick(' + e.ep + ')">' +
+          '<div class="ep-fill" style="width:' + e.progress + '%"></div>' +
+          '<span>第' + String(e.ep).padStart(2, "0") + '集</span>' +
+          '<span class="ep-sub">' + epStatusText(e) + '</span>' +
+        '</div>'
+      ).join("") +
+    '</div>';
+}
+
+function epStatusText(e) {
+  if (e.status === "completed") return "▶ 点击播放";
+  if (e.status === "downloading") return pausedFlag ? "⏸ 已暂停 " + Math.round(e.progress) + "%" : Math.round(e.progress) + "%";
+  if (e.status === "pending") return pausedFlag ? "排队·暂停" : "排队中";
+  if (e.status === "failed") return "失败·点击重试";
+  return "点击下载";
+}
+
+function onEpClick(ep) {
+  const st = meta.episodes.find(e => e.ep === ep);
+  if (st && st.status === "completed") { playLocal(ep); return; }  // 已下载：调用本地播放器
+  downloadEp(ep);
+}
+
+// ---------- 播放 ----------
+// 电脑：调本地默认播放器（fMP4型HLS拼接/HEVC编码本地播放器通吃）；
+// 手机：调不到电脑的播放器（os.startfile在服务端执行），走网页内嵌播放（mpegts.js）
+async function playLocal(ep) {
+  if (isMobile) { openPlayer(ep); return; }
+  try {
+    const res = await fetch("/api/play", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ video_id: videoId, ep: ep })
+    });
+    if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "调用失败"); }
+  } catch (e) {
+    alert("本地播放调用失败: " + e.message);
+  }
+}
+
+function openPlayer(ep) {
+  const mask = document.getElementById("playerMask");
+  const video = document.getElementById("playerVideo");
+  document.getElementById("playerTitle").textContent =
+    (meta ? meta.title : "视频") + " · 第" + String(ep).padStart(2, "0") + "集";
+  destroyTsPlayer();
+  const url = "/api/stream/" + videoId + "/" + ep;
+  // 服务端会把TS拼接流无损转封装为真MP4，原生播放即可（含iOS Safari）；
+  // 若转封装失败文件仍是TS，video报错后回退mpegts.js（MSE方案，仅安卓可用）
+  video.onerror = function () {
+    video.onerror = null;
+    if (!(window.mpegts && mpegts.getFeatureList().mseLivePlayback)) return;
+    tsPlayer = mpegts.createPlayer({
+      type: "mpegts", isLive: false, url: url
+    }, { enableStashBuffer: true, lazyLoad: true, autoCleanupSourceBuffer: true });
+    tsPlayer.attachMediaElement(video);
+    tsPlayer.load();
+  };
+  video.src = url;
+  mask.classList.add("show");
+}
+function destroyTsPlayer() {
+  if (tsPlayer) {
+    try { tsPlayer.pause(); tsPlayer.unload(); tsPlayer.detachMediaElement(); tsPlayer.destroy(); } catch (e) {}
+    tsPlayer = null;
+  }
+}
+function closePlayer() {
+  const video = document.getElementById("playerVideo");
+  video.onerror = null;
+  destroyTsPlayer();
+  video.pause();
+  video.removeAttribute("src");
+  video.load();
+  document.getElementById("playerMask").classList.remove("show");
+}
+document.getElementById("playerMask").addEventListener("click", e => {
+  if (e.target === e.currentTarget) closePlayer();
+});
+document.addEventListener("keydown", e => { if (e.key === "Escape") closePlayer(); });
+
+// ---------- 下载 ----------
+async function downloadEp(ep) {
+  const btn = document.getElementById("ep-" + ep);
+  const sub = btn.querySelector(".ep-sub");
+  const st = meta.episodes.find(e => e.ep === ep);
+  if (st && (st.status === "downloading" || st.status === "pending")) return;
+  try {
+    const res = await fetch("/api/download/" + videoId, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ep: ep })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "请求失败");
+    if (!data.queued.length) { sub.textContent = "已在队列中"; return; }
+    if (st) { st.status = "pending"; st.progress = 0; }  // 本地即时同步，等待轮询接管
+    sub.textContent = "排队中";
+    btn.classList.remove("failed");
+    HgCommon.ensurePolling();  // 恢复轮询跟踪进度
+  } catch (e) {
+    sub.textContent = "发起失败";
+    alert("下载发起失败: " + e.message);
+  }
+}
+
+async function downloadAll() {
+  const btn = document.getElementById("dlAllBtn");
+  btn.disabled = true; btn.textContent = "提交中...";
+  try {
+    const res = await fetch("/api/download/" + videoId, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}"
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "请求失败");
+    // 立即把未下载的集数标记为排队，等待轮询接管
+    meta.episodes.forEach(e => {
+      if (e.status === "idle" || e.status === "failed") { e.status = "pending"; e.progress = 0; }
+    });
+    render(meta);
+    btn.disabled = false; btn.textContent = "下载全部";
+    HgCommon.ensurePolling();
+  } catch (e) {
+    btn.disabled = false; btn.textContent = "下载全部";
+    alert("下载发起失败: " + e.message);
+  }
+}
+
+// ---------- 进度合并（由公共轮询驱动，有活动任务时才请求） ----------
+HgCommon.onProgress((prog) => {
+  const p = prog[String(videoId)];
+  if (!meta || !p) return;
+  pausedFlag = !!p.paused;
+
+  let completed = 0;
+  meta.episodes.forEach(e => {
+    const pst = p.episodes[String(e.ep)];
+    if (pst) { e.status = pst.status; e.progress = pst.progress; e.error = pst.error; }
+    else if (e.status === "completed") { e.status = "idle"; e.progress = 0; }  // 记录已被清除（本地文件被删）
+    if (e.status === "completed") completed++;
+    const btn = document.getElementById("ep-" + e.ep);
+    if (!btn) return;
+    btn.querySelector(".ep-fill").style.width = e.progress + "%";
+    btn.querySelector(".ep-sub").textContent = epStatusText(e);
+    btn.className = "ep-btn " + (e.status === "completed" ? "completed" : e.status === "downloading" ? "downloading" : e.status === "failed" ? "failed" : "");
+  });
+
+  const box = document.getElementById("overallBox");
+  if (completed > 0) {
+    box.style.display = "block";
+    const pct = meta.total_eps ? Math.round(completed / meta.total_eps * 100) : 0;
+    document.getElementById("overallBar").style.width = pct + "%";
+    const cur = pausedFlag ? " · ⏸ 已暂停"
+      : (p.current ? " · 正在下载第" + p.current.ep + "集 " + Math.round(p.current.progress) + "%" : "");
+    const fail = p.failed.length ? ' · <span class="status-fail">失败' + p.failed.length + '集</span>' : "";
+    document.getElementById("overallText").innerHTML = "已下载 " + completed + " / " + meta.total_eps + " 集" + cur + fail;
+    document.getElementById("overallPct").textContent = pct + "%";
+  } else {
+    box.style.display = "none";  // 记录被清空（本地文件已删）时隐藏进度框
+  }
+
+  // 全部集数下载完成后置灰"下载全部"按钮（提交中状态除外）
+  const dlAllBtn = document.getElementById("dlAllBtn");
+  if (dlAllBtn && dlAllBtn.textContent !== "提交中...") {
+    const allDone = meta.total_eps > 0 && completed >= meta.total_eps;
+    dlAllBtn.disabled = allDone;
+    dlAllBtn.textContent = allDone ? "已全部下载 ✓" : "下载全部";
+  }
+});
+
+loadDetail();
+</script>
+</body>
+</html>

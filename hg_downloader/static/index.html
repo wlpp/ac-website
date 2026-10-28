@@ -43,6 +43,11 @@
   .pager button { padding: 8px 20px; border: 1px solid #2c3345; border-radius: 8px; background: #1d2230; color: #cfd6e4; cursor: pointer; }
   .pager button:disabled { opacity: .4; cursor: default; }
   .pager button:not(:disabled):hover { border-color: #ffb84d; color: #ffb84d; }
+  .page-jump { display: flex; align-items: center; gap: 6px; color: #9aa3b5; font-size: 13px; }
+  .page-jump input { width: 56px; padding: 6px 8px; text-align: center; border: 1px solid #2c3345; border-radius: 8px; background: #1d2230; color: #e8eaed; font-size: 13px; outline: none; }
+  .page-jump input:focus { border-color: #ffb84d; }
+  .page-jump input::-webkit-outer-spin-button, .page-jump input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .page-jump input { -moz-appearance: textfield; appearance: textfield; }
 
   /* ---------- 移动端适配 ---------- */
   @media (max-width: 640px) {
@@ -63,6 +68,8 @@
     .card-title { font-size: 13px; }
     .pager { gap: 8px; margin-top: 20px; }
     .pager button { padding: 9px 16px; }
+    .page-jump { font-size: 14px; }
+    .page-jump input { font-size: 16px; width: 60px; }
   }
 </style>
 </head>
@@ -89,7 +96,7 @@
     <div id="content" class="loading">加载中...</div>
     <div class="pager" id="pager" style="display:none">
       <button id="prevBtn" onclick="changePage(-1)">上一页</button>
-      <span id="pageInfo" style="line-height:36px;color:#9aa3b5;font-size:13px"></span>
+      <span class="page-jump">第 <input id="pageInput" type="number" min="1" value="1" onchange="jumpPage()" onkeydown="if(event.key==='Enter'){event.preventDefault();jumpPage();}"> / <span id="pageTotal">1</span> 页</span>
       <button id="nextBtn" onclick="changePage(1)">下一页</button>
     </div>
   </div>
@@ -126,7 +133,9 @@ async function loadList(page) {
     el.className = "grid";
     el.innerHTML = items.map(cardHtml).join("");
     document.getElementById("pager").style.display = "flex";
-    document.getElementById("pageInfo").textContent = "第 " + curPage + " / " + totalPages + " 页";
+    document.getElementById("pageInput").value = curPage;
+    document.getElementById("pageInput").max = totalPages;
+    document.getElementById("pageTotal").textContent = totalPages;
     document.getElementById("prevBtn").disabled = curPage <= 1;
     document.getElementById("nextBtn").disabled = curPage >= totalPages;
   } catch (e) {
@@ -183,6 +192,17 @@ async function doSearch() {
 function changePage(delta) {
   const p = curPage + delta;
   if (p < 1 || p > totalPages) return;
+  loadList(p);
+  window.scrollTo(0, 0);
+}
+
+function jumpPage() {
+  const input = document.getElementById("pageInput");
+  let p = parseInt(input.value, 10);
+  if (isNaN(p)) { input.value = curPage; return; }
+  p = Math.min(Math.max(p, 1), totalPages);
+  input.value = p;
+  if (p === curPage) return;
   loadList(p);
   window.scrollTo(0, 0);
 }

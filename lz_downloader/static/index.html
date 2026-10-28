@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>荔枝短剧下载器</title>
+<link rel="stylesheet" href="/static/common.css">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f1115; color: #e8eaed; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; min-height: 100vh; }
+  .header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; justify-content: center; gap: 16px; padding: 14px 24px; background: #161922; border-bottom: 1px solid #262b38; }
+  .logo { font-size: 18px; font-weight: 700; color: #ffb84d; white-space: nowrap; }
+  .search-box { flex: 0 1 480px; display: flex; }
+  .search-box input { flex: 1; padding: 9px 14px; border: 1px solid #2c3345; border-right: none; border-radius: 8px 0 0 8px; background: #1d2230; color: #e8eaed; font-size: 14px; outline: none; }
+  .search-box input:focus { border-color: #ffb84d; }
+  .search-box button { padding: 9px 18px; border: none; border-radius: 0 8px 8px 0; background: #ffb84d; color: #1a1207; font-weight: 600; cursor: pointer; }
+  .search-box button:hover { background: #ffc76b; }
+  .main-nav { display: flex; gap: 4px; padding: 3px; background: #1d2230; border: 1px solid #2c3345; border-radius: 10px; }
+  .nav-item { padding: 6px 16px; border: none; border-radius: 7px; background: transparent; color: #9aa3b5; font-size: 14px; font-weight: 500; cursor: pointer; }
+  .nav-item.is-active { background: #ffb84d; color: #1a1207; font-weight: 600; }
+  .nav-item:not(.is-active):hover { color: #e8ecf4; }
+  .main { max-width: 1280px; margin: 0 auto; padding: 20px 24px 90px; }
+  .section-title { display: flex; align-items: center; gap: 10px; margin: 18px 0 16px; font-size: 17px; }
+  .section-title::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: #ffb84d; }
+  .list-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 18px 0 16px; }
+  .lt-item { padding: 7px 18px; border-radius: 999px; border: 1px solid #2c3345; background: #1d2230; color: #9aa3b5; font-size: 14px; cursor: pointer; transition: all .15s; }
+  .lt-item.is-active { background: #ffb84d; border-color: #ffb84d; color: #1a1207; font-weight: 600; }
+  .lt-item:not(.is-active):hover { border-color: #ffb84d; color: #ffb84d; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 18px; }
+  .card { background: #191d29; border-radius: 12px; overflow: hidden; border: 1px solid #262b38; transition: transform .15s, border-color .15s; }
+  .card:hover { transform: translateY(-3px); border-color: #3a4260; }
+  .cover-wrap { position: relative; cursor: pointer; aspect-ratio: 374/420; background: #10131b; }
+  .cover-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .badge { position: absolute; left: 8px; top: 8px; padding: 2px 8px; border-radius: 6px; color: #fff; font-size: 12px; font-weight: 600; }
+  .score { position: absolute; left: 8px; bottom: 8px; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,.65); color: #ffd166; font-size: 12px; font-weight: 600; }
+  .eps-badge { position: absolute; right: 8px; bottom: 8px; padding: 2px 8px; border-radius: 6px; background: rgba(0,0,0,.65); color: #9fd0ff; font-size: 12px; }
+  .card-body { padding: 10px 12px 14px; }
+  .card-title { font-size: 14px; font-weight: 600; line-height: 1.4; cursor: pointer; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-title:hover { color: #ffb84d; }
+  .card-meta { margin-top: 6px; font-size: 11px; color: #6b7385; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 5px; background: #232938; color: #8fa0c0; font-size: 11px; margin-right: 4px; }
+  .empty, .loading { padding: 60px 0; text-align: center; color: #6b7385; }
+  .pager { display: flex; justify-content: center; gap: 10px; margin-top: 26px; }
+  .pager button { padding: 8px 20px; border: 1px solid #2c3345; border-radius: 8px; background: #1d2230; color: #cfd6e4; cursor: pointer; }
+  .pager button:disabled { opacity: .4; cursor: default; }
+  .pager button:not(:disabled):hover { border-color: #ffb84d; color: #ffb84d; }
+
+  /* ---------- 移动端适配 ---------- */
+  @media (max-width: 640px) {
+    body { -webkit-tap-highlight-color: transparent; }
+    .header { padding: 10px 14px; gap: 10px; flex-wrap: wrap; }
+    .main-nav { order: 3; width: 100%; }
+    .nav-item { flex: 1; text-align: center; padding: 7px 0; font-size: 13px; }
+    .logo { font-size: 16px; }
+    .search-box input { font-size: 16px; padding: 8px 12px; } /* 16px防iOS聚焦自动放大 */
+    .search-box button { padding: 8px 14px; }
+    .main { padding: 14px 14px 90px; }
+    .section-title { font-size: 15px; margin: 12px 0 12px; }
+    .list-tabs { gap: 6px; }
+    .lt-item { padding: 6px 14px; font-size: 13px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+    .card { border-radius: 9px; }
+    .card-body { padding: 8px 9px 10px; }
+    .card-title { font-size: 13px; }
+    .badge, .score, .eps-badge { font-size: 11px; padding: 1px 6px; }
+    .pager { gap: 8px; margin-top: 20px; }
+    .pager button { padding: 9px 16px; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">荔枝短剧下载器</div>
+    <nav class="main-nav" id="mainNav">
+      <button class="nav-item" data-ch="lizhi-picked" onclick="switchCh('lizhi-picked')">荔枝精选</button>
+      <button class="nav-item is-active" data-ch="lizhi-original" onclick="switchCh('lizhi-original')">荔枝原创</button>
+    </nav>
+    <div class="search-box">
+      <input id="searchInput" type="text" placeholder="搜索剧名，如：岳母" />
+      <button onclick="doSearch()">搜索</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="list-tabs" id="listTabs">
+      <button class="lt-item is-active" data-sort="hot" onclick="switchSort('hot')">热播</button>
+      <button class="lt-item" data-sort="new" onclick="switchSort('new')">最新</button>
+    </div>
+    <div class="section-title" id="sectionTitle" style="display:none"></div>
+    <div id="content" class="loading">加载中...</div>
+    <div class="pager" id="pager" style="display:none">
+      <button id="prevBtn" onclick="changePage(-1)">上一页</button>
+      <span id="pageInfo" style="line-height:36px;color:#9aa3b5;font-size:13px"></span>
+      <button id="nextBtn" onclick="changePage(1)">下一页</button>
+    </div>
+  </div>
+
+<script src="/static/common.js"></script>
+<script>
+let curPage = 1, totalPages = 1, keyword = "";
+let curCh = "lizhi-original";   // 当前专题：lizhi-picked=荔枝精选 lizhi-original=荔枝原创（默认）
+let curSort = "hot";            // 当前榜单：hot/new
+const pageByChSort = {          // 各专题各榜单独立记住翻页位置
+  "lizhi-picked":   { hot: 1, new: 1 },
+  "lizhi-original": { hot: 1, new: 1 },
+};
+
+async function loadList(page) {
+  const el = document.getElementById("content");
+  el.className = "loading"; el.textContent = "加载中...";
+  try {
+    const res = await fetch("/api/list?page=" + page + "&sort=" + curSort + "&ch=" + curCh);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "加载失败");
+    const items = data.items || [];
+    totalPages = (data.pagination && data.pagination.pages) || 1;
+    curPage = page;
+    pageByChSort[curCh][curSort] = page;
+    if (!items.length) { el.className = "empty"; el.textContent = "暂无内容"; return; }
+    el.className = "grid";
+    el.innerHTML = items.map(cardHtml).join("");
+    document.getElementById("pager").style.display = "flex";
+    document.getElementById("pageInfo").textContent = "第 " + curPage + " / " + totalPages + " 页";
+    document.getElementById("prevBtn").disabled = curPage <= 1;
+    document.getElementById("nextBtn").disabled = curPage >= totalPages;
+    window.scrollTo(0, 0);
+  } catch (e) {
+    el.className = "empty"; el.textContent = "加载失败: " + e.message;
+  }
+}
+
+function exitSearch() {
+  keyword = "";
+  document.getElementById("searchInput").value = "";
+  document.getElementById("listTabs").style.display = "flex";
+  document.getElementById("sectionTitle").style.display = "none";
+}
+
+function switchCh(ch) {
+  curCh = ch;
+  document.querySelectorAll(".nav-item").forEach(a => a.classList.toggle("is-active", a.dataset.ch === ch));
+  exitSearch();
+  loadList(pageByChSort[ch][curSort] || 1);
+}
+
+function switchSort(sort) {
+  curSort = sort;
+  document.querySelectorAll(".lt-item").forEach(b => b.classList.toggle("is-active", b.dataset.sort === sort));
+  exitSearch();
+  loadList(pageByChSort[curCh][sort] || 1);
+}
+
+async function doSearch() {
+  const kw = document.getElementById("searchInput").value.trim();
+  if (!kw) { exitSearch(); loadList(pageByChSort[curCh][curSort] || 1); return; }
+  keyword = kw;
+  document.getElementById("listTabs").style.display = "none";
+  const st = document.getElementById("sectionTitle");
+  st.style.display = "flex";
+  st.textContent = '搜索“' + kw + '”的结果';
+  document.getElementById("pager").style.display = "none";
+  const el = document.getElementById("content");
+  el.className = "loading"; el.textContent = "搜索中...";
+  try {
+    const res = await fetch("/api/search?q=" + encodeURIComponent(kw));
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || "搜索失败");
+    const items = data.items || [];
+    const total = (data.pagination && data.pagination.total) || items.length;
+    st.textContent = '搜索“' + kw + '”的结果（' + total + ' 条）';
+    if (!items.length) { el.className = "empty"; el.textContent = "没有找到相关结果"; return; }
+    el.className = "grid";
+    el.innerHTML = items.map(cardHtml).join("");
+  } catch (e) {
+    el.className = "empty"; el.textContent = "搜索失败: " + e.message;
+  }
+}
+
+function changePage(delta) {
+  const p = curPage + delta;
+  if (p < 1 || p > totalPages) return;
+  loadList(p);
+}
+
+function cardHtml(it) {
+  const score = it.score ? '<span class="score">' + it.score + '分</span>' : "";
+  const epsText = it.episode_text || (it.episode_count ? "全" + it.episode_count + "集" : "");
+  const eps = epsText ? '<span class="eps-badge">' + epsText + '</span>' : "";
+  const badge = it.badge
+    ? '<span class="badge" style="background:' + (it.badge_color || "#fe5722") + '">' + it.badge + '</span>' : "";
+  const meta = [];
+  if (it.view_text) meta.push(it.view_text);
+  if (it.progress_text) meta.push(it.progress_text);
+  const metaHtml = (meta.length ? meta.join(" · ") + " · " : "") +
+    (it.tags || []).slice(0, 3).map(t => '<span class="tag">' + t + '</span>').join("");
+  return '<div class="card">' +
+    '<div class="cover-wrap" onclick="window.open(\'/detail/' + it.id + '\', \'_blank\')">' +
+      '<img src="' + LzCommon.imgProxy(it.cover) + '" loading="lazy" onerror="LzCommon.imgError(this)">' +
+      badge + score + eps +
+    '</div>' +
+    '<div class="card-body">' +
+      '<div class="card-title" onclick="window.open(\'/detail/' + it.id + '\', \'_blank\')">' + it.title + '</div>' +
+      '<div class="card-meta">' + metaHtml + '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+document.getElementById("searchInput").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+
+loadList(1);
+</script>
+</body>
+</html>

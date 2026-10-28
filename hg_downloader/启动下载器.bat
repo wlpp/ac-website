@@ -19,7 +19,11 @@ echo   Close this window to stop the service.
 echo ==============================================
 echo.
 
-cd /d "%~dp0"
+rem ---- Use the script's own folder if it contains app.py, otherwise fall back to the project path ----
+set "APP_DIR=%~dp0"
+if not exist "%APP_DIR%app.py" set "APP_DIR=e:\myWork\project\ac-website\hg_downloader"
+
+cd /d "%APP_DIR%"
 "e:\myWork\project\ac-website\.venv\Scripts\python.exe" app.py
 
 echo.

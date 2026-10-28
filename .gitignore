@@ -9,5 +9,8 @@ crawler/
 hg_downloader/tools/
 hg_downloader/*.log
 hg_downloader/aliyun.json
+lz_downloader/tools/
+lz_downloader/*.log
+lz_downloader/aliyun.json
 __pycache__/
 *.pyc

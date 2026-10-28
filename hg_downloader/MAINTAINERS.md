@@ -28,7 +28,7 @@
 ```
 hg_downloader/                 # 项目根目录（2026-10-27 由 crawler/hg_downloader 迁入）
 ├── app.py                 # 全部后端（FastAPI + 爬虫 + 下载器 + 转封装），单文件约 771 行
-├── 启动下载器.bat          # 一键启动：端口占用检测、打印局域网地址、切换到脚本所在目录后运行 app.py
+├── 启动下载器.bat          # 一键启动：端口占用检测、打印局域网地址、切换到脚本所在目录后运行 app.py；也可放到桌面运行（自动回退到项目路径）
 ├── MAINTAINERS.md         # 本文件
 ├── server.log             # 运行日志（uvicorn + print 输出），最新一次 2026-10-14
 ├── static/
@@ -286,3 +286,4 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | 2026-10-27 | 建档 | 通读代码生成维护记录；确认当前实现：单 worker、16 并发分片、10 分钟 m3u8 缓存、图片 AES 解密、TS→MP4 转封装、按需轮询、全局暂停；记录 `EP_DELAY` 未使用、代理与保存路径硬编码、状态不持久化等风险 | `MAINTAINERS.md` |
 | 2026-10-27 | 迁移 | 整个目录由 `crawler/hg_downloader` 移至项目根目录 `hg_downloader/`。代码用 `APP_DIR = Path(__file__).parent` 定位 static/tools，路径无需改动；启动命令与端口不变 | `MAINTAINERS.md` |
 | 2026-10-27 | 修复 | `启动下载器.bat` 的 `cd` 目标由旧路径改为 `%~dp0`（脚本自身目录），解决迁移后"系统找不到指定的路径"、python 在桌面找 `app.py` 的问题；后续再搬目录也不会失效 | `启动下载器.bat`、`MAINTAINERS.md` |
+| 2026-10-28 | 增强 | 支持把 bat 放到桌面运行：先在脚本所在目录找 `app.py`，找不到则回退到 `e:\myWork\project\ac-website\hg_downloader`。桌面已放一份副本 `C:\Users\wlpp\Desktop\启动下载器.bat`；**项目再搬家时需同步修改两处副本里的回退路径** | `启动下载器.bat`、`MAINTAINERS.md` |

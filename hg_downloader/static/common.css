@@ -7,8 +7,8 @@
 .fab:hover { transform: scale(1.08); }
 .fab-download { background: linear-gradient(135deg, #ffb84d, #ff8c42); color: #1a1207;
                 box-shadow: 0 6px 20px rgba(255,150,50,.35); }
-.fab-folder { background: #2b3348; color: #ffd166; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
 .fab-library { background: #1f3a2e; color: #7ee2a8; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
+.fab-player { background: #1f2b45; color: #8fb8ff; box-shadow: 0 6px 20px rgba(0,0,0,.4); }
 .fab .badge { position: absolute; top: -4px; right: -4px; min-width: 22px; height: 22px; padding: 0 6px;
               border-radius: 11px; background: #ff5252; color: #fff; font-size: 12px; font-weight: 700;
               line-height: 22px; display: none; }

@@ -1,7 +1,5 @@
-/* 公共组件：悬浮按钮组（剧集列表/打开目录/下载进度）、下载进度弹窗、按需轮询 */
+/* 公共组件：悬浮按钮组（剧集列表/播放器/下载进度）、下载进度弹窗、按需轮询 */
 const HgCommon = (() => {
-  // 当前页面上下文中的视频id（详情页设置后，打开目录/跳转用）
-  let videoContext = null;
   let modalOpen = false;
   let polling = false;
   let holdUntil = 0;     // 保活窗口：刚发起下载时后端还没建好任务状态，先持续轮询一段时间
@@ -27,7 +25,7 @@ const HgCommon = (() => {
   wrap.innerHTML = `
     <div class="fab-group">
       <button class="fab fab-library" id="fabLibrary" title="剧集列表（已下载）">🎞</button>
-      <button class="fab fab-folder" id="fabFolder" title="打开本地目录">📁<span class="badge" id="fabFolderBadge"></span></button>
+      <button class="fab fab-player" id="fabPlayer" title="本地播放器">▶</button>
       <button class="fab fab-download" id="fabDownload" title="下载进度">⬇<span class="badge" id="fabBadge"></span></button>
     </div>
     <div class="modal-mask" id="modalMask">
@@ -92,18 +90,6 @@ const HgCommon = (() => {
   document.getElementById("modalClose").addEventListener("click", closeModal);
 
   document.getElementById("fabDownload").addEventListener("click", openModal);
-  document.getElementById("fabFolder").addEventListener("click", () => openFolder());
-
-  async function openFolder(vid) {
-    const id = vid !== undefined ? vid : videoContext;
-    try {
-      const res = await fetch("/api/open-folder", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(id ? { video_id: id } : {})
-      });
-      if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "打开失败"); }
-    } catch (e) { alert("打开本地目录失败: " + e.message); }
-  }
 
   // ---------- 本地剧集（剧集列表页使用） ----------
   // 在资源管理器中打开某一部剧的本地目录
@@ -117,12 +103,19 @@ const HgCommon = (() => {
     } catch (e) { alert("打开本地目录失败: " + e.message); }
   }
 
-  // 剧集列表改为独立页面：按钮直接跳转（该页面自身不再显示此按钮）
+  // 剧集列表/播放器为独立页面：按钮直接跳转（各自页面自身不再显示对应按钮）
+  const path = location.pathname.replace(/\/+$/, "");
   const fabLibrary = document.getElementById("fabLibrary");
-  if (location.pathname.replace(/\/+$/, "") === "/library") {
+  if (path === "/library") {
     fabLibrary.style.display = "none";
   } else {
     fabLibrary.addEventListener("click", () => { location.href = "/library"; });
+  }
+  const fabPlayer = document.getElementById("fabPlayer");
+  if (path === "/player") {
+    fabPlayer.style.display = "none";
+  } else {
+    fabPlayer.addEventListener("click", () => { location.href = "/player"; });
   }
 
   // ---------- 渲染 ----------
@@ -231,8 +224,7 @@ const HgCommon = (() => {
   ensurePolling();
 
   return {
-    imgProxy, imgError, fmtSize, openFolder, ensurePolling, openLibFolder,
+    imgProxy, imgError, fmtSize, ensurePolling, openLibFolder,
     onProgress(cb) { progressCb = cb; },
-    setVideoContext(vid) { videoContext = vid; },
   };
 })();

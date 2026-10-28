@@ -97,8 +97,6 @@ let tsPlayer = null; // mpegts.js 播放器实例（TS流，移动端网页播�
 let pausedFlag = false; // 全局暂停状态（由进度轮询同步）
 const isMobile = /Android|iPhone|iPad|iPod|Mobile|Silk|HarmonyOS/i.test(navigator.userAgent);
 
-HgCommon.setVideoContext(videoId);
-
 async function loadDetail() {
   const el = document.getElementById("content");
   try {

@@ -500,6 +500,11 @@ async def library_page():
     return FileResponse(APP_DIR / "static" / "library.html")
 
 
+@app.get("/player")
+async def player_page():
+    return FileResponse(APP_DIR / "static" / "player.html")
+
+
 def parse_drama_cards(scope):
     """解析 .hg-drama-card 卡片列表（搜索页/频道页latest面板共用）"""
     items = []
@@ -707,6 +712,51 @@ async def api_library():
     return await asyncio.to_thread(_scan_library)
 
 
+# ========== 收藏剧集（PC 与手机共用，存在 favorites.json） ==========
+FAV_FILE = APP_DIR / "favorites.json"
+
+
+def _load_favorites() -> list:
+    """读取收藏的剧集目录名"""
+    try:
+        data = json.loads(FAV_FILE.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return []
+    if not isinstance(data, list):
+        return []
+    return [str(x) for x in data if isinstance(x, str)]
+
+
+def _save_favorites(folders: list) -> None:
+    FAV_FILE.write_text(json.dumps(folders, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _toggle_favorite(folder: str, favorite: bool) -> list:
+    folders = _load_favorites()
+    if favorite and folder not in folders:
+        folders.append(folder)
+    elif not favorite and folder in folders:
+        folders.remove(folder)
+    _save_favorites(folders)
+    return folders
+
+
+@app.get("/api/favorites")
+async def api_favorites():
+    """收藏的剧集目录名列表"""
+    return {"folders": await asyncio.to_thread(_load_favorites)}
+
+
+@app.post("/api/favorites")
+async def api_favorites_toggle(body: dict = None):
+    """收藏 / 取消收藏（body: {folder, favorite: true/false}）"""
+    body = body or {}
+    folder = str(body.get("folder") or "")
+    if not folder:
+        raise HTTPException(400, "缺少剧名")
+    return {"folders": await asyncio.to_thread(_toggle_favorite, folder, bool(body.get("favorite")))}
+
+
 def _folder_is_busy(folder: str) -> bool:
     """该剧集目录是否还有下载中/排队中的任务（此时删除目录会造成写入错乱）"""
     for vid, s in manager.state.items():
@@ -728,6 +778,7 @@ async def api_library_delete(body: dict = None):
     if _folder_is_busy(folder):
         raise HTTPException(409, "该剧集正在下载，请先暂停并等待当前集完成后再删除")
     await asyncio.to_thread(shutil.rmtree, target, ignore_errors=True)
+    await asyncio.to_thread(_toggle_favorite, folder, False)  # 删除本地文件同时移出收藏
     manager.sync_deleted_files()  # 清理内存中指向已删文件的下载记录
     log(f"已删除本地剧集目录: {folder}")
     return {"deleted": folder}

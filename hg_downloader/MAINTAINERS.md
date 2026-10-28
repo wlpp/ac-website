@@ -164,6 +164,7 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | GET | `/` | – | `static/index.html` |
 | GET | `/detail/{video_id}` | – | `static/detail.html`（前端再调 `/api/video`） |
 | GET | `/library` | – | `static/library.html`（我的剧集页） |
+| GET | `/player` | – | `static/player.html`（本地播放器页） |
 | GET | `/api/list` | `page`,`sort=hot_window\|latest`,`ch` | 非法值回退 `duanju`/`hot_window` |
 | GET | `/api/search` | `q` | 空词返回空列表 |
 | GET | `/api/video/{id}` | – | 详情 + 每集本地状态（含磁盘存在性） |
@@ -171,6 +172,8 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | GET | `/api/progress` | – | 全量进度快照（含 `paused/queue_len/current/failed`） |
 | GET/POST | `/api/pause` | body `{paused}` | 全局暂停 |
 | GET | `/api/library` | – | 扫描 `SAVE_DIR`，返回 `{items:[{folder,episodes,count,size,mtime}],count,total_size}` |
+| GET | `/api/favorites` | – | 收藏的剧集目录名 `{folders:[...]}`（存 `favorites.json`，PC/手机共用） |
+| POST | `/api/favorites` | body `{folder, favorite}` | 收藏/取消收藏，返回最新 `{folders}`；`favorite:false` 用于删除本地目录时同步清收藏 |
 | GET | `/api/library/episodes` | `folder` | 卡片展开：反查 `video_id` + 全部集数 + 本机已下载集；目录名非法 400、不存在 404 |
 | POST | `/api/library/delete` | body `{folder}` | 删除整部剧本地目录（`shutil.rmtree`）；有下载中/排队任务返回 409 |
 | POST | `/api/library/play` | body `{folder, ep}` | 转封装后用系统播放器打开 |
@@ -201,20 +204,36 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 - "下载全部"提交后立即把 idle/failed 标 pending，交给轮询接管。
 
 ### `common.js`
-- 注入悬浮按钮（剧集列表 / 打开目录 / 下载进度）与下载进度弹窗，并追加 `common.css` 引用。
-- 剧集列表为独立页面：`fabLibrary` 直接 `location.href='/library'`（在 `/library` 页自身隐藏该按钮）。
+- 注入悬浮按钮（剧集列表 / 本地播放器 / 下载进度）与下载进度弹窗，并追加 `common.css` 引用。
+- 剧集列表/播放器为独立页面：`fabLibrary` → `/library`、`fabPlayer` → `/player`（各自页面自身隐藏对应按钮）。
 - **按需轮询**：`tick()` 每 1.5s 拉 `/api/progress`；条件为弹窗打开 **或** 存在 `current` / `queue_len>0`；否则 `polling=false` 停止（空闲不再打扰后端）。请求异常时 3s 后重试且不会停。
 - 角标计数 = 有活动任务或有失败集数的视频数。
 - 暂停按钮与后端同步；弹窗内展示每部剧的封面、总体进度、当前集分片进度、集状态 chips。
-- 对外导出：`imgProxy / imgError / fmtSize / openFolder / ensurePolling / openLibFolder / onProgress / setVideoContext`。
+- 对外导出：`imgProxy / imgError / fmtSize / ensurePolling / openLibFolder / onProgress`。
 - 下载完成提示：`tick()` 内对比上一轮快照 `lastProg`，新变为 `completed` 的集弹 toast（`《剧名》第N集下载完成`，整部完成则 `.hg-toasts` 提示"全部下载完成"）；首轮只建基线，避免把历史已完成误报为新完成。
 
 ### `library.html`（我的剧集，`/library`）
+- 两个可折叠分区：「已下载剧集」和「收藏剧集」，点分区标题（`.sect-head`）折叠/展开，折叠状态存 `localStorage["hg_lib_sects"]`（`{sectDl:false,...}`，`false` 表示折叠），刷新后保持。
 - 卡片网格（`align-items: start`，卡片按内容自适应高度，展开不影响同排其他卡片）。
-- 卡片显示标题 + 集数/大小/时间；右上角 📁 打开该剧目录、🗑 删除整部剧本地目录（`confirm` 后调 `/api/library/delete`）。
+- 卡片显示标题 + 集数/大小/时间；右上角 ☆/★ 收藏（`POST /api/favorites`，收藏后星标点亮并出现在收藏分区）、📁 打开该剧目录、🗑 删除整部剧本地目录（`confirm` 后调 `/api/library/delete`，同时移出收藏）。
+- 收藏存在后端 `favorites.json`（`APP_DIR` 下），因此电脑和手机看到同一份收藏；收藏只记录目录名，渲染时与 `/api/library` 结果取交集（本地已删的剧不会出现在收藏区）。
+- 两个分区**互斥**：已收藏的剧不再出现在「已下载剧集」里（`renderDownloaded` 过滤 `state.favs`），取消收藏后回到已下载分区；全部被收藏时已下载区显示提示。`syncFavUI()` 在收藏/取消后同时重建两个分区。
 - 点击卡片展开：先展示已下载集（绿色），同时请求 `/api/library/episodes` 补齐全量集数 —— 已下载亮起、未下载置灰；点击置灰集调 `/api/download/{vid}` 加入队列，状态文字由 `onProgress` 轮询更新（排队 → 百分比 → 完成/失败）。
+- 点击**已下载**的绿色集数：跳转 `/player?folder=<剧名>&ep=<集数>` 直接播放；置灰/失败的集仍是加入下载（行为不变）。
 - 「前往详情页」使用展开时拿到的 `video_id` 跳 `/detail/{id}`（电脑新标签，手机当前页）。
 - 加载失败时提示可点击重试。
+
+### `player.html`（本地播放器，`/player`）
+- 桌面：左视频 + 右剧集列表（`grid-template-columns: minmax(0,1fr) 320px`）。
+- **移动端（≤860px）沉浸式播放**：`.playlist` 隐藏（已下载剧集只在 PC 显示），视频占满剩余高度；底部不再有控制条，「剧集」按钮（`#btnEps`）与标题同一行（`.stage-bar`，右侧对齐），底部留 `env(safe-area-inset-bottom)`。窄屏占位文案改为"请从「我的剧集」点击已下载的集数进入播放"。
+- 移动端播放页**隐藏悬浮按钮组**（`body .fab-group { display:none }`，写在 `player.html` 自身的 `@media` 里，用 `body` 提升优先级压过 `common.js` 后注入的 `common.css`），避免 ⬇/🎞 圆钮遮挡「下一集」和视频原生控件；其它页面不受影响。
+- 整页固定高度（`100dvh` + `overflow: hidden`），只有剧集列表内部滚动，不会出现页面滚动条；视频用 `position:absolute; inset:0; object-fit:contain` 填充播放区，等比留黑边，不会溢出/拉伸。
+- **直接在视频画面上左右滑动快进/快退**（不使用独立进度条）：`#videoBox` 上监听 `touchstart/touchmove/touchend`，水平位移 > 14px 且大于竖直位移才进入滑动状态；比例按"划过整个宽度 ≈ 整集时长"（`dx / boxWidth * duration`），滑动时中间浮层 `.seek-hint` 显示"快进 N 秒"与目标时间，松手（`touchend`）才真正 `video.currentTime = target`；`touchmove` 为 `{passive:false}` 并 `preventDefault()` 占住手势，避免拖动原生进度条/页面滚动；`touchcancel` 放弃本次调节。
+- 「剧集」弹框（移动端）：点标题行右侧 `#btnEps` 打开底部面板 `.eps-mask/.eps-panel`，`#epsGrid` 列出**当前这部剧已下载的全部集数**，当前集高亮 `.cur` 并 `scrollIntoView` 居中；点某一集直接 `play()` 切集并关闭弹框，点遮罩空白处关闭；未选集时按钮禁用。
+- 一集播完自动顺延下一集（`ended` → `stepEp(1)`，仅在已下载集范围内）。
+- 支持 `GET /player?folder=<剧名>&ep=<集数>` 直接起播（剧集页点已下载集数即走这个入口）。
+- 数据直接用 `/api/library`（本地目录扫描），只播放已下载的集；点击剧名展开集数 chips，点击集数播放 `GET /api/library/stream?folder=&ep=`（后端先 `ensure_remux`，MP4 + Range 支持拖动）。
+- `<video controls playsinline webkit-playsinline x5-playsinline>`，移动端内联播放不劫持全屏；`waiting` 时状态栏提示"缓冲中"（首次播放可能要等转封装）。
 
 ---
 
@@ -308,4 +327,9 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | 2026-10-28 | 功能 | 新增「我的剧集」独立页面 `/library`（替代原弹框）：卡片展示标题/集数/大小/时间，🗑 删除整部剧本地目录（下载中 409 拒绝），点击卡片展开集数与「前往详情页」。后端新增 `/api/library`、`/api/library/episodes`、`/api/library/delete`、`/api/library/play`、`/api/library/stream`，`/api/open-folder` 支持 `{folder}`；并抽出 `_safe_save_subdir()` 防路径穿越 | `app.py`、`static/library.html`、`static/common.js`、`static/common.css` |
 | 2026-10-28 | 调整 | 卡片集数改为全量展示：展开时拉 `/api/library/episodes`（反查 video_id + 总集数 + 已下载集），已下载亮起、未下载置灰、点击置灰加入下载队列并由 `onProgress` 更新排队/百分比/失败状态；移除集数点击播放。网格加 `align-items: start` 修复展开卡片拉伸同排卡片 | `static/library.html`、`static/common.js` |
 | 2026-10-28 | 增强 | 下载完成消息提示：轮询时对比上一轮进度快照，新完成的集弹出 toast（单集完成/整部完成两种文案），3.2s 自动消失；首轮只建基线防止误报历史完成 | `static/common.js`、`static/common.css` |
-| 2026-10-29 | 修复 | 下载完成不弹提示：`_download_one` 先抓元数据才 `init_state`，发起下载后的首轮快照里看不到任务 → `active=false` 导致轮询停止、再没机会检测完成。`ensurePolling()` 增加 20s 保活窗口（`holdUntil`），等状态建立后由 `active` 接管 | `static/common.js` |
+| 2026-10-29 | 修复 | 下载完成不弹提示：`_download_one` 先抓元数据才 `init_state`，发起下载后的首轮快照里看不到任务 → `active=false` 导致轮询停止、再没机会检测完成。`ensurePolling()` 增加 20s 保活窗口（`holdUntil`），等状态建立后由 `active` 接管；三个页面静态资源加 `?v=` 版本号避免旧缓存 | `static/common.js`、`static/*.html` |
+| 2026-10-29 | 功能 | 新增本地播放器页 `/player`：右侧/下方列出已下载剧集，点集数用 `<video>` 播放 `/api/library/stream`（Range 拖动、自动下一集、移动端内联播放）；悬浮按钮组新增 ▶（`fabPlayer`）。后端新增 `GET /player` 路由 | `app.py`、`static/player.html`、`static/common.js`、`static/common.css` |
+| 2026-10-29 | 优化 | 播放器移动端：新增底部控制条（上一集/下一集 + 时间）、`scrubbing` 防回写；移动端隐藏 `.playlist`（已下载剧集只在 PC 显示）改为沉浸式播放。剧集页 `.ep-chip` 已下载的点击跳 `/player?folder=&ep=`，置灰/失败仍加入下载。移除悬浮按钮 📁（`fabFolder`/`openFolder`/`setVideoContext`）。**同日改为在视频画面上左右滑动快进/快退**（`dx/boxWidth*duration`，滑动时 `.seek-hint` 浮层提示，松手才 seek），去掉独立进度条 `input#seek` | `static/player.html`、`static/library.html`、`static/common.js`、`static/common.css`、`static/detail.html` |
+| 2026-10-29 | 修复 | 移动端播放页悬浮按钮（⬇/🎞）压住「下一集」和视频原生控件：在 `player.html` 的 `@media (max-width:860px)` 内用 `body .fab-group { display:none }` 隐藏（`body` 前缀提高优先级，压过 `common.js` 事后注入的 `common.css`）；`.ctl` 底部改用 `calc(10px + env(safe-area-inset-bottom))` 适配 iPhone 底部安全区 | `static/player.html` |
+| 2026-10-29 | 调整 | 去掉移动端底部「上一集 / 时间 / 下一集」控制条，改为标题同一行右侧的「剧集」按钮（`#btnEps`）；点击弹出底部面板，列出当前这部剧已下载的全部集数（当前集高亮、自动滚到中间），点一集直接切集并关闭，点遮罩关闭；上一集/下一集逻辑仅保留给 `ended` 自动连播 | `static/player.html` |
+| 2026-10-29 | 功能 | 「我的剧集」拆成两个可折叠分区（已下载 / 收藏，折叠状态存 `localStorage`）；卡片新增 ☆/★ 收藏按钮，收藏写入后端 `favorites.json`（`GET/POST /api/favorites`，PC 与手机共用），收藏分区与已下载列表取交集渲染；删除本地目录时同步移出收藏 | `app.py`、`static/library.html` |

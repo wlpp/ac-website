@@ -10,6 +10,7 @@ import json
 import os
 import random
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -494,6 +495,11 @@ async def detail_page(video_id: int):
     return FileResponse(APP_DIR / "static" / "detail.html")
 
 
+@app.get("/library")
+async def library_page():
+    return FileResponse(APP_DIR / "static" / "library.html")
+
+
 def parse_drama_cards(scope):
     """解析 .hg-drama-card 卡片列表（搜索页/频道页latest面板共用）"""
     items = []
@@ -637,12 +643,151 @@ async def api_set_pause(body: dict = None):
     return {"paused": manager.paused}
 
 
+LIB_EP_RE = re.compile(r"^第(\d+)集\.mp4$")
+_INVALID_DIR_CHARS = set('/\\:*?"<>|')
+
+
+def _safe_save_subdir(name: str) -> Path:
+    """把传入的目录名限制为 SAVE_DIR 下的一级子目录，防止路径穿越"""
+    if not name or name in (".", "..") or any(c in name for c in _INVALID_DIR_CHARS):
+        raise HTTPException(400, "目录名不合法")
+    target = SAVE_DIR / name
+    try:
+        target.resolve().relative_to(SAVE_DIR.resolve())
+    except ValueError:
+        raise HTTPException(400, "目录名不合法")
+    return target
+
+
+def _library_file(folder: str, ep: int) -> Path:
+    if ep <= 0:
+        raise HTTPException(400, "集数不合法")
+    return _safe_save_subdir(folder) / f"第{ep:02d}集.mp4"
+
+
+def _scan_library() -> dict:
+    """扫描 SAVE_DIR 下已下载的剧集（目录名=剧名，第NN集.mp4=集数）"""
+    if not SAVE_DIR.exists():
+        return {"items": [], "count": 0, "total_size": 0}
+    items = []
+    for d in SAVE_DIR.iterdir():
+        if not d.is_dir():
+            continue
+        try:
+            entries = list(d.iterdir())
+        except OSError:
+            continue
+        eps = []
+        for f in entries:
+            m = LIB_EP_RE.match(f.name)
+            if not m or not f.is_file():
+                continue
+            try:
+                st = f.stat()
+            except OSError:
+                continue
+            eps.append({"ep": int(m.group(1)), "size": st.st_size, "mtime": int(st.st_mtime)})
+        if not eps:
+            continue
+        eps.sort(key=lambda e: e["ep"])
+        items.append({
+            "folder": d.name,
+            "episodes": eps,
+            "count": len(eps),
+            "size": sum(e["size"] for e in eps),
+            "mtime": max(e["mtime"] for e in eps),
+        })
+    items.sort(key=lambda e: e["mtime"], reverse=True)
+    return {"items": items, "count": len(items), "total_size": sum(i["size"] for i in items)}
+
+
+@app.get("/api/library")
+async def api_library():
+    """已下载剧集列表（按最近下载时间倒序）"""
+    return await asyncio.to_thread(_scan_library)
+
+
+def _folder_is_busy(folder: str) -> bool:
+    """该剧集目录是否还有下载中/排队中的任务（此时删除目录会造成写入错乱）"""
+    for vid, s in manager.state.items():
+        if sanitize_filename(s.get("title", "")) != folder:
+            continue
+        for ep, st in s.get("episodes", {}).items():
+            if st.get("status") in ("downloading", "pending") or (vid, ep) in manager.queued:
+                return True
+    return False
+
+
+@app.post("/api/library/delete")
+async def api_library_delete(body: dict = None):
+    """删除本地剧集目录（body: {folder}）"""
+    folder = str((body or {}).get("folder") or "")
+    target = _safe_save_subdir(folder)
+    if not target.is_dir():
+        raise HTTPException(404, "剧集目录不存在")
+    if _folder_is_busy(folder):
+        raise HTTPException(409, "该剧集正在下载，请先暂停并等待当前集完成后再删除")
+    await asyncio.to_thread(shutil.rmtree, target, ignore_errors=True)
+    manager.sync_deleted_files()  # 清理内存中指向已删文件的下载记录
+    log(f"已删除本地剧集目录: {folder}")
+    return {"deleted": folder}
+
+
+async def _resolve_video_id(folder: str) -> tuple:
+    """按本地目录名反查站内 video_id（目录名即 sanitize 后的剧名）"""
+    for vid, name in manager.title_cache.items():
+        if name == folder:
+            return int(vid), folder
+    try:
+        html = await manager.fetch_text(search_url + quote(folder) + "/", "搜索")
+    except Exception as e:
+        raise HTTPException(502, f"搜索失败: {e}")
+    items = parse_drama_cards(BeautifulSoup(html, "html.parser"))
+    names = [(it, sanitize_filename(it["title"])) for it in items]
+    hit = next((it for it, n in names if n == folder), None) \
+        or next((it for it, n in names if n and (n in folder or folder in n)), None)
+    if not hit:
+        raise HTTPException(404, "站内未找到该剧，可能已下架")
+    return hit["id"], hit["title"]
+
+
+@app.get("/api/library/episodes")
+async def api_library_episodes(folder: str):
+    """卡片展开用：返回该剧全部集数与本机已下载的集数"""
+    folder = folder.strip()
+    target = _safe_save_subdir(folder)
+    if not target.is_dir():
+        raise HTTPException(404, "剧集目录不存在")
+    downloaded = []
+    for f in target.iterdir():
+        m = LIB_EP_RE.match(f.name)
+        if m and f.is_file():
+            downloaded.append(int(m.group(1)))
+    vid, _ = await _resolve_video_id(folder)
+    try:
+        meta = await manager.get_video_meta(vid)
+    except Exception as e:
+        raise HTTPException(502, f"获取视频信息失败: {e}")
+    return {
+        "video_id": vid,
+        "title": meta["title"],
+        "total_eps": max(meta["total_eps"], max(downloaded, default=0)),
+        "downloaded": sorted(downloaded),
+    }
+
+
 @app.post("/api/open-folder")
 async def api_open_folder(body: dict = None):
-    """打开本地下载目录（body: {video_id} 打开对应视频目录，否则打开根目录）"""
-    vid = (body or {}).get("video_id")
+    """打开本地下载目录（body: {video_id} 打开对应视频目录，{folder} 打开指定剧集目录，否则打开根目录）"""
+    body = body or {}
+    vid = body.get("video_id")
+    folder = body.get("folder")
     target = SAVE_DIR
-    if vid:
+    if folder:
+        target = _safe_save_subdir(str(folder))
+        if not target.is_dir():
+            raise HTTPException(404, "剧集目录不存在")
+    elif vid:
         try:
             title = await manager.resolve_title(int(vid))
             target = SAVE_DIR / title
@@ -673,18 +818,20 @@ async def api_play(body: dict = None):
     return {"opened": str(file_path)}
 
 
-@app.get("/api/stream/{video_id}/{ep}")
-async def api_stream(video_id: int, ep: int, range_header: str = Header(None, alias="range")):
-    """本地视频播放（支持Range，可拖动进度条）"""
-    try:
-        title = await manager.resolve_title(video_id)
-    except Exception as e:
-        raise HTTPException(502, f"获取视频信息失败: {e}")
-    file_path = SAVE_DIR / title / f"第{ep:02d}集.mp4"
+@app.post("/api/library/play")
+async def api_library_play(body: dict = None):
+    """播放已下载的剧集（body: {folder, ep}），无需 video_id"""
+    body = body or {}
+    file_path = _library_file(str(body.get("folder") or ""), int(body.get("ep") or 0))
     if not file_path.exists():
-        raise HTTPException(404, "视频文件不存在（尚未下载）")
-    await manager.ensure_remux(file_path)  # 若仍是TS拼接流，先无损转封装（转后才是合法MP4，浏览器可播）
+        raise HTTPException(404, "视频文件不存在")
+    await manager.ensure_remux(file_path)
+    await asyncio.to_thread(os.startfile, str(file_path))
+    return {"opened": str(file_path)}
 
+
+def _video_response(file_path: Path, range_header: str):
+    """按 Range 返回本地视频流（MP4 原生播放 / TS 交给前端 mpegts.js）"""
     size = file_path.stat().st_size
     start, end = 0, size - 1
     status = 200
@@ -721,6 +868,30 @@ async def api_stream(video_id: int, ep: int, range_header: str = Header(None, al
         headers["Content-Range"] = f"bytes {start}-{end}/{size}"
     return StreamingResponse(iter_file(), status_code=status,
                              media_type=media_type, headers=headers)
+
+
+@app.get("/api/stream/{video_id}/{ep}")
+async def api_stream(video_id: int, ep: int, range_header: str = Header(None, alias="range")):
+    """本地视频播放（支持Range，可拖动进度条）"""
+    try:
+        title = await manager.resolve_title(video_id)
+    except Exception as e:
+        raise HTTPException(502, f"获取视频信息失败: {e}")
+    file_path = SAVE_DIR / title / f"第{ep:02d}集.mp4"
+    if not file_path.exists():
+        raise HTTPException(404, "视频文件不存在（尚未下载）")
+    await manager.ensure_remux(file_path)  # 若仍是TS拼接流，先无损转封装（转后才是合法MP4，浏览器可播）
+    return _video_response(file_path, range_header)
+
+
+@app.get("/api/library/stream")
+async def api_library_stream(folder: str, ep: int, range_header: str = Header(None, alias="range")):
+    """已下载剧集网页播放（支持Range），供手机端从剧集列表直接打开"""
+    file_path = _library_file(folder, ep)
+    if not file_path.exists():
+        raise HTTPException(404, "视频文件不存在")
+    await manager.ensure_remux(file_path)
+    return _video_response(file_path, range_header)
 
 
 @app.get("/api/image")

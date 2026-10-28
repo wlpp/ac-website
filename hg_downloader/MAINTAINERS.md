@@ -163,17 +163,25 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 |---|---|---|---|
 | GET | `/` | – | `static/index.html` |
 | GET | `/detail/{video_id}` | – | `static/detail.html`（前端再调 `/api/video`） |
+| GET | `/library` | – | `static/library.html`（我的剧集页） |
 | GET | `/api/list` | `page`,`sort=hot_window\|latest`,`ch` | 非法值回退 `duanju`/`hot_window` |
 | GET | `/api/search` | `q` | 空词返回空列表 |
 | GET | `/api/video/{id}` | – | 详情 + 每集本地状态（含磁盘存在性） |
 | POST | `/api/download/{id}` | body `{ep}` 或 `{}` | 返回 `{queued, skipped}` |
 | GET | `/api/progress` | – | 全量进度快照（含 `paused/queue_len/current/failed`） |
 | GET/POST | `/api/pause` | body `{paused}` | 全局暂停 |
-| POST | `/api/open-folder` | body `{video_id?}` | `os.startfile` 打开目录 |
+| GET | `/api/library` | – | 扫描 `SAVE_DIR`，返回 `{items:[{folder,episodes,count,size,mtime}],count,total_size}` |
+| GET | `/api/library/episodes` | `folder` | 卡片展开：反查 `video_id` + 全部集数 + 本机已下载集；目录名非法 400、不存在 404 |
+| POST | `/api/library/delete` | body `{folder}` | 删除整部剧本地目录（`shutil.rmtree`）；有下载中/排队任务返回 409 |
+| POST | `/api/library/play` | body `{folder, ep}` | 转封装后用系统播放器打开 |
+| GET | `/api/library/stream` | `folder`,`ep`,`Range` | 同上，网页流播放 |
+| POST | `/api/open-folder` | body `{video_id?}` / `{folder?}` | `os.startfile` 打开根目录、某剧目录或指定剧集目录 |
 | POST | `/api/play` | body `{video_id, ep}` | 必要时先转封装，再 `os.startfile` 调系统播放器 |
 | GET | `/api/stream/{id}/{ep}` | `Range` 头 | 206/416/200；按首字节返回 `video/mp2t` 或 `video/mp4` |
 | GET | `/api/image` | `url` | 域名白名单校验 → 代理 → 嗅探文件头 → 解密 → 正确 Content-Type |
 | GET | `/favicon.ico` | – | 204 |
+
+> 本地目录名校验统一走 `_safe_save_subdir()`：拒绝 `.`/`..`、`/\:*?"<>|`，并 `resolve()` 后校验仍在 `SAVE_DIR` 下，防路径穿越。
 
 ---
 
@@ -193,10 +201,20 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 - "下载全部"提交后立即把 idle/failed 标 pending，交给轮询接管。
 
 ### `common.js`
-- 注入悬浮按钮（打开目录 / 下载进度）与弹窗，并追加 `common.css` 引用。
+- 注入悬浮按钮（剧集列表 / 打开目录 / 下载进度）与下载进度弹窗，并追加 `common.css` 引用。
+- 剧集列表为独立页面：`fabLibrary` 直接 `location.href='/library'`（在 `/library` 页自身隐藏该按钮）。
 - **按需轮询**：`tick()` 每 1.5s 拉 `/api/progress`；条件为弹窗打开 **或** 存在 `current` / `queue_len>0`；否则 `polling=false` 停止（空闲不再打扰后端）。请求异常时 3s 后重试且不会停。
 - 角标计数 = 有活动任务或有失败集数的视频数。
 - 暂停按钮与后端同步；弹窗内展示每部剧的封面、总体进度、当前集分片进度、集状态 chips。
+- 对外导出：`imgProxy / imgError / fmtSize / openFolder / ensurePolling / openLibFolder / onProgress / setVideoContext`。
+- 下载完成提示：`tick()` 内对比上一轮快照 `lastProg`，新变为 `completed` 的集弹 toast（`《剧名》第N集下载完成`，整部完成则 `.hg-toasts` 提示"全部下载完成"）；首轮只建基线，避免把历史已完成误报为新完成。
+
+### `library.html`（我的剧集，`/library`）
+- 卡片网格（`align-items: start`，卡片按内容自适应高度，展开不影响同排其他卡片）。
+- 卡片显示标题 + 集数/大小/时间；右上角 📁 打开该剧目录、🗑 删除整部剧本地目录（`confirm` 后调 `/api/library/delete`）。
+- 点击卡片展开：先展示已下载集（绿色），同时请求 `/api/library/episodes` 补齐全量集数 —— 已下载亮起、未下载置灰；点击置灰集调 `/api/download/{vid}` 加入队列，状态文字由 `onProgress` 轮询更新（排队 → 百分比 → 完成/失败）。
+- 「前往详情页」使用展开时拿到的 `video_id` 跳 `/detail/{id}`（电脑新标签，手机当前页）。
+- 加载失败时提示可点击重试。
 
 ---
 
@@ -287,3 +305,7 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | 2026-10-27 | 迁移 | 整个目录由 `crawler/hg_downloader` 移至项目根目录 `hg_downloader/`。代码用 `APP_DIR = Path(__file__).parent` 定位 static/tools，路径无需改动；启动命令与端口不变 | `MAINTAINERS.md` |
 | 2026-10-27 | 修复 | `启动下载器.bat` 的 `cd` 目标由旧路径改为 `%~dp0`（脚本自身目录），解决迁移后"系统找不到指定的路径"、python 在桌面找 `app.py` 的问题；后续再搬目录也不会失效 | `启动下载器.bat`、`MAINTAINERS.md` |
 | 2026-10-28 | 增强 | 支持把 bat 放到桌面运行：先在脚本所在目录找 `app.py`，找不到则回退到 `e:\myWork\project\ac-website\hg_downloader`。桌面已放一份副本 `C:\Users\wlpp\Desktop\启动下载器.bat`；**项目再搬家时需同步修改两处副本里的回退路径** | `启动下载器.bat`、`MAINTAINERS.md` |
+| 2026-10-28 | 功能 | 新增「我的剧集」独立页面 `/library`（替代原弹框）：卡片展示标题/集数/大小/时间，🗑 删除整部剧本地目录（下载中 409 拒绝），点击卡片展开集数与「前往详情页」。后端新增 `/api/library`、`/api/library/episodes`、`/api/library/delete`、`/api/library/play`、`/api/library/stream`，`/api/open-folder` 支持 `{folder}`；并抽出 `_safe_save_subdir()` 防路径穿越 | `app.py`、`static/library.html`、`static/common.js`、`static/common.css` |
+| 2026-10-28 | 调整 | 卡片集数改为全量展示：展开时拉 `/api/library/episodes`（反查 video_id + 总集数 + 已下载集），已下载亮起、未下载置灰、点击置灰加入下载队列并由 `onProgress` 更新排队/百分比/失败状态；移除集数点击播放。网格加 `align-items: start` 修复展开卡片拉伸同排卡片 | `static/library.html`、`static/common.js` |
+| 2026-10-28 | 增强 | 下载完成消息提示：轮询时对比上一轮进度快照，新完成的集弹出 toast（单集完成/整部完成两种文案），3.2s 自动消失；首轮只建基线防止误报历史完成 | `static/common.js`、`static/common.css` |
+| 2026-10-29 | 修复 | 下载完成不弹提示：`_download_one` 先抓元数据才 `init_state`，发起下载后的首轮快照里看不到任务 → `active=false` 导致轮询停止、再没机会检测完成。`ensurePolling()` 增加 20s 保活窗口（`holdUntil`），等状态建立后由 `active` 接管 | `static/common.js` |

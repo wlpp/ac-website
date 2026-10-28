@@ -1,10 +1,12 @@
-/* 公共组件：悬浮按钮组（下载进度/打开目录）、下载进度弹窗、按需轮询 */
+/* 公共组件：悬浮按钮组（剧集列表/打开目录/下载进度）、下载进度弹窗、按需轮询 */
 const HgCommon = (() => {
   // 当前页面上下文中的视频id（详情页设置后，打开目录/跳转用）
   let videoContext = null;
   let modalOpen = false;
   let polling = false;
+  let holdUntil = 0;     // 保活窗口：刚发起下载时后端还没建好任务状态，先持续轮询一段时间
   let progressCb = null; // 页面注册的进度回调 (prog, active)
+  let lastProg = null;   // 上一轮进度快照，用于检测新完成的集并弹出提示
 
   // ---------- 工具 ----------
   function imgProxy(url) { return "/api/image?url=" + encodeURIComponent(url); }
@@ -20,10 +22,11 @@ const HgCommon = (() => {
   }
   function fmtSize(b) { return b > 1048576 ? (b / 1048576).toFixed(1) + "MB" : Math.round(b / 1024) + "KB"; }
 
-  // ---------- 注入悬浮按钮与弹窗 ----------
+  // ---------- 注入悬浮按钮与下载进度弹窗 ----------
   const wrap = document.createElement("div");
   wrap.innerHTML = `
     <div class="fab-group">
+      <button class="fab fab-library" id="fabLibrary" title="剧集列表（已下载）">🎞</button>
       <button class="fab fab-folder" id="fabFolder" title="打开本地目录">📁<span class="badge" id="fabFolderBadge"></span></button>
       <button class="fab fab-download" id="fabDownload" title="下载进度">⬇<span class="badge" id="fabBadge"></span></button>
     </div>
@@ -35,7 +38,23 @@ const HgCommon = (() => {
     </div>`;
   document.body.appendChild(wrap);
   document.body.insertAdjacentHTML("beforeend",
-    `<link rel="stylesheet" href="/static/common.css">`);
+    `<link rel="stylesheet" href="/static/common.css?v=20261029">`);
+
+  // ---------- 消息提示（下载完成） ----------
+  const toastBox = document.createElement("div");
+  toastBox.className = "hg-toasts";
+  document.body.appendChild(toastBox);
+
+  function toast(text) {
+    const el = document.createElement("div");
+    el.className = "hg-toast";
+    el.textContent = text;
+    toastBox.appendChild(el);
+    setTimeout(() => {
+      el.classList.add("hide");
+      setTimeout(() => el.remove(), 300);
+    }, 3200);
+  }
 
   const fabBadge = document.getElementById("fabBadge");
   const mask = document.getElementById("modalMask");
@@ -84,6 +103,26 @@ const HgCommon = (() => {
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.detail || "打开失败"); }
     } catch (e) { alert("打开本地目录失败: " + e.message); }
+  }
+
+  // ---------- 本地剧集（剧集列表页使用） ----------
+  // 在资源管理器中打开某一部剧的本地目录
+  async function openLibFolder(folder) {
+    try {
+      const res = await fetch("/api/open-folder", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ folder })
+      });
+      if (!res.ok) { const d = await res.json().catch(() => ({})); throw new Error(d.detail || "打开失败"); }
+    } catch (e) { alert("打开本地目录失败: " + e.message); }
+  }
+
+  // 剧集列表改为独立页面：按钮直接跳转（该页面自身不再显示此按钮）
+  const fabLibrary = document.getElementById("fabLibrary");
+  if (location.pathname.replace(/\/+$/, "") === "/library") {
+    fabLibrary.style.display = "none";
+  } else {
+    fabLibrary.addEventListener("click", () => { location.href = "/library"; });
   }
 
   // ---------- 渲染 ----------
@@ -140,6 +179,24 @@ const HgCommon = (() => {
   }
 
   // ---------- 按需轮询（有活动任务或弹窗打开时才持续请求） ----------
+  // 对比上一轮快照，发现新完成的集就弹出提示（首轮只建立基线，避免把历史已完成误报为新完成）
+  function notifyCompleted(prog) {
+    if (lastProg) {
+      for (const vid in prog) {
+        const p = prog[vid], prev = lastProg[vid];
+        if (!prev) continue;  // 本轮新出现的视频：其已完成集可能来自历史文件
+        const done = Object.keys(p.episodes).filter(ep =>
+          p.episodes[ep].status === "completed" &&
+          !(prev.episodes[ep] && prev.episodes[ep].status === "completed")
+        ).map(Number).sort((a, b) => a - b);
+        if (!done.length) continue;
+        if (p.overall >= 100) toast("《" + p.title + "》全部下载完成");
+        else done.forEach(ep => toast("《" + p.title + "》第" + ep + "集下载完成"));
+      }
+    }
+    lastProg = prog;
+  }
+
   async function tick() {
     let prog;
     try {
@@ -148,6 +205,7 @@ const HgCommon = (() => {
       setTimeout(tick, 3000); // 请求异常稍后重试
       return;
     }
+    notifyCompleted(prog);
     // 活动任务：有正在下载的集或队列中还有任务（部分下载但空闲的不算）
     const active = Object.values(prog).some(p => !!p.current || p.queue_len > 0);
     // 角标：正在下载/排队 或 存在失败集数的视频数
@@ -159,11 +217,13 @@ const HgCommon = (() => {
     if (modalOpen) renderModal(prog);
     if (progressCb) progressCb(prog, active);
 
-    if (modalOpen || active) setTimeout(tick, 1500);
+    if (modalOpen || active || Date.now() < holdUntil) setTimeout(tick, 1500);
     else polling = false;
   }
 
   function ensurePolling() {
+    // 留 20s 保活：服务端要先抓元数据才会建立任务状态，这段时间快照里看不到下载中
+    holdUntil = Date.now() + 20000;
     if (!polling) { polling = true; tick(); }
   }
 
@@ -171,7 +231,7 @@ const HgCommon = (() => {
   ensurePolling();
 
   return {
-    imgProxy, imgError, fmtSize, openFolder, ensurePolling,
+    imgProxy, imgError, fmtSize, openFolder, ensurePolling, openLibFolder,
     onProgress(cb) { progressCb = cb; },
     setVideoContext(vid) { videoContext = vid; },
   };

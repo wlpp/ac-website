@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的剧集 - 黄果短剧下载器</title>
+<link rel="stylesheet" href="/static/common.css?v=20261029">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0f1115; color: #e8eaed; font-family: "Microsoft YaHei", "PingFang SC", sans-serif; min-height: 100vh; }
+  .header { position: sticky; top: 0; z-index: 10; display: flex; align-items: center; gap: 14px; padding: 14px 24px; background: #161922; border-bottom: 1px solid #262b38; }
+  .logo { font-size: 18px; font-weight: 700; color: #ffb84d; text-decoration: none; white-space: nowrap; }
+  .page-name { padding-left: 14px; border-left: 1px solid #2c3345; font-size: 14px; color: #9aa3b5; }
+  .back { margin-left: auto; color: #9aa3b5; font-size: 14px; text-decoration: none; }
+  .back:hover { color: #ffb84d; }
+  .main { max-width: 1280px; margin: 0 auto; padding: 22px 24px 90px; }
+  .toolbar { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .page-title { display: flex; align-items: center; gap: 10px; font-size: 17px; }
+  .page-title::before { content: ""; width: 4px; height: 18px; border-radius: 2px; background: #ffb84d; }
+  .stats { font-size: 13px; color: #8b93a7; }
+  .refresh { margin-left: auto; padding: 7px 16px; border: 1px solid #2c3345; border-radius: 8px;
+             background: #1d2230; color: #cfd6e4; font-size: 13px; cursor: pointer; }
+  .refresh:hover { border-color: #ffb84d; color: #ffb84d; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; align-items: start; }
+  .card { position: relative; padding: 16px 18px; border: 1px solid #262b38; border-radius: 14px;
+          background: linear-gradient(160deg, #1d2230, #171b26); cursor: pointer;
+          transition: border-color .15s, transform .15s; }
+  .card:hover { border-color: #3a4260; transform: translateY(-2px); }
+  .card.open { border-color: #ffb84d; }
+  .card-main { padding-right: 76px; }
+  .card-title { font-size: 15px; font-weight: 600; line-height: 1.45;
+                display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-meta { margin-top: 8px; font-size: 12px; color: #8b93a7; }
+  .card-hint { margin-top: 12px; font-size: 11px; color: #5d6578; }
+  .card.open .card-hint { display: none; }
+  .card-actions { position: absolute; top: 12px; right: 12px; display: flex; gap: 6px; }
+  .act { width: 30px; height: 30px; border: 1px solid #2c3345; border-radius: 8px;
+         background: #232938; color: #a7b0c2; font-size: 14px; line-height: 1; cursor: pointer; transition: all .15s; }
+  .act:hover { background: #2e3648; color: #fff; }
+  .act-del:hover { background: #3a1b1b; border-color: #6b2b2b; color: #ff7a7a; }
+  .act:disabled { opacity: .5; cursor: default; }
+  .card-detail { display: none; margin-top: 14px; padding-top: 14px; border-top: 1px dashed #2c3345; }
+  .card.open .card-detail { display: block; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; max-height: 168px; overflow-y: auto; }
+  .ep-chip { padding: 4px 10px; border: 1px solid #2b5a40; border-radius: 7px;
+             background: #14251c; color: #6ee7a0; font-size: 12px; font-family: inherit; }
+  .ep-chip.ep-missing { border-color: #2c3345; background: #232938; color: #5d6578; cursor: pointer; }
+  .ep-chip.ep-missing:hover { border-color: #ffb84d; color: #ffb84d; }
+  .ep-chip.wait { border-color: #b57e2a; background: #2a2313; color: #ffd166; cursor: default; }
+  .ep-chip.ep-fail { border-color: #6b2b2b; background: #251414; color: #ff7a7a; cursor: pointer; }
+  .ep-tip { margin-top: 10px; font-size: 12px; color: #6b7385; }
+  .ep-tip:empty { display: none; }
+  .ep-tip.err { color: #ff7a7a; cursor: pointer; }
+  .btn-detail { width: 100%; margin-top: 14px; padding: 9px; border: none; border-radius: 9px;
+                background: #ffb84d; color: #1a1207; font-family: inherit; font-size: 13px;
+                font-weight: 700; cursor: pointer; }
+  .btn-detail:hover { background: #ffc76b; }
+  .btn-detail:disabled { opacity: .6; cursor: default; }
+
+  .loading, .empty { padding: 70px 0; text-align: center; color: #6b7385; font-size: 14px; }
+  .empty .tip { margin-top: 10px; font-size: 13px; color: #565d6e; }
+
+  /* ---------- 移动端适配 ---------- */
+  @media (max-width: 640px) {
+    body { -webkit-tap-highlight-color: transparent; }
+    .header { padding: 10px 14px; gap: 10px; }
+    .logo { font-size: 16px; }
+    .page-name { font-size: 13px; padding-left: 10px; }
+    .back { font-size: 13px; }
+    .main { padding: 16px 14px 90px; }
+    .toolbar { gap: 10px; margin-bottom: 14px; }
+    .page-title { font-size: 15px; }
+    .stats { font-size: 12px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .card { padding: 13px 13px 14px; border-radius: 11px; }
+    .card-main { padding-right: 0; }
+    .card-title { font-size: 14px; }
+    .card-actions { position: static; margin-top: 12px; }
+    .act { flex: 1; width: auto; height: 30px; }
+    .card-meta { margin-top: 6px; font-size: 11px; }
+    .card-hint { display: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="header">
+    <a class="logo" href="/">黄果短剧下载器</a>
+    <span class="page-name">我的剧集</span>
+    <a class="back" href="/">返回首页</a>
+  </div>
+
+  <div class="main">
+    <div class="toolbar">
+      <div class="page-title">已下载剧集</div>
+      <div class="stats" id="stats"></div>
+      <button class="refresh" onclick="load()">刷新</button>
+    </div>
+    <div id="content" class="loading">加载中...</div>
+  </div>
+
+<script src="/static/common.js?v=20261029"></script>
+<script>
+const isMobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+function fmtSize(b) {
+  if (b >= 1073741824) return (b / 1073741824).toFixed(2) + "GB";
+  return b > 1048576 ? (b / 1048576).toFixed(1) + "MB" : Math.round(b / 1024) + "KB";
+}
+function fmtDate(ts) {
+  const d = new Date(ts * 1000), p = n => String(n).padStart(2, "0");
+  return (d.getMonth() + 1) + "-" + p(d.getDate()) + " " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+
+function cardHtml(it) {
+  const chips = it.episodes.map(e =>
+    '<button class="ep-chip" data-ep="' + e.ep + '">第' + e.ep + '集</button>'
+  ).join("");
+  return '<div class="card" data-folder="' + esc(it.folder) + '">' +
+    '<div class="card-main">' +
+      '<div class="card-title" title="' + esc(it.folder) + '">' + esc(it.folder) + '</div>' +
+      '<div class="card-meta">' + it.count + ' 集 · ' + fmtSize(it.size) + ' · ' + fmtDate(it.mtime) + '</div>' +
+      '<div class="card-hint">点击查看集数</div>' +
+    '</div>' +
+    '<div class="card-actions">' +
+      '<button class="act act-folder" data-act="folder" title="打开本地目录">📁</button>' +
+      '<button class="act act-del" data-act="del" title="删除本地目录">🗑</button>' +
+    '</div>' +
+    '<div class="card-detail">' +
+      '<div class="chips">' + chips + '</div>' +
+      '<div class="ep-tip"></div>' +
+      '<button class="btn-detail" data-act="detail">前往详情页 →</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// 展开卡片时拉取全部集数：已下载高亮，未下载置灰（点击置灰集数加入下载）
+async function ensureEpisodes(card) {
+  if (card.dataset.loaded === "1") return;
+  const tip = card.querySelector(".ep-tip");
+  tip.className = "ep-tip";
+  tip.textContent = "正在获取全部集数...";
+  try {
+    const res = await fetch("/api/library/episodes?folder=" + encodeURIComponent(card.dataset.folder));
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.detail || "获取失败");
+    card.dataset.vid = d.video_id;
+    card.dataset.loaded = "1";
+    renderChips(card, d.total_eps, d.downloaded || []);
+    tip.textContent = "";
+  } catch (e) {
+    tip.className = "ep-tip err";
+    tip.textContent = "获取全部集数失败：" + e.message + "（点击重试）";
+  }
+}
+
+function renderChips(card, total, downloaded) {
+  const done = new Set(downloaded);
+  let html = "";
+  for (let ep = 1; ep <= total; ep++) {
+    html += done.has(ep)
+      ? '<button class="ep-chip" data-ep="' + ep + '">第' + ep + '集</button>'
+      : '<button class="ep-chip ep-missing" data-ep="' + ep + '">第' + ep + '集</button>';
+  }
+  card.querySelector(".chips").innerHTML = html;
+}
+
+async function enqueueEp(card, chip) {
+  const vid = card.dataset.vid;
+  const ep = Number(chip.dataset.ep);
+  if (!vid) { alert("剧集信息尚未加载完成，请稍候"); return; }
+  chip.disabled = true;
+  try {
+    const res = await fetch("/api/download/" + vid, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ep })
+    });
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(d.detail || "加入下载失败");
+    chip.classList.remove("ep-missing", "ep-fail");
+    chip.classList.add("wait");
+    chip.dataset.queued = "1";
+    chip.textContent = "第" + ep + "集 · 排队";
+    HgCommon.ensurePolling();  // 让进度轮询持续刷新排队/进度状态
+  } catch (e) {
+    chip.disabled = false;
+    alert(e.message);
+  }
+}
+
+async function load() {
+  const el = document.getElementById("content");
+  el.className = "loading"; el.textContent = "加载中...";
+  document.getElementById("stats").textContent = "";
+  try {
+    const data = await (await fetch("/api/library")).json();
+    const items = data.items || [];
+    if (!items.length) {
+      document.getElementById("stats").textContent = "";
+      el.className = "empty";
+      el.innerHTML = '暂无已下载剧集<div class="tip">到剧集详情页点击集数或“下载全部”开始下载</div>';
+      return;
+    }
+    const totalEps = items.reduce((n, i) => n + i.count, 0);
+    document.getElementById("stats").textContent =
+      items.length + " 部 · " + totalEps + " 集 · " + fmtSize(data.total_size || 0);
+    el.className = "grid";
+    el.innerHTML = items.map(cardHtml).join("");
+  } catch (e) {
+    el.className = "empty"; el.textContent = "加载失败：" + e.message;
+  }
+}
+
+async function delFolder(card, folder) {
+  if (!confirm("确定删除《" + folder + "》的全部本地文件？\n此操作不可恢复。")) return;
+  const btn = card.querySelector('[data-act="del"]');
+  btn.disabled = true;
+  try {
+    const res = await fetch("/api/library/delete", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ folder })
+    });
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      throw new Error(d.detail || "删除失败");
+    }
+    card.remove();
+    load();  // 重新统计
+  } catch (e) {
+    btn.disabled = false;
+    alert("删除失败：" + e.message);
+  }
+}
+
+async function gotoDetail(btn, card) {
+  if (!card.dataset.vid) await ensureEpisodes(card);
+  if (!card.dataset.vid) return;
+  const url = "/detail/" + card.dataset.vid;
+  if (isMobile) location.href = url;
+  else window.open(url, "_blank");
+}
+
+document.getElementById("content").addEventListener("click", e => {
+  const card = e.target.closest(".card");
+  if (!card) return;
+  const folder = card.dataset.folder;
+
+  // 集数加载失败时，点击提示可重试
+  const tip = e.target.closest(".ep-tip");
+  if (tip && card.dataset.loaded !== "1") { ensureEpisodes(card); return; }
+
+  const actEl = e.target.closest("[data-act]");
+  if (actEl) {
+    const act = actEl.dataset.act;
+    if (act === "del") delFolder(card, folder);
+    else if (act === "folder") HgCommon.openLibFolder(folder);
+    else if (act === "detail") gotoDetail(actEl, card);
+    return;
+  }
+
+  const epEl = e.target.closest(".ep-chip");
+  if (epEl) {
+    // 已下载的集数只做状态展示；置灰/失败的点击加入下载
+    if (epEl.classList.contains("ep-missing") || epEl.classList.contains("ep-fail")) enqueueEp(card, epEl);
+    return;
+  }
+
+  if (card.classList.toggle("open")) ensureEpisodes(card);
+});
+
+// 下载进度轮询：同步卡片内排队/下载中/完成/失败的集数状态
+HgCommon.onProgress(prog => {
+  document.querySelectorAll(".card.open[data-vid]").forEach(card => {
+    const p = prog[card.dataset.vid];
+    if (!p) return;
+    card.querySelectorAll(".ep-chip[data-queued]").forEach(chip => {
+      const ep = chip.dataset.ep;
+      const st = p.episodes[ep];
+      if (!st) return;
+      if (st.status === "completed") {
+        chip.classList.remove("wait", "ep-fail");
+        chip.textContent = "第" + ep + "集";
+        delete chip.dataset.queued;
+        chip.disabled = false;
+      } else if (st.status === "failed") {
+        chip.classList.remove("wait");
+        chip.classList.add("ep-fail");
+        chip.textContent = "第" + ep + "集 · 失败";
+        delete chip.dataset.queued;
+        chip.disabled = false;
+      } else if (st.status === "downloading") {
+        chip.textContent = "第" + ep + "集 · " + Math.round(st.progress) + "%";
+      }
+    });
+  });
+});
+
+load();
+</script>
+</body>
+</html>

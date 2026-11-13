@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shopfans 2.0 Admin - Action Boxes (STATIC TEST PAGE)</title>
+
+<!-- jQuery & jQuery UI from CDN -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/themes/smoothness/jquery-ui.css">
+
+<!-- Page CSS: action.css is the boxes/action bundle -->
+<link rel="stylesheet" href="css/action.css">
+<!-- open.css provides the shared layout (header / sidebar / buttons / tables wrapper) -->
+<link rel="stylesheet" href="css/open.css">
+
+<link rel="shortcut icon" href="//app.shopfans.com/admin/themes/classic/images/favicon.ico" type="image/x-icon">
+
+<script>
+var THEME_BASE_URL = '/admin/themes/classic';
+var BASE_URL = 'https://app.shopfans.com/admin';
+var USER_NAME = 'China';
+var USER_ROLE = 'admin';
+</script>
+
+<style>
+/* ====== Document tooltip styling (copied from original header) ====== */
+.document_state { font-weight: 700; }
+.document_state > a { color: #000 !important; }
+#documents-count {
+    font-weight: bold;
+    display: inline-block;
+    margin: 5px 5px 0 -5px;
+}
+
+/* ====== Original summary box action styles ====== */
+.box_info table.summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+.box_info table.summary td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+}
+.box_info table.summary td:first-child {
+    color: #888;
+    width: 180px;
+    white-space: nowrap;
+}
+.box_info table.summary tr.provider td { text-align: right; font-weight: bold; padding-top: 16px; }
+.box_info table.summary tr.suite td { font-weight: bold; font-size: 14px; }
+.box_info table.summary tr.suite td:first-child { color: #c00; }
+.box_info table.summary tr.ship-to td .address { display: block; color: #555; }
+.box_info table.summary tr.ship-to td .name { font-weight: bold; }
+.box_info .action_buttons {
+    padding: 12px 0 8px;
+    border-top: 1px solid #eee;
+    margin-top: 8px;
+}
+.box_info .action_buttons input[type=button] {
+    margin-right: 8px;
+    margin-bottom: 8px;
+    padding: 6px 16px;
+    cursor: pointer;
+}
+
+/* Hint banner */
+.hint {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 4px;
+    color: #856404;
+}
+
+/* Scan & Check out button floated right */
+.scan_check {
+    float: right;
+    margin-top: -4px;
+}
+
+/* Grid table row toolbar */
+.row-toolbar a, .row-toolbar button { margin-left: 6px; }
+
+/* Form finish hidden by default */
+#form_finish { margin-top: 16px; padding: 14px; background: #fafafa; border-radius: 4px; }
+#form_finish input[type=text] { padding: 2px 4px; margin: 0 4px; border: 1px solid #ccc; border-radius: 2px; }
+#form_finish .dimension label, #form_finish .location label { margin-right: 4px; }
+#form_finish .dimension input { width: 80px; }
+
+/* Comments block */
+.block.comments { margin-top: 20px; padding: 12px 16px; border: 1px solid #eee; border-radius: 4px; background: #fafafa; }
+.block.comments h3 { font-family: "Georgia", serif; font-style: italic; margin-top: 0; color: #333; }
+.block.comments ul { padding: 0; }
+.block.comments ul li { border-bottom: 1px solid #eee; padding: 8px 0; }
+.block.comments .form textarea { width: 100%; min-height: 60px; border: 1px solid #ccc; border-radius: 3px; padding: 6px; }
+.block.comments .form button { padding: 6px 16px; margin-top: 6px; cursor: pointer; }
+.block.comments .comment_template { display: none; }
+
+/* body reset */
+body { font-family: Arial, sans-serif; }
+a { text-decoration: none; color: #06c; }
+a:hover { text-decoration: underline; }
+h1, h2, h3 { font-family: Georgia, serif; font-style: italic; color: #333; }
+.clear { clear: both; }
+</style>
+</head>
+
+<body>
+
+<div id="float-messages"></div>
+<div id="layout">
+
+    <!-- ============ TOP HEADER (same as shipment-open) ============ -->
+    <div id="header">
+        <div id="header-right">
+            <div class="atk-menu atk-menu-horizontal ui-widget">
+            <ul>
+                <li class="ui-state-default ui-corner-left"><a href="/admin/overview.html">Guangzhou</a></li>
+                <li class="ui-state-default"><a href="/admin/requests.html">Requests</a></li>
+                <li class="ui-state-default"><a href="/admin/packages.html">Purchases</a></li>
+                <li class="ui-state-active"><a href="/admin/boxes.html">Shipments</a></li>
+                <li class="ui-state-default"><a href="/admin/locations.html">Locations</a></li>
+                <li class="ui-state-default"><a href="/admin/dictionaries.html">Dictionaries</a></li>
+                <li class="ui-state-default"><a href="/admin/users.html">Users</a></li>
+                <li class="ui-state-default"><a href="/admin/content.html">Content</a></li>
+                <li class="ui-state-default"><a href="/admin/finances.html">Finances</a></li>
+                <li class="ui-state-default"><a href="/admin/terminals.html">Terminals</a></li>
+
+                <li class="ui-state-default documents">
+                    <a style="float: left" href="/admin/documents.html">Documents</a>
+                    <p id="documents-count" data-current-count="0" data-current-ready=""></p>
+                </li>
+
+                <li class="ui-state-default">
+                    <input type="text" id="object-search" placeholder="Search..."
+                           style="height:20px;width:114px;margin:0;border:0"
+                           title="Input number of suite, conso or package..."
+                           class="ui-autocomplete-input" autocomplete="off">
+                </li>
+
+                <li class="ui-state-default"><a href="/admin/preferences.html">Settings</a></li>
+                <li class="ui-state-default ui-corner-right"><a href="/admin/logout.html">Logout</a></li>
+            </ul>
+            </div>
+            <div id="atk-version"><i></i></div>
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <div class="wrapper">
+
+        <!-- ====== LEFT SIDEBAR (25 items, Shipment section active) ====== -->
+        <div id="LeftSidebar">
+            <div class="atk-menu atk-menu-vertical ui-widget">
+                <ul class="main_submenu">
+                    <li class="ui-state-default ui-corner-top"><a href="/admin/shipment/open.html">Shipment</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/stuck_after_conso.html">Stuck After Conso</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/stuckEcommerce.html">Stuck Ecommerce</a></li>
+                    <li class="ui-state-default"><a href="/admin/sfx/list/verified.html">Shopfans-Express</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/ems.html">Express USPS</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/dhl.html">DHL</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/pmi.html">Priority USPS</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/ship/pmi_rus.html">Priority BWW/ACO Rus</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/airmail.html">Airmail</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/epacket.html">ePacket</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipped/list/default.html">Shipped</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/list.html">Plain View</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/history.html">Export History</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/terminalUsage.html">Terminal Usage</a></li>
+                    <li class="ui-state-default"><a href="/admin/kpiPerformance/index/packing.html">KPI Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/packingPerformance/index.html">Packing Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/pickingPerformance/index.html">Picking Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/placingPerformance/index.html">Placing Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/sortingPerformance/index.html">Sorting Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/charity.html">Charity</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/removed.html">Removed from stock</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipmentToReturn/index.html">Shipments to Return</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipmentToReturn/refunded.html">Shipments to Refunded</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/refundReport.html">Refund Report</a></li>
+                    <li class="ui-state-default ui-corner-bottom"><a href="/admin/shipment/status_plan.html">Status Plan</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ====================== MAIN CONTENT ====================== -->
+        <div id="Content" class="atk4_loader subpage">
+
+            <!-- ============= Consolidation Heading ============= -->
+            <h2>Consolidation</h2>
+
+            <!-- ============= Box Info Summary Table (ALL original data preserved) ============= -->
+            <div class="box_info">
+                <table class="summary">
+                    <tbody>
+                        <tr class="provider">
+                            <td></td>
+                            <td align="right"><span>Yandex</span></td>
+                        </tr>
+                        <tr class="suite">
+                            <td>Suite #930001</td>
+                            <td>
+                                <a href="/admin/users/details.html?user_id=930001" target="_blank">Aleksandra Tsipulina</a>,
+                                <a href="mailto:ecommerce1765312598402@example.com">ecommerce1765312598402@example.com</a>
+                            </td>
+                        </tr>
+                        <tr class="reference">
+                            <td>Shipment ID</td>
+                            <td>#910999</td>
+                        </tr>
+                        <tr class="status">
+                            <td>Status</td>
+                            <td>900200 / Consolidation Packing / Packing process has been started</td>
+                        </tr>
+                        <tr class="ship-to">
+                            <td>Ship To</td>
+                            <td>
+                                <span class="name">Aleksandra Tsipulina</span>,
+                                <span class="address">
+                                    Russian Federation, 111024, Moskva, ulitsa Marshala Vasilevskogo, 13 / k1
+                                </span>
+                            </td>
+                        </tr>
+                        <tr class="shipment-type">
+                            <td>Shipment Type</td>
+                            <td>Shopfans Lite (sfx_lite)</td>
+                        </tr>
+                        <tr class="options">
+                            <td>Options</td>
+                            <td>Pack and ship</td>
+                        </tr>
+                        <tr class="calculated-weight">
+                            <td>Calculated Weight</td>
+                            <td>6 oz</td>
+                        </tr>
+                        <tr class="actual-weight">
+                            <td>Actual Weight</td>
+                            <td>0 lbs</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- ============= Action Buttons ============= -->
+                <div class="action_buttons">
+                    <input type="button" class="ui-button" value="Return to list" id="go_back">
+
+                    <!-- Hold On button + its hidden reason dialog template -->
+                    <input type="button" class="ui-button" value="Hold On" id="hold_on">
+                    <div id="form_reason" style="display:none" title="Hold on"
+                         data-comment-template="Консолидация вашей посылки № %shipment_id% задерживается.&lt;br /&gt;&lt;br /&gt;%status_description%&lt;br /&gt;&lt;br /&gt;Если у вас есть вопросы, напишите нам, пожалуйста, на help@shopfans.ru&lt;br /&gt;Извините за доставленные неудобства."
+                         data-shipment-ref-no=""
+                         data-msg-1="таможенная декларация содержит ошибку в описании вещей"
+                         data-msg-2="содержимое похоже на коммерческую партию"
+                         data-msg-3="качество документа слишком плохое"
+                         data-msg-4="загружены не все требуемые страницы паспорта"
+                         data-msg-5="договор не подписан, или не соответствует образцу"
+                         data-msg-6="загруженный документ не похож на счёт, или не содержит данные о вещах"
+                         choose_one="You've choosed reason in the list and wrote a few words below, please keep only one reason"
+                         choose_something="Please choose reason or write a few words before continue">
+                        The reason why shipment was hold::<br>
+                        <textarea cols="80" rows="8" maxlength="10000" style="width:97%"></textarea>
+                        <br>
+                        <div class="text-length"></div>
+                        <div class="text-preview" style="margin:10px 0;padding:10px;background-color:#e8e8e8;min-height:189px;"></div>
+                    </div>
+
+                    <input type="button" class="ui-button" value="Show Manifest" id="show_manifest">
+
+                    <input type="button" class="ui-button" value="Print label"
+                           data-url="/admin/shipment/label.html?id=910999" id="print_label">
+
+                    <input type="button" class="ui-button" value="Undo all" id="undo_all">
+                </div>
+            </div>
+
+            <!-- ============= Hint banner ============= -->
+            <div class="hint">
+                <strong>Remove Invoices!</strong>
+                All invoices must be removed from this package.
+            </div>
+
+            <!-- ============= Consolidation order contents Heading + Scan button ============= -->
+            <h2 style="float: left;">Consolidation order contents</h2>
+            <div class="scan_check">
+                <input type="button" class="ui-button" value="Scan &amp; Check out Package Labels" id="scan_check">
+            </div>
+
+            <!-- ============= Grid Table (1 row preserved from original capture) ============= -->
+            <div id="grid">
+                <div class="dataTables_wrapper" id="grid_table_wrapper">
+                    <div id="grid_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="grid_table_length">
+                                <option value="5">5</option>
+                                <option value="10">10</option>
+                                <option value="15" selected="selected">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_585472620_1794562804694" style="float:left;"></div>
+                    <div class="dataTables_filter" id="grid_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="grid_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="grid_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting_asc" rowspan="1" colspan="1" style="width:143px;">Package #</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:86px;">Store</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:175px;">Store Order #</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:103px;">Weight</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:111px;">Options</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:199px;">Package Status</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:27px;"></th>
+                            </tr>
+                        </thead>
+                        <tfoot>
+                            <tr class="footerRow">
+                                <th rowspan="1" colspan="1">Package #</th>
+                                <th rowspan="1" colspan="1">Store</th>
+                                <th rowspan="1" colspan="1">Store Order #</th>
+                                <th rowspan="1" colspan="1">Weight</th>
+                                <th rowspan="1" colspan="1">Options</th>
+                                <th rowspan="1" colspan="1">Package Status</th>
+                                <th rowspan="1" colspan="1"></th>
+                            </tr>
+                        </tfoot>
+                        <tbody>
+                            <!-- Original row from captured HTML -->
+                            <tr class="odd">
+                                <td class="sorting_1">940001</td>
+                                <td>https://www.poizon.com</td>
+                                <td>DW74</td>
+                                <td>0.4 lbs / 0.16 kg</td>
+                                <td>-</td>
+                                <td nowrap="true">Arrived on 13-Nov</td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>1</span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <button class="ui-button">In box</button>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_742839998_1794562804694" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="grid_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="grid_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (1 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="grid_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ============= Hidden Finish Form (captured DOM) ============= -->
+            <form id="form_finish" style="display:none;">
+                <input type="hidden" name="id" value="">
+                <input type="hidden" name="print_label" value="N">
+                <input type="hidden" name="hold_on_confirmed" value="">
+                <input type="hidden" name="dimensions_estimated" value="N">
+
+                <div id="error_message" class="hint"></div>
+
+                <p><label for="weight_0">Weight:</label>
+                    <input type="text" name="weight" id="weight_0"> lbs</p>
+
+                <p class="dimension">
+                    <label>Dimension (inches only)</label>
+                    <label for="width">Width</label>
+                    <input type="text" name="width" value="13.5000">
+                    <label for="height">Height</label>
+                    <input type="text" name="height" value="7.2000">
+                    <label for="depth">Depth</label>
+                    <input type="text" name="depth" value="2.5600">
+                    <input class="ui-button" value="Estimate (All sides &lt; 14inches)" name="estimate_button" type="button">
+                </p>
+
+                <p class="location">
+                    <label for="location_0">Stored at:</label>
+                    <input type="text" name="location_id" id="location_0" value="">
+                    <input type="button" class="ui-button" value="Save location" name="save_location">
+                </p>
+            </form>
+
+            <!-- ============= Comments Block (staff only, original form + empty comment list) ============= -->
+            <br><br>
+            <div class="block comments" id="yw0">
+                <h3>Shipment Comments (staff only)</h3>
+                <ul>
+                    <!-- 预留占位：静态测试也可以插几条模拟评论 -->
+                    <li>
+                        <strong>13-Nov 12:30</strong> · <em>staff:admin</em><br>
+                        Packer noted: label prints correctly. Invoices removed from PKG 940001.
+                    </li>
+                </ul>
+                <div class="form">
+                    <div style="display:none" class="comment_template">
+                        <span class="created">%dts%</span>
+                        <span class="author">%author%</span>
+                        <p>%text%</p>
+                    </div>
+                    <h3>Leave your comments here</h3>
+                    <form action="/admin/comment/post.html" method="POST">
+                        <input type="hidden" name="comment[entity]" value="shipment">
+                        <input type="hidden" name="comment[entity_id]" value="910999">
+                        <span class="error"></span>
+                        <textarea name="comment[text]" placeholder="Leave your comments here"></textarea>
+                        <button>Post Comment</button>
+                    </form>
+                </div>
+            </div>
+
+        </div><!-- /#Content -->
+        <div class="clear"></div>
+    </div><!-- /.wrapper -->
+    <div id="footer-guard"></div>
+</div><!-- /#layout -->
+
+<div id="footer" class="wrapper"></div>
+
+<!-- ============ STATIC JS: keep only click wiring for buttons ============ -->
+<script type="text/javascript">
+$(document).ready(function () {
+
+    // ===== 非阻塞 toast 提示（替代 alert）=====
+    function showToast(type, msg) {
+        var $toast = $('<div class="toast-msg toast-' + type + '" style="padding:8px 14px;margin:4px 0;border-radius:4px;color:#fff;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.2);">' + msg + '</div>');
+        $('#float-messages').append($toast);
+        setTimeout(function () { $toast.fadeOut(300, function () { $(this).remove(); }); }, 4000);
+    }
+
+    // Return to list → 跳回 shipment-open（同一目录下 index.html）
+    $('#go_back').on('click', function () {
+        window.location.href = 'index.html';
+    });
+
+    // Hold On → 弹框在页面加载时即初始化（按钮 DOM 持久存在，与线上一致）
+    $('#form_reason').dialog({
+        autoOpen: false,
+        width: 700,
+        title: 'Hold on',
+        buttons: [
+            { text: 'Cancel',           click: function () { $(this).dialog('close'); } },
+            { text: 'Continue',         click: function () { showToast('info', 'Hold On reason submitted to backend'); $(this).dialog('close'); } },
+            { text: 'Missing Continue', click: function () { showToast('warn', 'Missing package reason flow'); $(this).dialog('close'); } }
+        ]
+    });
+    $('#hold_on').on('click', function () {
+        $('#form_reason').dialog('open');
+    });
+
+    // Print label → open in new tab
+    $('#print_label').on('click', function () {
+        var url = $(this).data('url') || '#';
+        window.open(url, '_blank');
+    });
+
+    // Show Manifest / Scan & Check / Undo all → alert stub 占位
+    $('#show_manifest').on('click', function () { showToast('info', 'Opening manifest viewer for shipment #910999'); });
+    $('#scan_check').on('click', function () { showToast('info', 'Scan & Check out flow'); });
+    $('#undo_all').on('click', function () { showToast('warn', 'Undo all packing actions'); });
+
+    // Post comment → 阻止提交，避免刷新页面
+    $('#yw0 form').on('submit', function (e) {
+        e.preventDefault();
+        showToast('info', 'Comment submitted');
+        return false;
+    });
+
+    // Weight / Dimension / Save location → 占位
+    $('#form_finish input[name="save_location"]').on('click', function () { showToast('success', 'Location saved: ' + $('#location_0').val()); });
+    $('#form_finish input[name="estimate_button"]').on('click', function () { showToast('info', 'Estimate weight button clicked'); });
+
+    // === In box → Finish packing 弹框（页面加载时即初始化，按钮 DOM 持久存在）===
+    $('#form_finish').dialog({
+        autoOpen: false,
+        title: 'Finish packing',
+        width: 500,
+        closeOnEscape: true,
+        modal: false,
+        buttons: [
+            {
+                text: 'Proceed',
+                click: function () {
+                    // 若 Weight confirmed 提示还在，先清掉再提交（模拟线上：提示消失后才能 proceed）
+                    if ($('#error_message').hasClass('display')) {
+                        $('#error_message').removeClass('display').text('');
+                    }
+                    var weight = $('#weight_0').val();
+                    showToast('info', 'Proceed → submit packing (Weight=' + weight + ' lbs)');
+                    $(this).dialog('close');
+                    // 模拟线上：提交完成后跳回列表页
+                    window.location.href = '/index.html';
+                }
+            },
+            {
+                text: 'Print label',
+                'class': 'print-label-btn',
+                click: function () {
+                    showToast('info', 'Print label → call local print service');
+                    window.open('/admin/shipment/label.html?id=910999', '_blank');
+                }
+            },
+            {
+                text: 'Confirm Weight',
+                click: function () {
+                    var w = $('#weight_0').val();
+                    // 和线上一致: #error_message 填值 + 加 display class 显示
+                    $('#error_message').text('Weight confirmed').addClass('display');
+                    // 模拟线上：几秒后自动消失
+                    setTimeout(function () {
+                        $('#error_message').removeClass('display').text('');
+                    }, 5000);
+                }
+            }
+        ],
+        open: function () { $(this).show(); }
+    });
+    $('#grid_table button').filter(function () {
+        return $(this).text().trim() === 'In box';
+    }).on('click', function () {
+        $('#form_finish').dialog('open');
+    });
+
+    console.log('[STATIC TEST PAGE] action.html loaded — Shipment #910999 box action view, no backend calls.');
+});
+</script>
+
+</body>
+</html>

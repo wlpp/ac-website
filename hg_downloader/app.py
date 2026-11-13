@@ -230,23 +230,46 @@ class DownloadManager:
                 self.jobs.task_done()
 
     async def _ensure_m3u8(self, video_id, ep):
-        """按需获取m3u8（缓存10分钟，防auth_key过期）"""
+        """按需获取m3u8（缓存10分钟，防auth_key过期）
+
+        2026-11 上游改版：播放页 videoInitialData 不再给 epPlaySrcs/videoSrc，
+        改为 POST /api/videos/{id}/episodes/{ep}/playback，取 data.streams.main。
+        （同路径 GET 会被 CloudFront 403，必须 POST）
+        """
         cache = self.m3u8_cache.setdefault(video_id, {})
         hit = cache.get(ep)
         if hit and time.time() - hit[1] < 600:
             return hit[0]
-        url = f"{base_url}/video/{video_id}/" if ep == 1 else f"{base_url}/video/{video_id}/ep-{ep}/"
-        data, _ = self.parse_initial_data(await self.fetch_text(url, f"第{ep}集页面"))
-        m3u8 = None
-        for k, v in (data.get("epPlaySrcs") or {}).items():
-            cache.setdefault(int(k), (v, time.time()))
-        if ep in cache:
-            m3u8 = cache[ep][0]
-        elif data.get("videoSrc"):
-            cache[ep] = (data["videoSrc"], time.time())
-            m3u8 = data["videoSrc"]
-        await asyncio.sleep(random.uniform(*PAGE_DELAY))
-        return m3u8
+        api = f"{base_url}/api/videos/{video_id}/episodes/{ep}/playback"
+        page = f"{base_url}/video/{video_id}/" if ep == 1 else f"{base_url}/video/{video_id}/ep-{ep}/"
+        headers = rand_headers()
+        headers.update({
+            "Content-Type": "application/json",
+            "Accept": "application/json, text/plain, */*",
+            "Origin": base_url,
+            "Referer": page,
+        })
+        last_err = None
+        for retry in range(MAX_RETRIES):
+            try:
+                async with self.session.post(api, json={}, headers=headers, proxy=proxy, ssl=False,
+                                             timeout=aiohttp.ClientTimeout(total=SEGMENT_TIMEOUT)) as resp:
+                    if resp.status == 200:
+                        payload = await resp.json(content_type=None)
+                        streams = ((payload or {}).get("data") or {}).get("streams") or {}
+                        m3u8 = streams.get("main") or streams.get("hevc") or ""
+                        if m3u8:
+                            cache[ep] = (m3u8, time.time())
+                            await asyncio.sleep(random.uniform(*PAGE_DELAY))
+                            return m3u8
+                        last_err = "接口未返回 streams.main"
+                    else:
+                        last_err = f"HTTP {resp.status}"
+            except Exception as e:
+                last_err = str(e)
+            if retry < MAX_RETRIES - 1:
+                await asyncio.sleep(1 + retry)
+        raise Exception(f"获取m3u8失败（{api}）: {last_err}")
 
     @staticmethod
     def parse_m3u8(m3u8_text):

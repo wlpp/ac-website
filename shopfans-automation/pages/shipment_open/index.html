@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shopfans 2.0 Admin - Open Shipment (STATIC TEST PAGE)</title>
+
+<!-- jQuery & jQuery UI from CDN (required for UI widgets used by original page) -->
+<script src="//cdnjs.cloudflare.com/ajax/libs/jquery/1.7.2/jquery.min.js"></script>
+<script src="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/jquery-ui.min.js"></script>
+<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/jqueryui/1.9.2/themes/smoothness/jquery-ui.css">
+
+<!-- jQuery DataTables (used by all the tables on the original page) -->
+<script src="//cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+<link rel="stylesheet" href="//cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+
+<!-- Page-specific compiled CSS (images removed for offline independence) -->
+<link rel="stylesheet" href="css/open.css">
+
+<!-- Favicon (kept from original) -->
+<link rel="shortcut icon" href="//app.shopfans.com/admin/themes/classic/images/favicon.ico" type="image/x-icon">
+
+<!-- ====== Inline styles copied verbatim from original page ====== -->
+<style>
+/* Loader (kept for completeness but never triggered since JS calls removed) */
+.shopfans-global-loader {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(255,255,255,0.85);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: Arial, sans-serif;
+}
+
+/* Tooltip styling from original header Documents widget */
+.document_state { font-weight: 700; }
+.document_state > a { color: #000 !important; }
+
+.ui-tooltip {
+    position: relative;
+    background: #ffffef;
+    padding: 10px 14px;
+    border-radius: 5px;
+    color: #333;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.4;
+    z-index: 9999;
+    border: 1px solid #e0e0d8;
+    min-width: 120px;
+}
+#documents-count {
+    font-weight: bold;
+    display: inline-block;
+    margin: 5px 5px 0 -5px;
+}
+
+/* Print dropdown button list styling */
+.button-list { display: inline-block; }
+.button-list select {
+    opacity: 0;
+    position: absolute;
+    margin: 0;
+    z-index: 1000;
+    width: 140px;
+}
+.button-list button {
+    width: 140px;
+    text-align-last: justify;
+}
+
+/* VIP ignore filter row (appears above every grid section) */
+.vip-ignore {
+    text-align: right;
+    margin-top: -25px;
+}
+
+/* Original row toolbar (Consolidate / Hold on actions per shipment row) */
+.row-toolbar a { margin-left: 6px; }
+
+/* Red heading */
+h2.red { color: #c00; }
+
+/* Minor body reset so original colors look right */
+body { font-family: Arial, sans-serif; }
+a { text-decoration: none; color: #06c; }
+a:hover { text-decoration: underline; }
+
+/* Ensure row toolbar table cells don't inherit weird backgrounds */
+table.row-toolbar { background: transparent !important; }
+table.row-toolbar td { background: transparent !important; }
+</style>
+
+<script>
+// Original global variables (kept for structural parity)
+var THEME_BASE_URL = '/admin/themes/classic';
+var BASE_URL = 'https://app.shopfans.com/admin';
+var USER_NAME = 'China';
+var USER_ROLE = 'admin';
+</script>
+</head>
+
+<body>
+
+<!-- ====== Float messages container (kept, static test has none) ====== -->
+<div id="float-messages"></div>
+
+<!-- ====== Main layout ====== -->
+<div id="layout">
+
+    <!-- ============ TOP HEADER with navigation ============ -->
+    <div id="header">
+        <div id="header-right">
+            <div class="atk-menu atk-menu-horizontal ui-widget">
+            <ul>
+                <li class="ui-state-default ui-corner-left"><a href="/admin/overview.html">Guangzhou</a></li>
+                <li class="ui-state-default"><a href="/admin/requests.html">Requests</a></li>
+                <li class="ui-state-default"><a href="/admin/packages.html">Purchases</a></li>
+                <li class="ui-state-active"><a href="/admin/boxes.html">Shipments</a></li>
+                <li class="ui-state-default"><a href="/admin/locations.html">Locations</a></li>
+                <li class="ui-state-default"><a href="/admin/dictionaries.html">Dictionaries</a></li>
+                <li class="ui-state-default"><a href="/admin/users.html">Users</a></li>
+                <li class="ui-state-default"><a href="/admin/content.html">Content</a></li>
+                <li class="ui-state-default"><a href="/admin/finances.html">Finances</a></li>
+                <li class="ui-state-default"><a href="/admin/terminals.html">Terminals</a></li>
+
+                <li class="ui-state-default documents">
+                    <a style="float: left" href="/admin/documents.html">Documents</a>
+                    <p id="documents-count" data-current-count="0" data-current-ready=""></p>
+                </li>
+
+                <li class="ui-state-default">
+                    <input type="text" id="object-search" placeholder="Search..."
+                           style="height:20px;width:114px;margin:0;border:0"
+                           title="Input number of suite, conso or package to find object details."
+                           class="ui-autocomplete-input" autocomplete="off">
+                </li>
+
+                <li class="ui-state-default"><a href="/admin/preferences.html">Settings</a></li>
+                <li class="ui-state-default ui-corner-right"><a href="/admin/logout.html">Logout</a></li>
+            </ul>
+            </div>
+            <div id="atk-version"><i></i></div>
+        </div>
+        <div class="clear"></div>
+    </div>
+
+    <!-- ============ WRAPPER holds left sidebar + content ============ -->
+    <div class="wrapper">
+
+        <!-- ====== LEFT SIDEBAR vertical menu (24 items, fully preserved) ====== -->
+        <div id="LeftSidebar">
+            <div class="atk-menu atk-menu-vertical ui-widget">
+                <ul class="main_submenu">
+                    <li class="ui-state-active ui-corner-top"><a href="/admin/shipment/open.html">Shipment</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/stuck_after_conso.html">Stuck After Conso</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/stuckEcommerce.html">Stuck Ecommerce</a></li>
+                    <li class="ui-state-default"><a href="/admin/sfx/list/verified.html">Shopfans-Express</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/ems.html">Express USPS</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/dhl.html">DHL</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/pmi.html">Priority USPS</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/ship/pmi_rus.html">Priority BWW/ACO Rus</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/airmail.html">Airmail</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/list/epacket.html">ePacket</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipped/list/default.html">Shipped</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/list.html">Plain View</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/history.html">Export History</a></li>
+                    <li class="ui-state-default"><a href="/admin/boxes/terminalUsage.html">Terminal Usage</a></li>
+                    <li class="ui-state-default"><a href="/admin/kpiPerformance/index/packing.html">KPI Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/packingPerformance/index.html">Packing Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/pickingPerformance/index.html">Picking Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/placingPerformance/index.html">Placing Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/sortingPerformance/index.html">Sorting Performance</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/charity.html">Charity</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/removed.html">Removed from stock</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipmentToReturn/index.html">Shipments to Return</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipmentToReturn/refunded.html">Shipments to Refunded</a></li>
+                    <li class="ui-state-default"><a href="/admin/shipment/refundReport.html">Refund Report</a></li>
+                    <li class="ui-state-default ui-corner-bottom"><a href="/admin/shipment/status_plan.html">Status Plan</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- ====================== MAIN CONTENT ====================== -->
+        <div id="Content" class="atk4_loader subpage">
+
+            <!-- ---- Print dropdown + Force Majeure button ---- -->
+            <form class="button-list">
+                <select id="print_options">
+                    <option selected="" disabled="disabled">Choose document to print</option>
+                    <option data-url="/admin/boxes/print.html?shipmentIds=" data-ids="Y">Reports</option>
+                    <option data-url="/admin/boxes/print.html?locations=N&amp;shipmentIds=" data-ids="Y">Reports w/o Locations</option>
+                    <option data-url="/admin/boxes/printNextReport.html">Next Report</option>
+                    <option data-url="/admin/boxes/printVipReport.html">VIP Report</option>
+                    <option data-url="/admin/boxes/printNextReport.html?sfl=Y">Next SFL Report</option>
+                    <option data-url="/admin/boxes/printNextReport.html?ppo=Y">Next SFX_PPO Report</option>
+                </select>
+                <button class="ui-button">Print ▾</button>
+            </form>
+
+            <input type="button" class="ui-button force_majeure" value="Force Majeure" disabled="disabled">
+
+            <!-- Force Majeure reason dialog (hidden by default) -->
+            <div id="form_reason" style="display:none" title="Force Majeure"
+                 data-comment-template="Консолидация вашей посылки № %shipment_id% задерживается.&lt;br /&gt;&lt;br /&gt;%status_description%&lt;br /&gt;&lt;br /&gt;Если у вас есть вопросы, напишите нам, пожалуйста, на help@shopfans.ru&lt;br /&gt;Извините за доставленные неудобства."
+                 data-shipment-ref-no=""
+                 data-msg-1="таможенная декларация содержит ошибку в описании вещей"
+                 data-msg-2="содержимое похоже на коммерческую партию"
+                 data-msg-3="качество документа слишком плохое"
+                 data-msg-4="загружены не все требуемые страницы паспорта"
+                 data-msg-5="договор не подписан, или не соответствует образцу"
+                 data-msg-6="загруженный документ не похож на счёт, или не содержит данные о вещах">
+                The reason force majeure case:<br>
+                <textarea cols="80" rows="8" maxlength="10000" style="width:97%"></textarea>
+                <br>
+                <div class="text-length"></div>
+                <div class="text-preview" style="margin:10px 0;padding:10px;background-color:#e8e8e8;min-height:189px;"></div>
+            </div>
+
+            <!-- ================================================================
+                 SECTION 1: Delays (no reason) — 7 columns, static dummy rows
+                 ================================================================ -->
+            <h2 class="red">Delays (no reason)</h2>
+            <div class="vip-ignore">
+                <label for="delays_no_reason_vip_filter">Ignore VIP</label>
+                <input id="delays_no_reason_vip_filter" data-grid-var="oDelaysNoReason" class="vip-ignore-filter" type="checkbox">
+                <label for="delays_no_reason_sfl_only">SFL Only</label>
+                <input id="delays_no_reason_sfl_only" data-grid-var="oDelaysNoReason" class="sfl-only" type="checkbox">
+            </div>
+            <div id="delays_no_reason">
+                <div class="dataTables_wrapper" id="delays_no_reason_table_wrapper">
+                    <div id="delays_no_reason_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="delays_no_reason_table_length">
+                                <option value="5">5</option>
+                                <option value="10" selected="selected">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_8269362390_1794561316376" style="float:left;"></div>
+                    <div class="dataTables_filter" id="delays_no_reason_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="delays_no_reason_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="delays_no_reason_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:98px;">#ID</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:98px;">Packages</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:127px;">Type</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:127px;">Ready</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:141px;">Status</th>
+                                <th class="sorting_desc" rowspan="1" colspan="1" style="width:127px;">Delay</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:127px;">User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Row 1 -->
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8412001</span></nobr></td>
+                                <td valign="top">3</td>
+                                <td valign="top">sfx_lite</td>
+                                <td valign="top"><nobr title="Ready since 11/10/2026 08:14:22">3 days ago</nobr></td>
+                                <td valign="top">Consolidation in progress</td>
+                                <td valign="top" style="color:#c00;font-weight:bold;">~72h</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920007">
+                                        <nobr>920007 - Ivan Petrov</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <!-- Row 2 -->
+                            <tr class="even">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8412002</span></nobr></td>
+                                <td valign="top">7</td>
+                                <td valign="top">sfx_standard</td>
+                                <td valign="top"><nobr title="Ready since 11/09/2026 21:02:11">4 days ago</nobr></td>
+                                <td valign="top">Missing 1 package</td>
+                                <td valign="top" style="color:#c00;font-weight:bold;">~96h</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920008">
+                                        <nobr>920008 - Anna Smirnova</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <!-- Row 3 -->
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8412003</span></nobr></td>
+                                <td valign="top">1</td>
+                                <td valign="top">ems</td>
+                                <td valign="top"><nobr title="Ready since 11/05/2026 11:45:30">8 days ago</nobr></td>
+                                <td valign="top">On Hold (VIP)</td>
+                                <td valign="top" style="color:#c00;font-weight:bold;">~192h</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920009">
+                                        <nobr>920009 - Sergey Kuznetsov</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <!-- Row 4 -->
+                            <tr class="even">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8412004</span></nobr></td>
+                                <td valign="top">12</td>
+                                <td valign="top">dhl</td>
+                                <td valign="top"><nobr title="Ready since 11/12/2026 16:20:00">1 day ago</nobr></td>
+                                <td valign="top">Consolidation in progress</td>
+                                <td valign="top" style="color:#c88;">~20h</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920010">
+                                        <nobr>920010 - Maria Volkova</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <!-- Row 5 -->
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8412005</span></nobr></td>
+                                <td valign="top">2</td>
+                                <td valign="top">pmi</td>
+                                <td valign="top"><nobr title="Ready since 11/08/2026 09:09:09">5 days ago</nobr></td>
+                                <td valign="top">Stuck after conso</td>
+                                <td valign="top" style="color:#c00;font-weight:bold;">~120h</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920011">
+                                        <nobr>920011 - Dmitry Sokolov</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_9645467349_1794561316376" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="delays_no_reason_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="delays_no_reason_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (5 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="delays_no_reason_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 SECTION 2: Open boxes — 5 columns, 6 static rows
+                 ================================================================ -->
+            <h2>Open boxes</h2>
+            <div class="vip-ignore">
+                <label for="open_boxes_vip_filter">Ignore VIP</label>
+                <input id="open_boxes_vip_filter" data-grid-var="oOpenBoxes" class="vip-ignore-filter" type="checkbox">
+                <label for="open_boxes_sfl_only">SFL Only</label>
+                <input id="open_boxes_sfl_only" data-grid-var="oOpenBoxes" class="sfl-only" type="checkbox">
+            </div>
+            <div id="open_boxes">
+                <div class="dataTables_wrapper" id="open_boxes_table_wrapper">
+                    <div id="open_boxes_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="open_boxes_table_length">
+                                <option value="5">5</option>
+                                <option value="10" selected="selected">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_2041294938_1794561316386" style="float:left;"></div>
+                    <div class="dataTables_filter" id="open_boxes_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="open_boxes_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="open_boxes_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:154px;">#ID</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:154px;">Packages</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:196px;">Type</th>
+                                <th class="sorting_asc"  rowspan="1" colspan="1" style="width:196px;">Ready</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:196px;">User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Row 1 (preserved from original capture) -->
+                            <tr class="odd">
+                                <td><nobr><input type="checkbox" class="check_id" value="910001"><span style="color:#c88;font-weight:bold;"> 910001</span></nobr></td>
+                                <td>1</td>
+                                <td>sfx_lite</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 12:04:44">a few minutes ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920001">
+                                                            <nobr>920001 - Dmitrii Kirnichnyi</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910001" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910001" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Row 2 (preserved from original capture) -->
+                            <tr class="even">
+                                <td><nobr><input type="checkbox" class="check_id" value="910002"><span style="color:#c88;font-weight:bold;"> 910002</span></nobr></td>
+                                <td>1</td>
+                                <td>sfx_lite</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 12:05:08">a few minutes ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920002">
+                                                            <nobr>920002 - Ekaterina Prokhorova</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910002" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910002" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Row 3 (preserved from original capture) -->
+                            <tr class="odd">
+                                <td><nobr><input type="checkbox" class="check_id" value="910003"><span style="color:#c88;font-weight:bold;"> 910003</span></nobr></td>
+                                <td>1</td>
+                                <td>sfx_lite</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 12:05:37">a few minutes ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920003">
+                                                            <nobr>920003 - Aleksei Ershov</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910003" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910003" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Row 4 (preserved from original capture) -->
+                            <tr class="even">
+                                <td><nobr><input type="checkbox" class="check_id" value="910004"><span style="color:#c88;font-weight:bold;"> 910004</span></nobr></td>
+                                <td>1</td>
+                                <td>sfx_lite</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 12:15:08">a few minutes ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920004">
+                                                            <nobr>920004 - Sabrina Khanzharova</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910004" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910004" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Row 5 (static dummy) -->
+                            <tr class="odd">
+                                <td><nobr><input type="checkbox" class="check_id" value="910005"><span style="color:#c88;font-weight:bold;"> 910005</span></nobr></td>
+                                <td>4</td>
+                                <td>sfx_standard</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 11:30:00">30 minutes ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920005">
+                                                            <nobr>920005 - Alex Ivanov</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910005" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910005" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                            <!-- Row 6 (static dummy) -->
+                            <tr class="even">
+                                <td><nobr><input type="checkbox" class="check_id" value="910006"><span style="color:#c88;font-weight:bold;"> 910006</span></nobr></td>
+                                <td>8</td>
+                                <td>ems</td>
+                                <td class="sorting_1">
+                                    <span style="color:#c88;font-weight:bold;">
+                                        <nobr title="Ready for packing since 11/13/2026 10:15:00">1 hour ago</nobr>
+                                    </span>
+                                </td>
+                                <td>
+                                    <table width="100%" class="row-toolbar" style="background:inherit !important;">
+                                        <tbody style="background:inherit !important;">
+                                            <tr style="background:inherit !important;">
+                                                <td class="row-value" style="background:inherit !important;">
+                                                    <span>
+                                                        <a target="_blank" href="/admin/users/details.html?user_id=920006">
+                                                            <nobr>920006 - Olga Petrova</nobr>
+                                                        </a>
+                                                    </span>
+                                                </td>
+                                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                                    <a href="action.html?shipment_id=910006" style="margin-left:6px;">Consolidate</a>
+                                                    <a href="action.html?shipment_id=910006" style="margin-left:6px;">Hold on</a>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_6261966215_1794561316386" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="open_boxes_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="open_boxes_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (6 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="open_boxes_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 SECTION 3: Consolidating — 8 columns, 3 static rows
+                 ================================================================ -->
+            <h2>Consolidating</h2>
+            <div class="vip-ignore">
+                <label for="consolidating_vip_filter">Ignore VIP</label>
+                <input id="consolidating_vip_filter" data-grid-var="oConsolidating" class="vip-ignore-filter" type="checkbox">
+                <label for="consolidating_sfl_only">SFL Only</label>
+                <input id="consolidating_sfl_only" data-grid-var="oConsolidating" class="sfl-only" type="checkbox">
+            </div>
+            <div id="consolidating">
+                <div class="dataTables_wrapper" id="consolidating_table_wrapper">
+                    <div id="consolidating_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="consolidating_table_length">
+                                <option value="5">5</option>
+                                <option value="10" selected="selected">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_3535855363_1794561316392" style="float:left;"></div>
+                    <div class="dataTables_filter" id="consolidating_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="consolidating_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="consolidating_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:60px;">#ID</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:60px;">Packages</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:70px;">Type</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:70px;">Ready</th>
+                                <th class="sorting_asc" rowspan="1" colspan="1" style="width:70px;">Status Time</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:90px;">Status</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:176px;">User</th>
+                                <th rowspan="1" colspan="1">Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="odd">
+                                <td valign="top"><nobr><input type="checkbox" class="check_id" value="910007"><span style="color:#c88;font-weight:bold;"> 910007</span></nobr></td>
+                                <td valign="top">2</td>
+                                <td valign="top">sfx_lite</td>
+                                <td valign="top"><nobr title="Ready since 11/13/2026 09:00:00">3h ago</nobr></td>
+                                <td valign="top"><nobr title="Status set on 11/13/2026 10:00:00">2h ago</nobr></td>
+                                <td valign="top">Packing</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920012">
+                                        <nobr>920012 - Pavel Sidelnikov</nobr>
+                                    </a>
+                                </td>
+                                <td valign="top">2.45 kg</td>
+                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                    <a href="action.html?shipment_id=910007" style="margin-left:6px;">Consolidate</a>
+                                    <a href="action.html?shipment_id=910007" style="margin-left:6px;">Hold on</a>
+                                </td>
+                            </tr>
+                            <tr class="even">
+                                <td valign="top"><nobr><input type="checkbox" class="check_id" value="910008"><span style="color:#c88;font-weight:bold;"> 910008</span></nobr></td>
+                                <td valign="top">5</td>
+                                <td valign="top">dhl</td>
+                                <td valign="top"><nobr title="Ready since 11/12/2026 18:00:00">18h ago</nobr></td>
+                                <td valign="top"><nobr title="Status set on 11/13/2026 06:00:00">6h ago</nobr></td>
+                                <td valign="top">Waiting for invoice</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920013">
+                                        <nobr>920013 - Elena Morozova</nobr>
+                                    </a>
+                                </td>
+                                <td valign="top">7.12 kg</td>
+                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                    <a href="action.html?shipment_id=910008" style="margin-left:6px;">Consolidate</a>
+                                    <a href="action.html?shipment_id=910008" style="margin-left:6px;">Hold on</a>
+                                </td>
+                            </tr>
+                            <tr class="odd">
+                                <td valign="top"><nobr><input type="checkbox" class="check_id" value="910009"><span style="color:#c88;font-weight:bold;"> 910009</span></nobr></td>
+                                <td valign="top">1</td>
+                                <td valign="top">airmail</td>
+                                <td valign="top"><nobr title="Ready since 11/13/2026 11:50:00">10 min ago</nobr></td>
+                                <td valign="top"><nobr title="Status set on 11/13/2026 12:00:00">just now</nobr></td>
+                                <td valign="top">Ready to print</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920014">
+                                        <nobr>920014 - Viktor Lebedev</nobr>
+                                    </a>
+                                </td>
+                                <td valign="top">0.38 kg</td>
+                                <td class="row-toolbar" align="right" nowrap="true" style="background:inherit !important;">
+                                    <a href="action.html?shipment_id=910009" style="margin-left:6px;">Consolidate</a>
+                                    <a href="action.html?shipment_id=910009" style="margin-left:6px;">Hold on</a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_7310560202_1794561316392" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="consolidating_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="consolidating_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (3 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="consolidating_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 SECTION 4: On Hold (missing packages) — 7 columns, 3 rows
+                 ================================================================ -->
+            <h2>On Hold (missing packages)</h2>
+            <div class="vip-ignore">
+                <label for="on_hold_missing_packages_vip_filter">Ignore VIP</label>
+                <input id="on_hold_missing_packages_vip_filter" data-grid-var="oOnHoldMissingPackages" class="vip-ignore-filter" type="checkbox">
+                <label for="on_hold_missing_packages_sfl_only">SFL Only</label>
+                <input id="on_hold_missing_packages_sfl_only" data-grid-var="oOnHoldMissingPackages" class="sfl-only" type="checkbox">
+            </div>
+            <div id="on_hold_missing_packages">
+                <div class="dataTables_wrapper" id="on_hold_missing_packages_table_wrapper">
+                    <div id="on_hold_missing_packages_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="on_hold_missing_packages_table_length">
+                                <option value="5">5</option>
+                                <option value="10" selected="selected">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_9117670864_1794561316397" style="float:left;"></div>
+                    <div class="dataTables_filter" id="on_hold_missing_packages_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="on_hold_missing_packages_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="on_hold_missing_packages_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:60px;">#ID</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:60px;">Packages</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:90px;">Type</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:130px;">Ready</th>
+                                <th class="sorting_desc" rowspan="1" colspan="1" style="width:179px;">On Hold</th>
+                                <th class="sorting"     rowspan="1" colspan="1" style="width:200px;">Missed packages</th>
+                                <th rowspan="1" colspan="1">User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8430001</span></nobr></td>
+                                <td valign="top">5 / 6</td>
+                                <td valign="top">sfx_standard</td>
+                                <td valign="top"><nobr title="Ready since 11/10/2026">3 days ago</nobr></td>
+                                <td valign="top" style="color:#c00;">Since 11/11/2026 (48h)</td>
+                                <td valign="top">
+                                    <a href="#" title="View missing">PKG-778123456789 (seller: DHL DE)</a>
+                                </td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920015">
+                                        <nobr>920015 - Natalia Orlova</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr class="even">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8430002</span></nobr></td>
+                                <td valign="top">8 / 10</td>
+                                <td valign="top">pmi</td>
+                                <td valign="top"><nobr title="Ready since 11/08/2026">5 days ago</nobr></td>
+                                <td valign="top" style="color:#c00;">Since 11/09/2026 (72h)</td>
+                                <td valign="top">
+                                    PKG-445566778899, PKG-445566778900 (USPS labels)
+                                </td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920016">
+                                        <nobr>920016 - Konstantin Belyaev</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8430003</span></nobr></td>
+                                <td valign="top">1 / 3</td>
+                                <td valign="top">ems</td>
+                                <td valign="top"><nobr title="Ready since 11/12/2026">1 day ago</nobr></td>
+                                <td valign="top" style="color:#c00;">Since 11/13/2026 (12h)</td>
+                                <td valign="top">PKG-112233445566 (EMS)</td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920017">
+                                        <nobr>920017 - Irina Gavrilova</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_7791293886_1794561316397" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="on_hold_missing_packages_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="on_hold_missing_packages_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (3 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="on_hold_missing_packages_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================================================================
+                 SECTION 5: On Hold (customer service) — 6 columns, 3 rows
+                 ================================================================ -->
+            <h2>On Hold (customer service)</h2>
+            <div class="vip-ignore">
+                <label for="on_hold_customer_service_vip_filter">Ignore VIP</label>
+                <input id="on_hold_customer_service_vip_filter" data-grid-var="oOnHoldCustomerService" class="vip-ignore-filter" type="checkbox">
+                <label for="on_hold_customer_service_packages_sfl_only">SFL Only</label>
+                <input id="on_hold_customer_service_packages_sfl_only" data-grid-var="oOnHoldCustomerService" class="sfl-only" type="checkbox">
+            </div>
+            <div id="on_hold_customer_service">
+                <div class="dataTables_wrapper" id="on_hold_customer_service_table_wrapper">
+                    <div id="on_hold_customer_service_table_length" class="dataTables_length">
+                        <label>Show
+                            <select size="1" name="on_hold_customer_service_table_length">
+                                <option value="5">5</option>
+                                <option value="10" selected="selected">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                                <option value="500">500</option>
+                                <option value="-1">All</option>
+                            </select> entries
+                        </label>
+                    </div>
+                    <div class="tlbr_5585442550_1794561316401" style="float:left;"></div>
+                    <div class="dataTables_filter" id="on_hold_customer_service_table_filter">
+                        <label>Search: <input type="text"></label>
+                    </div>
+                    <div id="on_hold_customer_service_table_processing" class="dataTables_processing" style="visibility:hidden;">Processing...</div>
+                    <table class="display" id="on_hold_customer_service_table" style="width:1026px;">
+                        <thead>
+                            <tr class="headerRow">
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:60px;">#ID</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:60px;">Packages</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:90px;">Type</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:130px;">Ready</th>
+                                <th class="sorting_desc" rowspan="1" colspan="1" style="width:330px;">On Hold</th>
+                                <th class="sorting"      rowspan="1" colspan="1" style="width:200px;">User</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8440001</span></nobr></td>
+                                <td valign="top">1</td>
+                                <td valign="top">sfx_lite</td>
+                                <td valign="top"><nobr title="Ready since 11/12/2026">1 day ago</nobr></td>
+                                <td valign="top">
+                                    Waiting for customer confirmation of dangerous-goods declaration — ticket #T-4512
+                                </td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920018">
+                                        <nobr>920018 - Yuliya Vasilieva</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr class="even">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8440002</span></nobr></td>
+                                <td valign="top">3</td>
+                                <td valign="top">dhl</td>
+                                <td valign="top"><nobr title="Ready since 11/11/2026">2 days ago</nobr></td>
+                                <td valign="top">
+                                    Awaiting customer to pay overweight surcharge (2.3 kg over limit) — ticket #T-4498
+                                </td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920019">
+                                        <nobr>920019 - Roman Popov</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                            <tr class="odd">
+                                <td valign="top"><nobr><span style="color:#c88;font-weight:bold;">8440003</span></nobr></td>
+                                <td valign="top">2</td>
+                                <td valign="top">epacket</td>
+                                <td valign="top"><nobr title="Ready since 11/10/2026">3 days ago</nobr></td>
+                                <td valign="top">
+                                    Customer requested to split into two shipments; awaiting final decision — ticket #T-4480
+                                </td>
+                                <td valign="top">
+                                    <a target="_blank" href="/admin/users/details.html?user_id=920020">
+                                        <nobr>920020 - Ksenia Makarova</nobr>
+                                    </a>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    <div class="dwld_7574391906_1794561316401" style="float:left;">
+                        Download data (<a href="#download_excel" format="xls">Excel</a>, <a href="#download_csv" format="csv">CSV</a>)
+                    </div>
+                    <div class="dataTables_paginate paging_links" id="on_hold_customer_service_table_paginate">
+                        <a class="previous paginate_button paginate_button_disabled" id="on_hold_customer_service_table_previous">&lt;&lt;</a>
+                        <span><strong>1</strong> (3 total)</span>
+                        <a class="next paginate_button paginate_button_disabled" id="on_hold_customer_service_table_next">&gt;&gt;</a>
+                    </div>
+                </div>
+            </div>
+
+        </div><!-- /#Content -->
+
+        <div class="clear"></div>
+    </div><!-- /.wrapper -->
+
+    <div id="footer-guard"></div>
+</div><!-- /#layout -->
+
+<div id="footer" class="wrapper"></div>
+
+<!-- ================================================================
+     JS section
+     Original page had initConsoList() + checkNewDocuments() + autocomplete
+     — all of which require backend AJAX endpoints. We strip them out.
+
+     We keep only the trivial static DataTables initialisation so that the
+     "Show N entries" select / Search box / pagination look & feel match
+     the original page. The data itself is rendered as plain <tbody> rows,
+     so the tables work equally well without DataTables if the test suite
+     prefers raw DOM access.
+     ================================================================ -->
+<script type="text/javascript">
+$(document).ready(function () {
+    // The original called initConsoList(...) here.
+    // That function registers DataTables + AJAX endpoints.
+    // For the STATIC TEST PAGE we skip it completely — tables are already
+    // populated in markup and should be findable directly by id.
+
+    // Optional: wire up the print dropdown button so clicking it triggers
+    // the intended action (open selected URL in a new tab). Kept for parity.
+    $('.button-list select').on('change', function () {
+        var $opt = $(this).find(':selected');
+        var url  = $opt.data('url');
+        if (url) { window.open(url, '_blank'); }
+        $(this).val($(this).find('option:first').val()); // reset
+    });
+
+    // Force Majeure dialog: minimal jQuery UI dialog wiring
+    var $fm = $('#form_reason');
+    $('.force_majeure').click(function () {
+        $fm.dialog({ width: 700, title: 'Force Majeure' });
+    });
+
+    console.log('[STATIC TEST PAGE] shipment-open loaded. All tables are pre-rendered, no backend calls.');
+});
+</script>
+
+</body>
+</html>

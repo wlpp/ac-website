@@ -105,7 +105,7 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | 搜索 | `GET /search/video/{quote(q)}/` | 卡片列表 |
 | 卡片字段 | 同上两处共用 `parse_drama_cards` | `.hg-drama-card[data-track-id]`、`data-track-title`、`img[data-src]`、`__score`、`__episode`、`__desc`、`.hg-tag`（会剔除 `.sr-only` 子节点） |
 | 详情/播放页 | `GET /video/{id}/`、`/video/{id}/ep-{n}/` | `script#videoInitialData` 的 JSON：`title/description/coverSrc/posterSrc/tags/ep/epPlaySrcs/videoSrc`；集数取 `[data-web-play-ep-grid] a[data-ep-id]` 的最大值 |
-| m3u8 | `data.epPlaySrcs[str(ep)]`，回退 `data.videoSrc` | `#EXT-X-KEY URI/IV`、`#EXT-X-MEDIA-SEQUENCE`、非 `#` 行即 ts 地址 |
+| m3u8 | **2026-11-09 起**：`POST /api/videos/{id}/episodes/{ep}/playback`（body `{}`，带 `Referer/Origin`）→ `data.streams.main`。旧字段 `data.epPlaySrcs[str(ep)]`/`data.videoSrc` 已被站点清空（`{}`/`""`），不可再用；同路径 `GET` 会被 CloudFront 403 | `#EXT-X-KEY URI/IV`、`#EXT-X-MEDIA-SEQUENCE`、非 `#` 行即 ts 地址 |
 
 已知细节：
 - `sort=latest` **不能用 JSON API**（排序/集合与网页不一致），所以走 SSR 页面并自行算页数。
@@ -130,7 +130,7 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | L188 | `enqueue` | 入队去重：只认 `queued` 集合 + `downloading` 状态（**不要**加 pending 判断，会死锁） |
 | L206 | `set_paused` | 全局暂停开关（`resume_event`） |
 | L215 | `_worker` | 单 worker 顺序取任务，异常标记 failed |
-| L231 | `_ensure_m3u8` | 按需取播放页、填充整部集地址缓存 |
+| L231 | `_ensure_m3u8` | 按需 `POST /api/videos/{id}/episodes/{ep}/playback` 取 `streams.main`（10 分钟缓存） |
 | L250 | `parse_m3u8` | key/IV/media-sequence/ts 列表 |
 | L270 | `decrypt_segment` | AES-CBC + 尽力 unpad（失败按 16 字节截断） |
 | L279 | `_download_one` | 单集主流程（见下） |
@@ -301,7 +301,7 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 
 调试小技巧：
 - 直接 `curl http://127.0.0.1:8765/api/progress` 看内存状态与 `queue_len`。
-- 想验证某集 m3u8：在 Python 里 `manager.parse_initial_data` 后打印 `epPlaySrcs`。
+- 想验证某集 m3u8：`POST https://huangguoai.com/api/videos/{id}/episodes/{ep}/playback`（body `{}`），看 `data.streams.main`。
 - 判断文件是 TS 还是 MP4：读首字节 `0x47` vs `ftyp`（代码已有 `_is_ts`，可直接复用）。
 
 ---
@@ -332,4 +332,5 @@ E:\download\短剧\{清洗后的标题}\第NN集.mp4
 | 2026-10-29 | 优化 | 播放器移动端：新增底部控制条（上一集/下一集 + 时间）、`scrubbing` 防回写；移动端隐藏 `.playlist`（已下载剧集只在 PC 显示）改为沉浸式播放。剧集页 `.ep-chip` 已下载的点击跳 `/player?folder=&ep=`，置灰/失败仍加入下载。移除悬浮按钮 📁（`fabFolder`/`openFolder`/`setVideoContext`）。**同日改为在视频画面上左右滑动快进/快退**（`dx/boxWidth*duration`，滑动时 `.seek-hint` 浮层提示，松手才 seek），去掉独立进度条 `input#seek` | `static/player.html`、`static/library.html`、`static/common.js`、`static/common.css`、`static/detail.html` |
 | 2026-10-29 | 修复 | 移动端播放页悬浮按钮（⬇/🎞）压住「下一集」和视频原生控件：在 `player.html` 的 `@media (max-width:860px)` 内用 `body .fab-group { display:none }` 隐藏（`body` 前缀提高优先级，压过 `common.js` 事后注入的 `common.css`）；`.ctl` 底部改用 `calc(10px + env(safe-area-inset-bottom))` 适配 iPhone 底部安全区 | `static/player.html` |
 | 2026-10-29 | 调整 | 去掉移动端底部「上一集 / 时间 / 下一集」控制条，改为标题同一行右侧的「剧集」按钮（`#btnEps`）；点击弹出底部面板，列出当前这部剧已下载的全部集数（当前集高亮、自动滚到中间），点一集直接切集并关闭，点遮罩关闭；上一集/下一集逻辑仅保留给 `ended` 自动连播 | `static/player.html` |
-| 2026-10-29 | 功能 | 「我的剧集」拆成两个可折叠分区（已下载 / 收藏，折叠状态存 `localStorage`）；卡片新增 ☆/★ 收藏按钮，收藏写入后端 `favorites.json`（`GET/POST /api/favorites`，PC 与手机共用），收藏分区与已下载列表取交集渲染；删除本地目录时同步移出收藏 | `app.py`、`static/library.html` |
+| 2026-10-29 | 功能 | 「我的剧集」拆成两个可折叠分区（已下载 / 收藏，折叠状态存 `localStorage`）；卡片新增 ☆/★ 收藏按钮，收藏写入后端 `favorites.json`（`GET/POST /api/favorites`，PC 与手机共用），收藏分区与已下载列表取交集渲染；删除本地目录时同步移出收藏。随后按用户要求：已收藏的剧不再出现在「已下载」分区，两区互斥 | `app.py`、`static/library.html` |
+| 2026-11-09 | 修复 | 上游站点改版导致下载全部失败（"未能获取到该集的 m3u8 地址"）：播放页 `videoInitialData` 里的 `epPlaySrcs`/`videoSrc` 已清空，取址迁到 `POST /api/videos/{id}/episodes/{ep}/playback`（带 `Referer`/`Origin`，返回 `data.streams.main`；同路径 `GET` 被 CloudFront 403）。`_ensure_m3u8` 改为调该接口并保留 10 分钟缓存与 `PAGE_DELAY`；m3u8 内的 AES-128 key 与 TS 分片仍在 `tp5/tp7.drleao.cn`，原解密/下载逻辑不变。实测 8093 第 1 集下载成功（45 分片 → 86MB 真 MP4） | `app.py`、`MAINTAINERS.md` |

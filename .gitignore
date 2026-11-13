@@ -3,6 +3,7 @@ crawler/
 # Local PC maintenance toolkit, not part of the website project
 电脑优化/
 .trae/
+.trae-html-share-packages/
 
 # hg_downloader: bundled ffmpeg binaries (~100MB each, exceed GitHub limit),
 # runtime logs, bytecode cache, and cloud-drive token config

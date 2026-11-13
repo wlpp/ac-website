@@ -14,5 +14,9 @@ hg_downloader/favorites.json
 lz_downloader/tools/
 lz_downloader/*.log
 lz_downloader/aliyun.json
+
+# PyInstaller build outputs (regenerated from .spec; 100MB+ binaries)
+dist/
+build/
 __pycache__/
 *.pyc

@@ -56,7 +56,8 @@ shopfans-automation/
 │   ├── diff.py                  # 线上 vs 本地结构审计
 │   └── single_finish_packing.py # 单点验证脚本（遗留）
 │
-└── legacy/01_manual_control.py  # 单文件旧版（模块化拆分前的备份）
+├── dist/ShopfansAutomation/   # PyInstaller 打包产物（exe + 依赖，整个文件夹可复制到其他电脑）
+├── legacy/01_manual_control.py  # 单文件旧版（模块化拆分前的备份）
 ```
 
 ---
@@ -67,6 +68,11 @@ shopfans-automation/
 # 线上运行
 cd e:\myWork\project\ac-website\shopfans-automation
 ..\.venv\Scripts\python.exe main.py
+
+# 打包成 exe（给其他电脑用）
+..\.venv\Scripts\python.exe -m pip install pyinstaller
+..\.venv\Scripts\pyinstaller.exe --name ShopfansAutomation --collect-all playwright --console --noconfirm --clean main.py
+# 产物在 dist\ShopfansAutomation\ShopfansAutomation.exe（整个文件夹复制到其他电脑即可）
 
 # 本地测试（静态页，不会触发线上 API）
 # 启动服务器（根目录必须是 pages/shipment_open，因为 action.html Proceed 跳转用 /index.html 绝对路径）
@@ -319,8 +325,8 @@ max_pages=50  # 安全上限防死循环
 
 | 位置 | 常量 | 值 | 说明 |
 |------|------|----|----|
-| modules/base.py | CHROME_EXE | `C:\Program Files\Google\Chrome\Application\chrome.exe` | 系统 Chrome 路径 |
-| modules/base.py | COOKIE_STATE_FILE | `~/.playwright_shopfans_state.json` | 登录态文件 |
+| modules/base.py | CHROME_EXE | `find_chrome_exe()` 自动探测 | 注册表 App Paths → 常见路径兜底 |
+| modules/base.py | COOKIE_STATE_FILE | `~/.playwright_shopfans_state.json` | 登录态文件（跨电脑自动存在用户目录） |
 | modules/shipment_finish.py | BASE_URL | `https://app.shopfans.com` | 线上根（本地测试 monkeypatch） |
 | modules/shipment_finish.py | OPEN_LIST_PATH | `/admin/shipment/open.html` | 列表路径 |
 | main.py | 窗口尺寸 | `660x760` | |

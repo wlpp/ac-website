@@ -20,8 +20,37 @@ from playwright.sync_api import sync_playwright
 
 
 # ===== 系统级配置（所有模块共享）=====
-CHROME_EXE = r"C:\Program Files\Google\Chrome\Application\chrome.exe"
 COOKIE_STATE_FILE = os.path.join(os.path.expanduser("~"), ".playwright_shopfans_state.json")
+
+
+def find_chrome_exe() -> str:
+    """自动探测系统 Chrome 安装路径（兼容 64/32 位、用户级安装、注册表）。
+    打包成 exe 后在其他电脑上也能找到正确路径。"""
+    # 1) 注册表 App Paths（最可靠）
+    try:
+        import winreg
+        with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
+                            r"SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\chrome.exe") as k:
+            path, _ = winreg.QueryValueEx(k, "")
+            if path and os.path.isfile(path):
+                return path
+    except OSError:
+        pass
+    # 2) 常见路径兜底
+    candidates = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
+        os.path.join(os.environ.get("LOCALAPPDATA", ""),
+                     r"Google\Chrome\Application\chrome.exe"),
+    ]
+    for p in candidates:
+        if p and os.path.isfile(p):
+            return p
+    # 都找不到时返回默认路径，由 Playwright 启动时报错提示
+    return r"C:\Program Files\Google\Chrome\Application\chrome.exe"
+
+
+CHROME_EXE = find_chrome_exe()
 
 
 class BaseRunner:
